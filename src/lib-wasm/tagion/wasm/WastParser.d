@@ -491,7 +491,7 @@ struct WastParser {
                     break;
                 case CALL_INDIRECT: /// call_indirect tableidx? (type typeidx) ..
                     r.nextToken;
-                        uint tableidx;
+                    uint tableidx;
                     if (r.type is TokenType.WORD) {
                         tableidx = table_lookup.get(r.token, r.token.convert!uint);
                         r.nextToken;
@@ -802,14 +802,14 @@ struct WastParser {
 
     ForwardElement[] forward_elements;
     private void evaluateForwardElements() {
-        foreach(ref f; forward_elements) {
+        foreach (ref f; forward_elements) {
             while (f.tokenizer.type is TokenType.WORD) {
-            const func_idx = func_lookup.get(f.tokenizer.token, -1); 
-            f.elem.funcs~=func_idx;
-            f.tokenizer.nextToken;
-            
-}
-            writer.section!(Section.ELEMENT).sectypes~=f.elem;
+                const func_idx = func_lookup.get(f.tokenizer.token, -1);
+                f.elem.funcs ~= func_idx;
+                f.tokenizer.nextToken;
+
+            }
+            writer.section!(Section.ELEMENT).sectypes ~= f.elem;
         }
     }
 
@@ -849,7 +849,8 @@ struct WastParser {
                         writer.section!(Section.ELEMENT).sectypes ~= elem;
                     }
                     else { // func ...
-                            import tagion.wasm.WasmReader : ElementMode;
+                        import tagion.wasm.WasmReader : ElementMode;
+
                         ForwardElement forward;
                         forward.tokenizer = post_r;
                         int count;
@@ -857,11 +858,13 @@ struct WastParser {
                             count++;
                             r.nextToken;
                         }
+                        table.limit.from = table.limit.to = count;
+                        table.limit.lim = Limits.RANGE;
+                        forward.elem.mode = ElementMode.ACTIVE;
+                        forward.elem.tableidx = cast(uint) writer.section!(Section.TABLE).sectypes.length;
                         forward_elements ~= forward;
-                        table.limit.from=table.limit.to=count;
-                            table.limit.lim=Limits.RANGE;
-                        forward.elem.mode=ElementMode.ACTIVE;
                     }
+
                     return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
                     r.nextToken;
@@ -910,9 +913,9 @@ struct WastParser {
             r.nextToken;
         }
         if (r.type is TokenType.BEGIN) {
-            scope(exit) {
+            scope (exit) {
                 evaluateForwardElements();
-                forward_elements=null;
+                forward_elements = null;
             }
             string label;
             string arg;
@@ -1238,17 +1241,14 @@ struct WastParser {
                 auto rewind = r.save;
                 r.nextToken;
                 if (r.token == WastKeywords.EXPORT) {
-                    __write("Inside EXPORT");
                     r.check(export_type == ExportType.init,
                             "Export has already been defined");
                     r.nextToken;
-                    __write("STRING %s %s", r.type, r.token);
                     r.check(r.type is TokenType.STRING,
                             "Name of export expected");
                     export_type.name = r.token.stripQuotes;
                     export_type.idx = -1; // Should be set when the function index is know
                     export_type.desc = IndexType.FUNC;
-                    __write("export_type %s", export_type);
                     r.nextToken;
                     r.expect(TokenType.END);
                     r.nextToken;
@@ -1284,7 +1284,8 @@ struct WastParser {
             }
         }
         r.nextToken;
-        if (r.type is TokenType.BEGIN) {
+        if (r.isComponent(WastKeywords.EXPORT)) {
+            //if (r.type is TokenType.BEGIN) {
             export_tokenizer = r.save;
             while (!r.empty && (r.type !is TokenType.END)) {
                 r.nextToken;
@@ -1306,6 +1307,8 @@ struct WastParser {
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
             if (arg_stage is ParserStage.EXPORT) {
                 innerParseExport(r, export_type);
+                //__write("Inner export ==== %s", export_type);
+                //writer.section!(
                 continue;
             }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);

@@ -252,7 +252,7 @@ struct WastTokenizer {
         check(error_count < max_errors, format("Error count exceeds %d", max_errors));
     }
 
-    void nextBlock() pure {
+    bool nextBlock() pure {
         if (type is TokenType.BEGIN) {
             do {
                 nextToken;
@@ -260,7 +260,9 @@ struct WastTokenizer {
             }
             while (type !is TokenType.END && type !is TokenType.EOF);
             nextToken;
+            return true;
         }
+        return false;
     }
 
     unittest {
@@ -278,6 +280,30 @@ struct WastTokenizer {
             r.nextBlock;
             assert(r.token == "yyy");
         }
+    }
+
+    bool isComponent(const(char[]) word) pure {
+        if (type is TokenType.BEGIN) {
+            auto test = save;
+            test.nextToken;
+            if (test.token == word) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    unittest {
+        enum text = "xxx ( word1 ( word2 word3 ) ) ( word4 )";
+        auto r = WastTokenizer(text);
+        assert(!r.isComponent("xxx"));
+        r.nextToken;
+        assert(!r.isComponent("xxx"));
+        assert(r.isComponent("word1"));
+        r.nextBlock;
+        assert(r.isComponent("word4"));
+        assert(equal(r.save.map!(t => t.token), only("(", "word4", ")")));
+
     }
 
     @nogc pure nothrow {
