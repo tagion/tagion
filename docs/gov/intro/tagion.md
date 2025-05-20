@@ -4,10 +4,25 @@ sidebar_label: Summary
 ---
 # Draft: What is Tagion
 
-Tagion is the name of a novel distributed database technology that combines highly efficient protocols for communication and consensus with a decentralized network architecture. 
+Tagion is the name of a noval distributed database technology that combines highly efficient protocols for communication and consensus and decentralisation. 
 
-It combines a suit of privacy and transparency and data-control options previously only found in part in traditional databases or DLT systems. 
+It combines a suite of privacy, transparency and data-control options previously only found, in part, in traditional databases or DLT systems respectively. 
 
-The Tagion Mainnet is set-up to become highly decentralized, allowing the greatest number of actors to operate nodes. This is supplemented with federated Subsystems, that are independent in their governance and data-settings, but submitting regular signets to the Mainnet which serves as quasi-public notary service and verification layer that enhances confidence and trust in mulit-stakeholder settings. 
+something about DART, Hashgraph (upgraded by) Wavefront (theoretically min-
+imal communication complexity.). Atomic broadcast protocol (A protocol where every node eventually agrees on the ordering of information is called an Atomic Broadcast Protocol (ABP)), aBFT. Determinstic finality (and fast), fair ordering, 
 
-The technology was concieved of in 2017 and remained under continuous development by Decard AG, the current stewardship entitys seeing Tagion through to full deployment and decentralisation. 
+The Tagion Mainnet is designed to become highly decentralized, allowing the greatest number of actors to operate nodes. This is supplemented with federated Subsystems which are independent in their governance and data-settings, but required to submit regular signets of their state to the Mainnet. This way, the Mainnet provides a quasi-public notary service and verification layer to the individual business and use-cases of the Subsystems, enhancing confidence and trust in any mulit-stakeholder setting. 
+
+Swapping? Proof-of-community?
+
+Manifesto
+
+TGN
+
+Link to Step-by-Step. 
+
+Archive and old papers
+
+Gov pages
+
+The technology was concieved of in 2017 and remaines under continuous development by Decard AG, the current stewardship entity guiding Tagion through to full deployment and decentralisation. 
