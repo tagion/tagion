@@ -379,7 +379,7 @@ class WasmWriter {
         }
 
         struct FuncType {
-            Types type;
+            Types type=Types.FUNC;
             immutable(Types)[] params;
             immutable(Types)[] results;
             @exclude int[string] param_names;
@@ -394,6 +394,7 @@ class WasmWriter {
             }
 
             this(ref const(ReaderSecType!(Section.TYPE)) s) {
+                __write("%s %02x", __FUNCTION__, s.type);
                 type = s.type;
                 params = s.params;
                 results = s.results;
@@ -694,8 +695,10 @@ class WasmWriter {
                 __write("WasmWriter select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
+                    bout.write(cast(ubyte) reftype);
                     bout.write(expr);
                     bout.writeb(funcs);
+                    bout.write(tableidx);
                     break;
                 case 1: /// 1:u32 et:elemkind y*:vec(funcidx)
                     bout.writeb(elemkind);

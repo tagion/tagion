@@ -849,6 +849,7 @@ struct WastParser {
                         writer.section!(Section.ELEMENT).sectypes ~= elem;
                     }
                     else { // func ...
+                            import tagion.wasm.WasmReader : ElementMode;
                         ForwardElement forward;
                         forward.tokenizer = post_r;
                         int count;
@@ -857,6 +858,9 @@ struct WastParser {
                             r.nextToken;
                         }
                         forward_elements ~= forward;
+                        table.limit.from=table.limit.to=count;
+                            table.limit.lim=Limits.RANGE;
+                        forward.elem.mode=ElementMode.ACTIVE;
                     }
                     return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
