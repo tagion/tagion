@@ -17,7 +17,7 @@ We have chosen to publish these ideas throughout their development process becau
 Since 2019 we had preliminarily described a lot of our ideas in PDF publications: <br>
 our "Technical", "Concept" and "Tokenomics" papers. They are all considered superseeded by the information on these pages, and everything current is now found here. 
 
-But if you are interested in the history of our thinking, you can find the old publications in our [archive](./intro/archive).
+But if you are interested in the history of our thinking, you can find the old publications in our Archive.
 :::
 
 
