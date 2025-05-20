@@ -9,10 +9,6 @@ As of May 2025, everything current is pubished in the tech and governance docume
 
 ## Tagion Patents
 
-[DART Database EP3790224](https://github.com/tagion/tagion/blob/e4a0e5f3c51d303c00562a6c63306174998e1630/docs/static/DART_Patent_EP_3790224_A1.pdf)
-
-[Wavefront Protocol EP3851974](https://github.com/tagion/tagion/blob/e4a0e5f3c51d303c00562a6c63306174998e1630/docs/static/Wavefront_Patent_EP_3851974_A1.pdf)
-
 ## Outdated Technical Papers
 
 [July 2020](https://github.com/tagion/tagion/blob/2d7cf36d89eb2e9213b1e8b4e375a3786e373650/docs/static/Tagion_2020_July_Tech.pdf)
