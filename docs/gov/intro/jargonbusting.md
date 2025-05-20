@@ -29,7 +29,7 @@ ___
 
 **Transaction:** unit of _database_-changes (add, edit, delete), inlcuding but not limited to currency related _transactions_
 
-... that much said, we now have enough words to be...
+... that much said, we now have enough words to begin ...
 
 ***
 
