@@ -9,7 +9,7 @@ _written by [Decard](https://www.decard.io) - the stewardship company of the Tag
 :::tip[Jargon Bustin']
 
 All technical terms will here be written in _italics_. Some of them are explained at the beginning, some first appear "in inverted commas" in the text and are explained there.  
-If not mentioned specifically, links go to the technical documentation pages of the Tagion project, where full details are provided but - incontrast to this introductory text - a high level of technical understanding is there assumed.
+If not mentioned specifically, links in the text go to the technical documentation pages of the Tagion project. There, full technical details and codes are provided but - incontrast to this introductory text - a high level of technical understanding is assumed.
 There is also complementary [Glossary](https://docs.tagion.org/gov/glossary) for terms here not touched upon. 
 
 :::
