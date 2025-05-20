@@ -1287,15 +1287,15 @@ struct WastParser {
         if (r.isComponent(WastKeywords.EXPORT)) {
             //if (r.type is TokenType.BEGIN) {
             export_tokenizer = r.save;
-            while (!r.empty && (r.type !is TokenType.END)) {
-                r.nextToken;
-            }
-            check(r.type is TokenType.END, "End expected");
-            r.nextToken;
+            r.nextBlock;
         }
         else if (r.type is TokenType.WORD) {
             func_name = r.token;
             r.nextToken;
+        }
+        if (export_tokenizer.isinit && r.isComponent(WastKeywords.EXPORT)) {
+            export_tokenizer = r.save;
+            r.nextBlock;
         }
         ExportType export_type;
         ParserStage arg_stage;
