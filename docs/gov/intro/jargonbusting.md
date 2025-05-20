@@ -31,7 +31,7 @@ ___
 
 ... this said, we now have enough words to be...
 ***
-___
+
 
 ## Starting from a general use-case:
 
@@ -90,8 +90,8 @@ This move away from central authority to an infrastructure that is run and gover
 
 Built from the ground up with efficiency as its foundational design principle, it achieves the speed, safety and energy efficiencies of traditional server based _databases_ - while staying true to the promises of _DLTs_ and providing the cooperative data infrastructure needed for mulitstakeholder industries and use-cases.
 
-______________________________________________________________
-If you are now inpired to deploy Tagion for your use-case but do not have the expertise to set-up a node and subsystem for yourself, contact [Decard](https://www.decard.io/): the stewardship entity to drive the development and adoption of Tagion.
+***
+If you are now inspired to deploy Tagion for your business, project or community but do not have the expertise to set-up a _node_ and _Subsystem_ for yourself, contact [Decard](https://www.decard.io/): the stewardship entity to drive the development and adoption of Tagion.
 
 
 
