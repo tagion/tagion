@@ -1280,7 +1280,10 @@ struct WastParser {
             else {
                 parseModule(export_tokenizer, ParserStage.FUNC);
                 auto export_type = &writer.section!(Section.EXPORT).sectypes[$ - 1];
-                export_type.idx = func_lookup[export_type.name] = func_idx;
+                if (!func_name) {
+                    func_name = export_type.name;
+                }
+                export_type.idx = func_lookup[func_name] = func_idx;
             }
         }
         r.nextToken;
@@ -1305,6 +1308,7 @@ struct WastParser {
         do {
             rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
+
             if (arg_stage is ParserStage.EXPORT) {
                 innerParseExport(r, export_type);
                 //__write("Inner export ==== %s", export_type);
