@@ -1,11 +1,17 @@
 ---
 sidebar_class_name: hidden
 ---
-# Archive of former Tagion publication 
+# Archive of (former) Tagion publication 
 
-Some ideas and concepts described in the follwing PDFs are outdated or abandonned, they are here only listed for transparency.  
+Some ideas and concepts described in the PDFs of the "outdated" sections below have been changed, reworded or abandonned - they are here only listed for transparency. 
 
 As of May 2025, everything current is pubished in the tech and governance documentation on docs.tagion.org, see top menu. 
+
+## Tagion Patents
+
+[DART Database](https://github.com/tagion/tagion/blob/e4a0e5f3c51d303c00562a6c63306174998e1630/docs/static/DART_Patent_EP_3790224_A1.pdf)
+
+[Wavefront Protocol](https://github.com/tagion/tagion/blob/e4a0e5f3c51d303c00562a6c63306174998e1630/docs/static/Wavefront_Patent_EP_3851974_A1.pdf)
 
 ## Outdated Technical Papers
 
