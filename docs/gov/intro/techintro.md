@@ -18,7 +18,7 @@ For an overview of what Tagion "is", have a look at the following [short descrip
 Since 2019 we had preliminarily described a lot of our ideas in PDF publications: 
 our "Technical", "Concept" and "Tokenomics" papers - they are all considered superseeded by the information on these pages - everything current is now found here. 
 
-But if you are interested in the history of our thinking, you can find the old publications in our [archive](./archive))
+But if you are interested in the history of our thinking, you can find the old publications in our [archive](https://docs.tagion.org/gov/intro/archive).
 :::
 
 
