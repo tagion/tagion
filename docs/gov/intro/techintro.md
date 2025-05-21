@@ -40,7 +40,7 @@ On all developmental aspects - code and governance - we welcome contributions. P
 :::tip[The _Tagion Governance Manifesto_]
 
 Our **Manifesto** is the foundational element of Tagion's governance - and the common denominator to be adhered to by all contributors and developments. 
-Download it as a [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](./intro/manifesto). 
+Download it as a [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](/gov/intro/manifesto). 
 
 :::
 

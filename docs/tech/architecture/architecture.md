@@ -35,7 +35,6 @@ A node consist of the following services.
 * Support services
 	- [Logger](/tech/architecture/Logger.md) takes care of handling the logger information for all the services.
 	- [Logger Subscription](/tech/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
-	- [Monitor](/tech/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 ## Connection types
 By default all of these sockets are private, ie. they are linux abstract sockets and can only by accessed on the same machine.

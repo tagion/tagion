@@ -32,7 +32,7 @@ subscriber --contract
 **Subscribing to a specific contract**
 
 You can show the outputs of specific contracts only 
-by providing the hash of the [SignedContract](/tech/protocols/contract#signed-contractssc) in base64url.
+by providing the hash of the [SignedContract](/tech/protocols/transactions/contract#signed-contractssc) in base64url.
 
 :::tip
 base64url hash of a HiBON can be shown with `hibonutil -tHc`  
