@@ -22,7 +22,7 @@ The Tagion technology stack was concieved of in 2017 and remaines under continuo
 
 The development and deployment of all aspects of the Tagion project have to comply with the guiding princeples described in the Tagion governance manifesto. 
 
-A non-technical step-by-step description of the functionality of Tagion can be found on here, on the adjacent governance development and documentation pages, which also cover questions of sybil resistance and tokenomics. 
+A [non-technical step-by-step description](https://docs.tagion.org/gov/intro/jargonbusting) of the functionality of Tagion can be found on the adjacent governance development and documentation pages, which also cover questions of sybil resistance and tokenomics. 
 
 :::info[Previous Documentaion]
 
