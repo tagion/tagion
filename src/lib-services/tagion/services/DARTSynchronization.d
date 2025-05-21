@@ -238,7 +238,7 @@ private:
         const SecureNet net,
         DART destination
     ) {
-        import tagion.replicator.RecorderCrud;
+        import tagion.script.methods;
         import tagion.replicator.RecorderBlock;
         import tagion.dart.Recorder;
         import tagion.script.common;

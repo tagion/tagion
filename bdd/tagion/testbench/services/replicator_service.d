@@ -17,7 +17,7 @@ import tagion.services.replicator;
 import tagion.script.common;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, register, thisTid;
 import tagion.replicator.RecorderBlock;
-import tagion.replicator.RecorderCrud;
+import tagion.script.methods;
 
 import std.typecons : Tuple;
 import std.file;
@@ -134,7 +134,6 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
 
     ReplicatorOptions replicator_opts;
     ActorHandle replicator_handle;
-    EpochParam epoch_param;
     RecorderBlock recorder_block;
 
     this(ReplicatorOptions replicator_opts) {
@@ -154,19 +153,13 @@ class WeReceiveARecorderFromFileByASpecifiedEpochNumber {
         return result_ok;
     }
 
-    @Given("a hibon with an epoch number as a document.")
-    Document asADocument() {
-        epoch_param = EpochParam(0);
-        return result_ok;
-    }
-
     @When("we send the document with the epoch number.")
     Document theEpochNumber() {
-        import tagion.replicator.RecorderCrud;
+        import tagion.script.methods;
         import tagion.communication.HiRPC;
 
         HiRPC hirpc = HiRPC(null);
-        const recorder_read_request = hirpc.readRecorder(epoch_param);
+        const recorder_read_request = readRecorder(0, hirpc);
 
         auto readRecorderRequest = readRecorderRR();
         replicator_handle.send(readRecorderRequest, recorder_read_request.toDoc);

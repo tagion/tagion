@@ -1,5 +1,6 @@
 module tagion.services.rpcs;
 
+version(none):
 import std.algorithm;
 import std.array;
 
@@ -17,10 +18,6 @@ static immutable(string[]) accepted_dart_methods = [
 
 static immutable(string[]) accepted_rep_methods = [
     "readRecorder",
-];
-
-static immutable(string[]) input_methods = [
-    "submit",
 ];
 
 pragma(msg, "deprecated search method should be removed from trt");

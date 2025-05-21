@@ -61,7 +61,7 @@ struct ReplicatorService {
         }
 
         void readRecorder(readRecorderRR req, Document doc) {
-            import tagion.replicator.RecorderCrud;
+            import tagion.script.methods;
             import tagion.hibon.HiBONJSON : toPretty;
 
             try {

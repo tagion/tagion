@@ -7,12 +7,12 @@ import tools = tagion.tools.toolsexception;
 import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.services.rpcs;
 import tagion.dart.DARTBasic;
-import tagion.dart.DARTcrud;
 import tagion.tools.dartutil.dartindex;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.hibon.Document;
 import tagion.script.standardnames;
+import tagion.script.methods;
 import tagion.hibon.HiBONtoText : decode;
 import tagion.hibon.HiBONFile;
 import tagion.basic.Debug;
@@ -153,8 +153,8 @@ int _main(string[] args) {
             return 0;
         }
         const hirpc = HiRPC(null);
-        tools.check(!method_name.empty && all_public_rpc_methods.canFind(name()), format(
-                "method name not valid must be one of known %s", all_public_rpc_methods));
+        tools.check(!method_name.empty && all_public_methods.canFind(name()), format(
+                "method name not valid must be one of known %s", all_public_methods));
 
         auto get_indices(string[] _input) {
             return _input.map!(d => hash_net.dartIndexDecode(d));
