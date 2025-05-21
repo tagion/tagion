@@ -1,0 +1,7 @@
+Package: tagion
+Version: $VERSION_STRING
+Section: utils
+Priority: optional
+Architecture: $DEB_ARCH
+Maintainer: Lucas <lr@decard.io>
+Description: Decentralised network for high volume transactions and distributed cases 

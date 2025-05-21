@@ -131,6 +131,7 @@ include $(DTUB)/help.mk
 # Road runner
 #
 include $(TARGETS)/trunk.mk
+include $(TARGETS)/package.mk
 
 #
 # WASI druntime 

@@ -3,6 +3,7 @@
 # Linux x86_64
 #
 LINUX_X86_64:=x86_64-linux
+export DEB_ARCH:=amd64
 
 PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
