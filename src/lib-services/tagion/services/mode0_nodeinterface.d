@@ -14,16 +14,18 @@ import tagion.hibon.Document;
 import tagion.logger;
 import tagion.services.messages;
 import tagion.services.tasknames;
+import tagion.services.exception;
 import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.script.methods;
 
 ///
 struct Mode0NodeInterfaceService {
     const(SecureNet) net;
     const(HiRPC) hirpc;
     ActorHandle epoch_creator_handle;
-    ActorHandle dart_handle;
+    TaskNames tn;
     shared(AddressBook) addressbook;
 
     ///
@@ -31,7 +33,7 @@ struct Mode0NodeInterfaceService {
         this.net = shared_net.clone;
         this.hirpc = HiRPC(this.net);
         this.epoch_creator_handle = ActorHandle(tn.epoch_creator);
-        this.dart_handle = ActorHandle(tn.dart);
+        this.tn = tn;
         this.addressbook = addressbook;
     }
 
@@ -82,13 +84,37 @@ struct Mode0NodeInterfaceService {
 
     // Receive a message from another node and forward the request to dart service
     void node_recv(NodeReq req, Document doc) {
-        spawn((NodeReq req, ActorHandle dart_handle, Document doc) {
-            // TODO check signatures and method name
-            dart_handle.send(dartHiRPCRR(), doc);
-            Document response_doc = receiveOnly!(dartHiRPCRR.Response, Document)[1];
-            // Extern nodeinterface
-            req.respond(response_doc);
-        }, req, dart_handle, doc);
+        spawn((NodeReq req, TaskNames tn, Document doc) {
+            try {
+                const receiver = HiRPC(null).receive(doc);
+                switch(receiver.method.name) {
+                    case RPCMethods.dartRead:
+                    case RPCMethods.dartCheckRead:
+                    case RPCMethods.dartBullseye:
+                    case RPCMethods.dartRim:
+                        ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
+                        break;
+                    case RPCMethods.readRecorder:
+                        ActorHandle(tn.replicator).send(readRecorderRR(), doc);
+                        break;
+                    default:
+                        throw new ServiceException("Unknown method");
+                }
+
+                receive(
+                        (dartHiRPCRR.Response _, Document response_doc) {
+                            req.respond(response_doc);
+                        },
+                        (readRecorderRR.Response _, Document response_doc) {
+                            req.respond(response_doc);
+                        },
+                );
+            }
+            catch (Exception e) {
+                log.fatal(e);
+                // req.respond(err);
+            }
+        }, req, tn, doc);
     }
 
     void task() @trusted {
