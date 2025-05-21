@@ -510,7 +510,7 @@ struct WastParser {
                     while (r.type is TokenType.BEGIN) {
                         inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                     }
-                    wasmexpr(IR.CALL_INDIRECT, tableidx, typeidx);
+                    wasmexpr(IR.CALL_INDIRECT, typeidx, tableidx);
                     break;
                 case LOCAL:
                     r.nextToken;
