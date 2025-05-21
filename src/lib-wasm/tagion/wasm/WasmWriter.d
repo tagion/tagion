@@ -694,10 +694,11 @@ class WasmWriter {
                 __write("WasmWriter select %d mode=%s", select, mode);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
-                    bout.write(cast(ubyte) reftype);
+                    __write("expr %s", expr);
                     bout.write(expr);
+                    __write("funcs =%s", funcs);
                     bout.writeb(funcs);
-                    bout.write(tableidx);
+                    __write("tableidx=%d", tableidx);
                     break;
                 case 1: /// 1:u32 et:elemkind y*:vec(funcidx)
                     bout.writeb(elemkind);

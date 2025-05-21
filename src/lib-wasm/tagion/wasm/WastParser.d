@@ -9,6 +9,7 @@ import std.format;
 import std.stdio;
 import std.traits;
 import std.range;
+import std.outbuffer;
 import tagion.basic.Debug;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmWriter;
@@ -804,11 +805,24 @@ struct WastParser {
     ForwardElement[] forward_elements;
     private void evaluateForwardElements() {
         foreach (ref f; forward_elements) {
-            while (f.tokenizer.type is TokenType.WORD) {
-                const func_idx = func_lookup.get(f.tokenizer.token, -1);
-                f.elem.funcs ~= func_idx;
-                f.tokenizer.nextToken;
+            __write("----- FORWARD ------");
+            auto r = f.tokenizer;
+            __write("=== %s", r.type);
+            __write("--- %(%s %)", r.map!(t => t.token).take(10));
+            if (r.type is TokenType.BEGIN) {
+                r.nextToken;
+                r.expect(WastKeywords.ELEM);
+                r.nextToken;
+                __write("Func_lookup %s", func_lookup.byKey);
+                while (r.type is TokenType.WORD) {
+                    __write("forward element %s", r.token);
+                    const func_idx = func_lookup.get(r.token, -1);
+                    f.elem.funcs ~= func_idx;
+                    r.nextToken;
 
+                }
+                r.expect(TokenType.END);
+                r.nextToken;
             }
             writer.section!(Section.ELEMENT).sectypes ~= f.elem;
         }
@@ -858,11 +872,16 @@ struct WastParser {
                         while (r.type is TokenType.WORD) {
                             count++;
                             r.nextToken;
+
                         }
                         table.limit.from = table.limit.to = count;
                         table.limit.lim = Limits.RANGE;
                         forward.elem.mode = ElementMode.ACTIVE;
                         forward.elem.tableidx = cast(uint) writer.section!(Section.TABLE).sectypes.length;
+                        {
+                            auto out_expr = new OutBuffer;
+                            forward.elem.expr = WasmExpr(out_expr)(IR.I32_CONST, 0)(IR.END).serialize;
+                        }
                         forward_elements ~= forward;
                     }
 
@@ -914,10 +933,6 @@ struct WastParser {
             r.nextToken;
         }
         if (r.type is TokenType.BEGIN) {
-            scope (exit) {
-                evaluateForwardElements();
-                forward_elements = null;
-            }
             string label;
             string arg;
             r.nextToken;
@@ -1284,6 +1299,7 @@ struct WastParser {
                 if (!func_name) {
                     func_name = export_type.name;
                 }
+                __write("Parse Export after func_name=%s export_type.name=%s", func_name, export_type.name);
                 export_type.idx = func_lookup[func_name] = func_idx;
             }
         }
@@ -1309,13 +1325,13 @@ struct WastParser {
         do {
             rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
-           version(none) 
-            if (arg_stage is ParserStage.EXPORT) {
-                innerParseExport(r, export_type);
-                //__write("Inner export ==== %s", export_type);
-                //writer.section!(
-                continue;
-            }
+            version (none)
+                if (arg_stage is ParserStage.EXPORT) {
+                    innerParseExport(r, export_type);
+                    //__write("Inner export ==== %s", export_type);
+                    //writer.section!(
+                    continue;
+                }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
         while (only(ParserStage.PARAM, ParserStage.EXPORT).canFind(arg_stage) || (only_one_type_allowed == 1));
@@ -1337,7 +1353,9 @@ struct WastParser {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
+        evaluateForwardElements();
         writeCustomAssert;
+        forward_elements = null;
     }
 
 }

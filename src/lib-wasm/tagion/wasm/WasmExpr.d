@@ -7,7 +7,7 @@ import std.traits : ForeachType, Unqual, isArray, isIntegral;
 import tagion.wasm.WasmBase;
 import tagion.utils.LEB128;
 
-@safe
+@safe:
 struct WasmExpr {
     OutBuffer bout;
     @disable this();
@@ -75,8 +75,8 @@ struct WasmExpr {
                 assert(Args.length == 2, format("Instruction %s one argument", instr.name));
                 static if (Args.length == 2) {
                     static assert(isIntegral!(Args[0]) && isIntegral!(Args[1]),
-                            format("The %s must be table-idx and type-idx not %s and %s", instr.name, 
-                        Args[0].stringof, Args[1].stringof));
+                            format("The %s must be table-idx and type-idx not %s and %s", instr.name,
+                            Args[0].stringof, Args[1].stringof));
                     static if (isIntegral!(Args[0]) && isIntegral!(Args[1])) {
                         bout.write(encode(args[0]));
                         bout.write(encode(args[1]));
