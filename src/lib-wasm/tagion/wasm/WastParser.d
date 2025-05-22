@@ -957,6 +957,7 @@ struct WastParser {
                 __write("Pass %s", r.getLine);
                 FuncType func_type;
                 parseTypeSection(r, ParserStage.TYPE, func_type);
+                __write("type lookup %s", type_lookup);
                 return stage;
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
                 parseFuncType(r, stage);
