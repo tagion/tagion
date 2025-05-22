@@ -7,8 +7,8 @@ bin-pkg:
 	mkdir -p $(PKG_DIR)/usr/bin $(PKG_DIR)/etc/
 	$(CP) $(DBIN)/tagion $(PKG_DIR)/usr/bin/
 	$(PKG_DIR)/usr/bin/tagion -s
-	$(CP) etc/neuewelle.service $(PKG_DIR)/etc/
-	$(CP) etc/tagionshell.service $(PKG_DIR)/etc/
+	mkdir -p $(PKG_DIR)/etc/systemd/system/
+	$(CP) etc/tagionshell.service etc/neuewelle.service $(PKG_DIR)/etc/systemd/system/
 
 tar-pkg:
 	$(CP) $(SCRIPTS)/install.sh $(PKG_DIR)/
