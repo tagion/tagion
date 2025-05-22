@@ -178,7 +178,7 @@
         },
         "call_indirect" : {
           "args" : [
-            "call_indirect_1.wast"
+            "call_indirect_2.wast"
           ]
         },
         "conversions_export" : {
