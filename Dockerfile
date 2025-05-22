@@ -1,9 +1,6 @@
 # Build image
 FROM alpine:3.21 as build
 
-# set the --build-arg DEBUG=1 to build the executable with debug information
-ARG DEBUG
-
 # Install deps
 WORKDIR /tmp/
 RUN apk add --no-cache git autoconf clang libtool cmake ldc make automake
@@ -11,13 +8,9 @@ RUN apk add --no-cache git autoconf clang libtool cmake ldc make automake
 # Build
 COPY . ./src
 WORKDIR /tmp/src/
-RUN echo DFLAGS+=--static >> local.mk && \
-if [[ "$DEBUG" == "" ]]; then \
-    echo DFLAGS+=--O3 >> local.mk; \
-    echo DEBUG_ENABLE= >> local.mk; \
-fi
+RUN echo DFLAGS+=--static >> local.mk
 
-RUN make tagion install INSTALL=/usr/local/bin/ DC=ldc2
+RUN make tagion install RELEASE=1 INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:3.21
