@@ -1,0 +1,33 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: docker build
+        run: | 
+          docker build -f Dockerfile
+      - name: Extract static binary
+        run: |
+          id=$(docker create tagion/tagion:${{ github.ref_name }})
+          docker cp $id:/usr/local/bin/tagion tagion
+          docker rm -v $id
+
+      - name: Create Package
+        run: |
+          mkdir -p build/x86_64-linux/bin/
+          mv tagion build/x86_64-linux/bin/
+          make bin-pkg tar-pkg
+          make clean-pkg
+          make bin-pkg deb-pkg
+
+      - name: Release
+        run: |
+          gh release create ${{ github.ref_name }} build/*.tar.gz build/*.deb --prerelease 
