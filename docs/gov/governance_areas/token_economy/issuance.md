@@ -117,7 +117,7 @@ Once unlocked tokens have been paid out from the online portal into a JustPay wa
 
 This, of course, includes tendering them for the purchase of goods and services, but acceptance of them on part of the provider of those goods and services is purely voluntary. 
 
-Currently, as TGN tokens are not yet listed on any token exchange, there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recepient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
+Currently, as TGN tokens are not yet listed on any token exchange, there is no brokered way of selling them. However, "over the counter" sales are always possible if two parties agree on the price and conditions. All that is technically required is that the recipient has a [JustPay wallet](https://www.decard.io/justpay) into which the tokens can be transferred, and that seller of tokens is confident that he will receive payment as agreed. 
 
 As was explained in our Townhall #13 (January 9th 2025, from minute 32 on the [recording](https://www.youtube.com/watch?v=yqgppLX4qOE)), the plan is not to consider and pursue being listed on an exchange before we achieve organic demand (or what we call UDD: "Utility Derived Demand") and before the mainnet is running with adequate system stability and resilience, which will happen with [Tech Mode 2](https://docs.tagion.org/tech/architecture/network_modes) and [Release Phase 1](https://docs.tagion.org/gov/intro/phased_release).
 <br />

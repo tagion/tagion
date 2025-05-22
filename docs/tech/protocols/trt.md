@@ -3,7 +3,7 @@
 Sometimes you may need to find data in the DART without knowing where it is ie. you don't have the dartindex.
 This could eg. be that someone makes a transaction to you, but they don't tell you the dartindex of the output bill.
 
-The trt is the 'transaction-reverse-table'. It is a seperate dart database, but there is no consensus on it.
+The trt is the 'transaction-reverse-table'. It is a separate dart database, but there is no consensus on it.
 And it is completely optional for a node to maintain it. Since it is a dart all the same methods are allowed as regular dart.
 They can be accessed by adding the `trt` domain to a dart method eg. reading an archive from the trt would simply call the `trt.dartRead` method.
 

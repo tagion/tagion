@@ -590,21 +590,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     push(format(instr_fmt[ir], pop));
                     return;
                 }
-                push(format("Undefinded %s pop %s", ir, pop));
+                push(format("Undefined %s pop %s", ir, pop));
                 break;
             case 2:
                 if (ir in instr_fmt) {
                     push(format(instr_fmt[ir], pop, pop));
                     return;
                 }
-                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                push(format("Undefined %s pops %s %s", ir, pop, pop));
                 break;
             case 3:
                 if (ir in instr_fmt) {
                     push(format(instr_fmt[ir], pop, pop, pop));
                     return;
                 }
-                push(format("Undefinded %s pops %s %s %s", ir, pop, pop, pop));
+                push(format("Undefined %s pops %s %s %s", ir, pop, pop, pop));
                 break;
             default:
                 check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir]
@@ -620,14 +620,14 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     push(format(instr_extend_fmt[ir], pop));
                     return;
                 }
-                push(format("Undefinded %s pop %s", ir, pop));
+                push(format("Undefined %s pop %s", ir, pop));
                 break;
             case 2:
                 if (ir in instr_extend_fmt) {
                     push(format(instr_extend_fmt[ir], pop, pop));
                     return;
                 }
-                push(format("Undefinded %s pops %s %s", ir, pop, pop));
+                push(format("Undefined %s pops %s %s", ir, pop, pop));
                 break;
             default:
                 check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir]
@@ -769,7 +769,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         string begin() const pure nothrow {
             switch (elm.code) {
             case IR.IF:
-                assert(condition, "No conidtion of IF");
+                assert(condition, "No condition of IF");
                 return assumeWontThrow(format("if (%s) {", condition));
             case IR.BLOCK:
                 return "do {";

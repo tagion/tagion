@@ -23,11 +23,11 @@ ___
 
 **Subsystem:** a bespoke network of _nodes_ for a particular use-case, independent of the Tagion _Mainnet_ in terms of rules and settings. It hosts its own _database_ and sends regular hashed/encrypted status updates to the Mainnet (for validation and notary functions, further explained below). Because of this, _Subsystems_ are here called "federated" with the Tagion _Mainnet_.
 
-**Database:** large file with archived information that is maintained in/by the _node_ software ("DART" is the name of Tagion's custom-deigned database systm, further explained below)
+**Database:** large file with archived information that is maintained in/by the _node_ software ("DART" is the name of Tagion's custom-deigned database system, further explained below)
 
 **App:** _user_-interface to make changes to the _database_, it sends info about changes to a _node_
 
-**Transaction:** unit of _database_-changes (add, edit, delete), inlcuding but not limited to currency related _transactions_
+**Transaction:** unit of _database_-changes (add, edit, delete), including but not limited to currency related _transactions_
 
 ... that much said, we now have enough words to begin ...
 ___
@@ -35,7 +35,7 @@ ___
 
 ## starting from a general use-case
 
-A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this informatin is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
+A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this information is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
 
 The _user_ submits the information via an _app_ (s.a.), e.g. on their mobile phone. 
 This information can be new (it will be added to the _database_ - s.a.), or it can be a change to (or deletion of) existing data.
@@ -48,9 +48,9 @@ These _contracts_ are sent to a _node_ (s.a.) via the internet or local communic
 
 The receiving _[node](https://docs.tagion.org/tech/architecture)_ checks the information sent in the _[enveloped contract](https://docs.tagion.org/tech/protocols/transactions)_ against the information already existing in its locally stored _database_ (e.g. if user identities and permissions are valid and other data is referenced correctly). It will then notify the other _nodes_ in the network about this new contract and its contents - because in a "distributed" system, all _nodes_ need to make sure that they maintain the same (copy of the) _database_. However, as _contracts_ are constantly being submitted to different _nodes_ in the network, their individual versions of the _database_ will continuously diverge.
 
-Thus it is important that nodes continuously communicate with each other about the contratcs they receieved, and even about _contracts_ submitted to other nodes which they heard about, this propagation of information is here called "gossip about gossip". This way, all _nodes_ will eventually know of all recent changes across the whole network - at least up to a certain point in the (not-so-distant) past. Submissions that arrived after that time, will not have been shared across the whole network.   
+Thus it is important that nodes continuously communicate with each other about the contratcs they received, and even about _contracts_ submitted to other nodes which they heard about, this propagation of information is here called "gossip about gossip". This way, all _nodes_ will eventually know of all recent changes across the whole network - at least up to a certain point in the (not-so-distant) past. Submissions that arrived after that time, will not have been shared across the whole network.   
 
-But for everything up to that point, a network-wide agreement about a correct and complete version of the _database_ is reached. For _distributed_ systems, this is called "consensus", and only at that point will the _nodes_ in the Tagino network computed the information submitted in the last _epoch_ (described as the "execution" of the _contracts_). As a result, all _nodes_ end up of the same version of their respective _databases_. The resulting synchronised version of all indiviudal _datbase_ is called it's "state" (as in "state of play" or "the current situation").
+But for everything up to that point, a network-wide agreement about a correct and complete version of the _database_ is reached. For _distributed_ systems, this is called "consensus", and only at that point will the _nodes_ in the Tagino network computed the information submitted in the last _epoch_ (described as the "execution" of the _contracts_). As a result, all _nodes_ end up of the same version of their respective _databases_. The resulting synchronised version of all individual _database_ is called it's "state" (as in "state of play" or "the current situation").
 
 How _consensus_ on the _state_ of the network is achieved is different from one distributed network to the next. So called "blockchains" offered the first popular solution for _consensus_ without a central authority. And when the practical limitations of _blockchains_ became obvious and new solutions were sought, the collective term "DLTs" was introduced - which stands for "distributed ledger technologies" . The "ledger" part of that term was again inherited from the early use-cases of _DLTs_ in currency transactions and accounting.
 

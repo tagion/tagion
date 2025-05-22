@@ -22,7 +22,7 @@ enum WastKeywords {
     FUNCREF = "funcref",
 }
 
-bool isReseved(const(char[]) word) @nogc pure nothrow {
+bool isReserved(const(char[]) word) @nogc pure nothrow {
     switch (word) {
         static foreach (E; [EnumMembers!WastKeywords]) {
     case E:

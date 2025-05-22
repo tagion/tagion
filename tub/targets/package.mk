@@ -1,4 +1,4 @@
-# These targets should be run after a succesfull build
+# These targets should be run after a successful build
 #
 
 PKG_DIR=$(DBUILD)/tagion

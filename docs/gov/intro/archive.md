@@ -3,9 +3,9 @@ sidebar_class_name: hidden
 ---
 # Archive of former Tagion publication 
 
-Some ideas and concepts described in the follwing PDFs are outdated or abandonned, they are here only listed for transparency.  
+Some ideas and concepts described in the following PDFs are outdated or abandoned, they are here only listed for transparency.  
 
-As of May 2025, everything current is pubished in the tech and governance documentation on docs.tagion.org, see top menu. 
+As of May 2025, everything current is published in the tech and governance documentation on docs.tagion.org, see top menu. 
 
 ## Outdated Technical Papers
 

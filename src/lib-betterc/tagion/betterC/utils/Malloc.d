@@ -126,7 +126,7 @@ extern (C) {
         return result;
     }
 
-    size_t bigest() {
+    size_t biggest() {
         import std.algorithm.comparison : max;
 
         size_t result;

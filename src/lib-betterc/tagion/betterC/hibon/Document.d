@@ -194,7 +194,7 @@ struct Document {
     }
 
     /**
-     * The deligate used by the valid function to report errors
+     * The delegate used by the valid function to report errors
      */
     alias ErrorCallback = void delegate(scope const(Element) current,
             scope const(Element) previous);

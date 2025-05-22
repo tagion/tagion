@@ -388,8 +388,8 @@ struct TranscriptService {
     }
 }
 
-// The bill statistic agregates the information about the amount of bills and the total value of bills to the new statistic block
-// It's job is not to check that agregated amount is legal
+// The bill statistic aggregates the information about the amount of bills and the total value of bills to the new statistic block
+// It's job is not to check that aggregated amount is legal
 TagionGlobals bill_statistics(RecordFactory.Recorder recorder, const TagionGlobals prev_globals) pure {
     TagionGlobals new_globals = prev_globals;
 

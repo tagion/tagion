@@ -47,7 +47,7 @@ interface Synchronizer {
         */
     void set(DART owner, DART.SynchronizationFiber fiber, HiRPC hirpc);
     /**
-        * Checks if the syncronizer is empty
+        * Checks if the synchronizer is empty
         * Returns:
         *     If the SynchronizationFiber has finished then this function returns `true`
         */
@@ -113,7 +113,7 @@ abstract class StdSynchronizer : Synchronizer {
         * 
         * Params:
         *   owner = DART to be synchronized
-        *   fiber = syncronizer fiber
+        *   fiber = synchronizer fiber
         *   hirpc = remote credential used 
         */
     void set(

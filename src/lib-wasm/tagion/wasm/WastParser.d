@@ -675,7 +675,7 @@ struct WastParser {
 
         ElementType elem;
         string elem_name;
-        if ((r.type is TokenType.WORD) && !(r.token.isReseved) &&
+        if ((r.type is TokenType.WORD) && !(r.token.isReserved) &&
                 (r.token.toType is Types.VOID)) {
             r.nextToken;
             elem_name = r.token;
@@ -750,11 +750,11 @@ struct WastParser {
             return false;
         }
 
-        immutable(uint[]) getFuncs(const Flag!"ignore" falg = No.ignore) {
+        immutable(uint[]) getFuncs(const Flag!"ignore" flag = No.ignore) {
             immutable(uint)[] result;
             while (r.type is TokenType.WORD) {
                 const func_idx = func_lookup.get(r.token, -1);
-                if (falg) {
+                if (flag) {
                     if (func_idx < 0) {
                         break;
                     }

@@ -269,7 +269,7 @@ int dartutil_operation(Operation op, string dartfilename, const HashNet net, ref
 
         import tagion.crypto.SecureNet : StdSecureNet;
 
-        StdSecureNet secure_net; // This should be initialized if the HiPRC respose should be signed 
+        StdSecureNet secure_net; // This should be initialized if the HiPRC response should be signed 
         const hirpc = HiRPC(secure_net);
 
         if (dartrpc) {

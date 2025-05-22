@@ -21,7 +21,7 @@ We here define it (in comparison to "privacy") according to what (action or acto
 |**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
 
 
-For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) and [federated Subsystem](/gov/glossary#federated-subsystem), this means repectively:
+For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) and [federated Subsystem](/gov/glossary#federated-subsystem), this means respectively:
 
 
 |In Tagion | **Full Privacy** |**Full Anonymity**|

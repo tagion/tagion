@@ -263,7 +263,7 @@ int _neuewelle(string[] args) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
-        pragma(msg, "FIXME: remove testing specific burried logic");
+        pragma(msg, "FIXME: remove testing specific buried logic");
         Node[] nodes = (bootkeys_path.empty)
             ? dummy_nodestruct_for_testing(node_options) : inputKeys(fin, node_options, bootkeys_path);
 
@@ -442,7 +442,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
             verbose("Input boot key %d as nodename:pincode", i);
 
             try {
-                net = inputDevicPin(by_line.front, bootkeys_path);
+                net = inputDevicePin(by_line.front, bootkeys_path);
                 break LoopTry;
             }
             catch (Exception e) {
@@ -463,7 +463,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
     return nodes;
 }
 
-SecureNet inputDevicPin(const(char)[] node_pin, string bootkeys_path) {
+SecureNet inputDevicePin(const(char)[] node_pin, string bootkeys_path) {
     import tagion.hibon.HiBONFile;
     import tagion.wallet.WalletRecords;
     import tagion.wallet.SecureWallet;
