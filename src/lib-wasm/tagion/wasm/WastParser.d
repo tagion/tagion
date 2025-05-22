@@ -805,17 +805,12 @@ struct WastParser {
     ForwardElement[] forward_elements;
     private void evaluateForwardElements() {
         foreach (ref f; forward_elements) {
-            __write("----- FORWARD ------");
             auto r = f.tokenizer;
-            __write("=== %s", r.type);
-            __write("--- %(%s %)", r.map!(t => t.token).take(10));
             if (r.type is TokenType.BEGIN) {
                 r.nextToken;
                 r.expect(WastKeywords.ELEM);
                 r.nextToken;
-                __write("Func_lookup %s", func_lookup.byKey);
                 while (r.type is TokenType.WORD) {
-                    __write("forward element %s", r.token);
                     const func_idx = func_lookup.get(r.token, -1);
                     r.check(func_idx >= 0, format("Function %s not defined", r.token));
                     f.elem.funcs ~= func_idx;
@@ -837,7 +832,6 @@ struct WastParser {
         }
         ParserStage tableArgument() {
             if (r.type is TokenType.BEGIN) {
-                __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(4));
                 scope (exit) {
                     r.expect(TokenType.END);
                     r.nextToken;
@@ -901,12 +895,10 @@ struct WastParser {
             return ParserStage.BASE;
         }
 
-        __write("Before toType!!");
         table.type = toType(r.token);
         if (table.type !is Types.VOID) {
             r.nextToken;
         }
-        __write("- - - > %s", r.save.map!(t => t.token).take(4));
         if (r.type is TokenType.BEGIN) {
 
             tableArgument;
@@ -955,10 +947,8 @@ struct WastParser {
                 return ParserStage.MODULE;
             case WastKeywords.TYPE:
                 r.nextToken;
-                __write("Pass %s", r.getLine);
                 FuncType func_type;
                 parseTypeSection(r, ParserStage.TYPE, func_type);
-                __write("type lookup %s", type_lookup);
                 return stage;
             case WastKeywords.FUNC: // Example (func $name (param ...) (result i32) )
                 parseFuncType(r, stage);
@@ -1181,7 +1171,6 @@ struct WastParser {
             case WastKeywords.EXPORT: // Ignore (export "<name>") 
                 r.check(stage is ParserStage.FUNC, "'export' not expected here");
                 r = rewind;
-                __write("END EXPORT %(%s %)", r.save.map!(t => t.token).take(4));
                 not_ended = true;
                 return ParserStage.EXPORT;
             default:
@@ -1213,7 +1202,6 @@ struct WastParser {
         r.expect(TokenType.BEGIN);
         r.nextToken;
         r.expect(TokenType.WORD);
-        __write("r.expect %(%s %)", r.save.map!(t => t.token).take(5));
         switch (r.token) {
         case WastKeywords.FUNC:
             r.nextToken;
@@ -1232,7 +1220,6 @@ struct WastParser {
         default:
             r.check(0, format("Type expected not %s", r.token));
         }
-        __write("----> %s", r);
         r.expect(TokenType.END);
         r.nextToken;
 
@@ -1253,8 +1240,6 @@ struct WastParser {
 
     private void parseFuncType(ref WastTokenizer r, const ParserStage stage) {
         static void innerParseExport(ref WastTokenizer r, ref ExportType export_type) {
-            // '(export "<name>")'
-            __write("%s %s", __FUNCTION__, r.save.map!(t => t.token).take(5));
             if (r.type is TokenType.BEGIN) {
                 auto rewind = r.save;
                 r.nextToken;
@@ -1273,7 +1258,6 @@ struct WastParser {
                     return;
                 }
                 r = rewind;
-                __write("END OF %s %(%s %)", __FUNCTION__, r.save.map!(t => t.token).take(5));
             }
         }
 
@@ -1301,7 +1285,6 @@ struct WastParser {
                 if (!func_name) {
                     func_name = export_type.name;
                 }
-                __write("Parse Export after func_name=%s export_type.name=%s", func_name, export_type.name);
                 export_type.idx = func_lookup[func_name] = func_idx;
             }
         }
@@ -1327,17 +1310,9 @@ struct WastParser {
         do {
             rewind = r;
             arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type);
-            version (none)
-                if (arg_stage is ParserStage.EXPORT) {
-                    innerParseExport(r, export_type);
-                    //__write("Inner export ==== %s", export_type);
-                    //writer.section!(
-                    continue;
-                }
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
         }
         while (only(ParserStage.PARAM, ParserStage.EXPORT).canFind(arg_stage) || (only_one_type_allowed == 1));
-        __write("--> %s %s", __FUNCTION__, arg_stage);
         if ((arg_stage != ParserStage.TYPE) &&
                 (arg_stage != ParserStage.RESULT) ||
                 (arg_stage == ParserStage.UNDEFINED)) {
