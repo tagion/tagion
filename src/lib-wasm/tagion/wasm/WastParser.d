@@ -817,6 +817,7 @@ struct WastParser {
                 while (r.type is TokenType.WORD) {
                     __write("forward element %s", r.token);
                     const func_idx = func_lookup.get(r.token, -1);
+                    r.check(func_idx >= 0, format("Function %s not defined", r.token));
                     f.elem.funcs ~= func_idx;
                     r.nextToken;
 
