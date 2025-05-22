@@ -27,9 +27,8 @@ jobs:
         run: |
           mkdir -p build/x86_64-linux/bin/
           mv tagion build/x86_64-linux/bin/
-          make bin-pkg tar-pkg
-          make clean-pkg
-          make bin-pkg deb-pkg
+          make clean-pkg bin-pkg tar-pkg
+          make clean-pkg bin-pkg deb-pkg
 
       - name: Release
         run: |

@@ -17,8 +17,7 @@ tar-pkg:
 deb-pkg:
 	mkdir $(PKG_DIR)/DEBIAN
 	envsubst < $(DTUB)/DEBIAN/control > $(PKG_DIR)/DEBIAN/control
-	dpkg-deb --root-owner-group --build $(PKG_DIR)
-
+	dpkg-deb --root-owner-group --build $(PKG_DIR) $(BUILD)/tagion-$(PLATFORM)-$(VERSION_REF).deb
 
 lib-pkg:
 	mkdir -p $(PKG_DIR)/usr/
