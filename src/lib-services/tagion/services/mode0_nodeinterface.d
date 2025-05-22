@@ -105,14 +105,19 @@ struct Mode0NodeInterfaceService {
                         (dartHiRPCRR.Response _, Document response_doc) {
                             req.respond(response_doc);
                         },
+                        (dartHiRPCRR.Error _, string msg) {
+                            req.error(msg);
+                        },
                         (readRecorderRR.Response _, Document response_doc) {
                             req.respond(response_doc);
+                        },
+                        (readRecorderRR.Error _, string msg) {
+                            req.error(msg);
                         },
                 );
             }
             catch (Exception e) {
-                log.fatal(e);
-                // req.respond(err);
+                req.error(e.msg);
             }
         }, req, tn, doc);
     }

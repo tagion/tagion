@@ -110,16 +110,28 @@ struct Request(string name, ID = uint) {
     }
 
     alias Response = .Response!(name, ID);
+    alias Error = .Error!(name, ID);
 
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
         this.tid.send(res, args);
     }
+
+    void error(string error_msg) {
+        auto res = Error(msg, id);
+        this.tid.send(res, error_msg);
+    }
 }
 
 /// 
 struct Response(string name, ID = uint) {
+    Msg!name msg;
+    ID id;
+}
+
+/// 
+struct Error(string name, ID = uint) {
     Msg!name msg;
     ID id;
 }
