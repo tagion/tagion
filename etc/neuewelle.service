@@ -1,13 +1,10 @@
 [Unit]
-Description="Test deployment of tagionwave"
+Description="Tagion core node"
 
 [Service]
-StandardInput=file:%h/.local/share/tagion/wave/mode0/keys.txt
-WorkingDirectory=%h/.local/share/tagion/wave/mode0
-ExecStart=%h/.local/bin/tagion neuewelle --option=subscription.tags:recorder,trt_created --keys %h/.local/share/tagion/mode0
-ExecStopPost=%h/.local/share/tagion/wave/failed.sh
-Restart=no
-RestartSec=30
+WorkingDirectory=/var/lib/tagion/wave/
+User=tagion
+ExecStart=/usr/bin/tagion neuewelle /etc/tagion/tagionwave.json --keys /var/lib/tagion/mode0
 
 [Install]
 WantedBy=default.target

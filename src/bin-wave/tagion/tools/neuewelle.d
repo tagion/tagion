@@ -263,6 +263,7 @@ int _neuewelle(string[] args) {
             assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
+        pragma(msg, "FIXME: remove testing specific buried logic");
         Node[] nodes = (bootkeys_path.empty)
             ? dummy_nodestruct_for_testing(node_options) : inputKeys(fin, node_options, bootkeys_path);
 
@@ -343,14 +344,9 @@ int _neuewelle(string[] args) {
         local_options.task_names.setPrefix(wallet_interface.secure_wallet.account.name);
 
         good("Logged in");
-        StdSecureNet login_net;
-        login_net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-        scope (exit) {
-            destroy(login_net);
-        }
 
         immutable opts = Options(local_options);
-        auto net = cast(shared(StdSecureNet))(login_net.clone);
+        shared net = cast(shared(SecureNet))(wallet_interface.secure_wallet.net.clone);
         spawn!Supervisor(local_options.task_names.supervisor, opts, net);
 
         break;
@@ -397,7 +393,6 @@ int _neuewelle(string[] args) {
             error(e);
         }
 
-        /* thisActor.stop |= thisActor.statusChildren(Ctrl.END, (name) => name.canFind(local_options.task_names.supervisor)); */
         // If all supervisors stopped then we stop as well
         thisActor.stop |=
             thisActor.childrenState
@@ -434,12 +429,11 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
 
     Node[] nodes;
     foreach (i, opts; node_options) {
-        StdSecureNet net;
+        SecureNet net;
         scope (exit) {
             net = null;
         }
 
-        WalletOptions wallet_options;
         LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
             scope (exit) {
                 by_line.popFront;
@@ -448,7 +442,7 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
             verbose("Input boot key %d as nodename:pincode", i);
 
             try {
-                net = inputKey(by_line.front, bootkeys_path);
+                net = inputDevicePin(by_line.front, bootkeys_path);
                 break LoopTry;
             }
             catch (Exception e) {
@@ -469,35 +463,23 @@ in (!bootkeys_path.empty, "Should specify a bootkeys path") {
     return nodes;
 }
 
-StdSecureNet inputKey(const(char)[] node_pin, string bootkeys_path) {
+SecureNet inputDevicePin(const(char)[] node_pin, string bootkeys_path) {
+    import tagion.hibon.HiBONFile;
+    import tagion.wallet.WalletRecords;
+    import tagion.wallet.SecureWallet;
+
     const args = (node_pin.empty) ? string[].init : node_pin.split(":");
 
-    if (args.length != 2) {
-        throw new ToolsException(format("Bad format %s expected nodename:pincode", node_pin));
-    }
+    check!ToolsException(args.length == 2, format("Bad format %s expected keyfile:pincode", node_pin));
 
-    const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
-    writeln("Looking for " ~ wallet_config_file);
-    verbose("Wallet path %s", wallet_config_file);
-    if (!wallet_config_file.exists) {
-        throw new ToolsException(format("Boot key file not found: %s", wallet_config_file));
-    }
+    const key_file_path = buildPath(bootkeys_path, args[0]);
+    scope DevicePIN devicepin = DevicePIN(fread(key_file_path));
+    auto wallet = SecureWallet!StdSecureNet(devicepin);
 
-    WalletOptions wallet_options;
-    verbose("Load config");
-    wallet_options.load(wallet_config_file);
-
-    auto wallet_interface = WalletInterface(wallet_options);
-    verbose("Load wallet");
-    if (!wallet_interface.load) {
-        throw new ToolsException(format("Could not find wallet file %s", wallet_options.walletfile));
-    }
-
-    const _ = wallet_interface.secure_wallet.login(args[1]);
-    if (!wallet_interface.secure_wallet.isLoggedin) {
-        throw new ToolsException(format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, args[0]));
-    }
+    const key_pin = args[1];
+    const _ = wallet.login(key_pin);
+    check!ToolsException(wallet.isLoggedin, format("%1$sWrong pincode bootkey node %3$s%2$s", RED, RESET, key_file_path));
 
     verbose("%1$sNode %3$s successful%2$s", GREEN, RESET, args[0]);
-    return cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+    return wallet.net.clone;
 }

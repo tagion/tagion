@@ -86,6 +86,6 @@ spawnActor(MyActor, "some_task_name");
 
 Reference types like objects or function should always be static or immutable.
 
-If you send multiple types where one is has an attribute like immutable thet we'll be received as a tuple, Genereally if you can it helps to make the type itself immutable because then it doesn't have to be a part of the type signature
+If you send multiple types where one is has an attribute like immutable that we'll be received as a tuple, Genereally if you can it helps to make the type itself immutable because then it doesn't have to be a part of the type signature
 
 Receiver methods that take reference types can not be implemented as function and have to be passed as an expression

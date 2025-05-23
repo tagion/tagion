@@ -379,7 +379,7 @@ class WasmWriter {
         }
 
         struct FuncType {
-            Types type;
+            Types type = Types.FUNC;
             immutable(Types)[] params;
             immutable(Types)[] results;
             @exclude int[string] param_names;
@@ -691,7 +691,6 @@ class WasmWriter {
 
             void serialize(ref OutBuffer bout) const {
                 bout.writeb(select);
-                __write("WasmWriter select %d", select);
                 switch (select) {
                 case 0: /// 0:u32 e:expr y*:vec(funcidx)
                     bout.write(expr);

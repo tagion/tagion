@@ -12,7 +12,7 @@ Check them out now!
  1. [Decision Making](./governance_areas/decision_making)
  2. [Network Formation](./governance_areas/network_formation)
  3. [Token Economy](./governance_areas/token_economy)
- 4. [Software Management](./governance_areas/software_management)
+ 4. [Software Management](./governance_areas/software_development)
 
 We also offer a repository of ideas and approaches, including our appraisal of them in the section currently called "[glossary](./glossary)".
 

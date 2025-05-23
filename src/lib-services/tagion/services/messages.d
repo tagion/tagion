@@ -51,6 +51,7 @@ enum NodeAction {
 /// An error occurred while doing an aio task
 alias NodeError = Msg!"node_error";
 alias NNGError = Msg!"nng_error";
+alias NodeReq = Request!"node_req";
 
 /// [FROM: EpochCommit, TO: Replicator] Send the produced recorder for recorderchain
 alias Replicate = Request!"ReplicateRecorder";

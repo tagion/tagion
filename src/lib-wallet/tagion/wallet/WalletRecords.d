@@ -95,7 +95,7 @@ unittest {
 @safe
 @recordType("Wallet")
 struct RecoverGenerator {
-    Buffer[] Y; /// Recorvery seed
+    Buffer[] Y; /// Recovery seed
     Buffer S; /// Check value S=H(H(R))
     @label("N") uint confidence; /// Confidence of the correct answers
     mixin HiBONRecord;

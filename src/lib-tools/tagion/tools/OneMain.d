@@ -129,6 +129,7 @@ mixin template doOneMain(alltools...) {
             }
 
             if (link_switch || force_switch) {
+                const exe_path = "./" ~ thisExePath.baseName;
                 foreach (toolname; toolnames) {
                     const symlink_filename = thisExePath.dirName.buildPath(toolname);
                     if (force_switch && symlink_filename.exists) {
@@ -140,9 +141,9 @@ mixin template doOneMain(alltools...) {
                             return Result(1, true);
                         }
                     }
-                    writefln("%s -> %s", toolname, thisExePath);
+                    writefln("%s -> %s", toolname, exe_path);
                     try {
-                        symlink(thisExePath, symlink_filename);
+                        symlink(exe_path, symlink_filename);
                     }
                     catch(Exception _) {
                     }

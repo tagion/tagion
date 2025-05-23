@@ -35,8 +35,8 @@ struct securenet_t {
 }
 
 /**
-  Generate a keypair used from a password / menmonic
-  The function does **NOT** validate the menmonic and 
+  Generate a keypair used from a password / mnemonic
+  The function does **NOT** validate the mnemonic and 
   should therefore be validated by another function.
 
   The function may be used in a minimal fashion without 
@@ -49,7 +49,7 @@ struct securenet_t {
   Params:
     passphrase_ptr = Pointer to passphrase
     passphrase_len = Length of the passphrase
-    salt_ptr = Optional salt for the menmonic phrase
+    salt_ptr = Optional salt for the mnemonic phrase
     salt_len = Length of the optional salt
     out_securenet = The allocated securenet used for cryptographic operations
     pin_ptr = Pointer to the pin

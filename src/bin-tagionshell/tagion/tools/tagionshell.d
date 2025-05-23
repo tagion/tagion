@@ -34,7 +34,7 @@ import tagion.hibon.HiBONBase : Type;
 import tagion.hibon.HiBONtoText;
 import tagion.dart.DARTBasic : DARTIndex, dartId, dartIndex, Params;
 import tagion.dart.Recorder;
-import crud = tagion.dart.DARTcrud;
+import crud = tagion.script.methods;
 import tagion.logger.subscription;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;

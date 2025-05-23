@@ -590,7 +590,7 @@ enum WASMKeywords = [
         // i32 compare
         "i32.eqz", "i32.eq", "i32.ne", "i32.lt_s", "i32.lt_u", "i32.gt_s",
         "i32.gt_u", "i32.le_s", "i32.le_u", "i32.ge_s", "i32.ge_u",
-        // i32 comversion
+        // i32 conversion
         "i32.wrap_i64", "i32.trunc_f32_s", "i32.trunc_f32_u", "i32.trunc_f64_s",
         "i32.trunc_f64_u", "i32.reinterpret_f32",
 
@@ -605,7 +605,7 @@ enum WASMKeywords = [
         // i64 compare
         "i64.eqz", "i64.eq", "i64.ne", "i64.lt_s", "i64.lt_u", "i64.gt_s",
         "i64.gt_u", "i64.le_s", "i64.le_u", "i64.ge_s", "i64.ge_u",
-        // i32 comversion
+        // i32 conversion
         "i64.extend_i32_s", "i64.extend_i32_u", "i64.trunc_f32_s",
         "i64.trunc_f32_u", "i64.trunc_f64_s", "i64.trunc_f64_u",
         "i64.reinterpret_f64",

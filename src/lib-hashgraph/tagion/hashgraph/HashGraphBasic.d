@@ -12,7 +12,6 @@ import std.typecons : TypedefType;
 import tagion.errors.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText;
-import tagion.communication.HiRPC : HiRPC;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
 import tagion.crypto.Types;

@@ -217,7 +217,7 @@ static assert(uint.sizeof == 4);
         return _data == rhs._data;
     }
     /++
-     The deligate used by the valid function to report errors
+     The delegate used by the valid function to report errors
      +/
     alias ErrorCallback = bool delegate(
             const Document main_doc,

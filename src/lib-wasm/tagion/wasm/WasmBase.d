@@ -169,7 +169,7 @@ enum IR : ubyte {
         @Instr("br_table", "br_table", 1, IRType.BRANCH)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
         @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
-        @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect x:typeidx 0x00
+        @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect y:typeidx x:tableidx
         @Instr("drop", "drop", 1, IRType.OP_STACK, [Types.VOID])                   DROP                = 0x1A, ///  drop
         @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
         @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
@@ -979,14 +979,8 @@ struct ExprRange {
                     elm.warg = get(Types.I32);
                     break;
                 case CALL_INDIRECT:
-                    // typeidx
-                    elm.warg = get(Types.I32);
-                    scope (exit) {
-                        index += ubyte.sizeof;
-                    }
-                    if (!(data[index] == 0x00)) {
-                        throw new WasmException("call_indirect should end with 0x00");
-                    }
+                    // typeidx tableidx
+                    elm.wargs=[get(Types.I32), get(Types.I32)];
                     break;
                 case LOCAL, GLOBAL:
                     // localidx globalidx

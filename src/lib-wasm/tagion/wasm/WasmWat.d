@@ -410,7 +410,7 @@ alias check = Check!WatException;
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s (type %d)", indent, elm.instr.name, elm.warg.get!uint);
+                        output.writefln("%s%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0].get!uint);
                         break;
                     case LOCAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);

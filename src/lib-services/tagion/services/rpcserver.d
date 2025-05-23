@@ -20,7 +20,7 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.codes;
 import tagion.services.options;
-import tagion.services.rpcs;
+import tagion.script.methods;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.TRTService : TRTOptions;
 import tagion.dart.DARTBasic;
@@ -133,20 +133,20 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
 
     // Should we really allow unsigned methods?
     string full_name = receiver.method.full_name;
-    if (accepted_trt_methods.canFind(full_name)) {
+    if (public_trt_methods.canFind(full_name)) {
         if(!cnt.trt_enable) {
             msg.set_error_msg(ServiceCode.method, "Trt methods are not enabled");
             return;
         }
         task_request!trtHiRPCRR(cnt.task_names.trt, cnt.worker_timeout.msecs, doc, msg);
     }
-    else if(accepted_rep_methods.canFind(full_name)) {
+    else if(full_name == RPCMethods.readRecorder) {
         task_request!readRecorderRR(cnt.task_names.replicator, cnt.worker_timeout.msecs, doc, msg);
     }
-    else if(accepted_dart_methods.canFind(full_name)) {
+    else if(public_dart_methods.canFind(full_name)) {
         task_request!dartHiRPCRR(cnt.task_names.dart, cnt.worker_timeout.msecs, doc, msg);
     }
-    else if(input_methods.canFind(full_name)) {
+    else if(full_name == RPCMethods.submit) {
         auto tid = locate(cnt.task_names.hirpc_verifier);
         if(tid is Tid.init) {
             msg.set_error_msg(ServiceCode.internal, "Missing task hirpcverifier");
@@ -157,7 +157,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
         set_response_doc(msg, response_ok.toDoc);
     }
     else {
-        msg.set_error_msg(ServiceCode.method, format("%s", all_public_rpc_methods));
+        msg.set_error_msg(ServiceCode.method, format("%s", all_public_methods));
     }
 }
 
@@ -182,8 +182,6 @@ struct RPCServer {
 
     pragma(msg, "FIXME: make dart interface @safe when nng is");
     void task() @trusted {
-        setState(Ctrl.STARTING);
-
         RPCWorkerContext ctx;
         ctx.worker_timeout = opts.sendtimeout;
         ctx.trt_enable = trt_opts.enable;

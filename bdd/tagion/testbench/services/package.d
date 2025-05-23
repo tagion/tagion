@@ -5,6 +5,7 @@ public import big_contract = tagion.testbench.services.big_contract;
 public import collector = tagion.testbench.services.collector;
 public import dart_synchronization = tagion.testbench.services.dart_synchronization;
 public import distributed_dart_synchronization = tagion.testbench.services.distributed_dart_synchronization;
+public import distributed_dart_synchronization_resilience = tagion.testbench.services.distributed_dart_synchronization_resilience;
 public import double_spend = tagion.testbench.services.double_spend;
 public import epoch_commit_service = tagion.testbench.services.epoch_commit_service;
 public import epoch_creator = tagion.testbench.services.epoch_creator;

@@ -178,7 +178,7 @@
         },
         "call_indirect" : {
           "args" : [
-            "call_indirect_1.wast"
+            "call_indirect_2.wast"
           ]
         },
         "conversions_export" : {
@@ -409,7 +409,13 @@
       },
       "timeout" : 3.0,
       "stages" : ["distributed_dart_synchronization", "acceptance"]
+    },
+    "distributed_dart_synchronization_resilience": {
+      "envs": {
+            "DISTRIBUTION_TIMEOUT" : "30" 
+      },
+      "timeout" : 3.0,
+      "stages" : ["distributed_dart_synchronization_resilience", "acceptance"]
     }
   }
 }
-

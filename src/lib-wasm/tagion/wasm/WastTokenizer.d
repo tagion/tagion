@@ -192,6 +192,10 @@ struct WastTokenizer {
 
     }
 
+    void expect(const(char[]) word, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
+        valid(token == word, assumeWontThrow(format("Syntax error %s expected", word)));
+    }
+
     enum hex_prefix = "0x";
     T get(T)() nothrow if (isIntegral!T) {
         try {
@@ -250,6 +254,60 @@ struct WastTokenizer {
     void nextToken() pure {
         takeToken;
         check(error_count < max_errors, format("Error count exceeds %d", max_errors));
+    }
+
+    bool nextBlock() pure {
+        if (type is TokenType.BEGIN) {
+            do {
+                nextToken;
+                nextBlock;
+            }
+            while (type !is TokenType.END && type !is TokenType.EOF);
+            nextToken;
+            return true;
+        }
+        return false;
+    }
+
+    unittest {
+        enum text = "xxx ( word1 ( word2 word3 ) ) ( word4 ) ( word7 7777 ) yyy";
+        {
+            auto r = WastTokenizer(text);
+            r.nextBlock;
+            assert(r.token == "xxx");
+            r.nextToken;
+            r.nextBlock;
+            assert(r.type is TokenType.BEGIN);
+            r.nextBlock;
+            assert(r.type is TokenType.BEGIN);
+            assert(r.save.drop(1).front.token == "word7");
+            r.nextBlock;
+            assert(r.token == "yyy");
+        }
+    }
+
+    bool isComponent(const(char[]) word) pure {
+        if (type is TokenType.BEGIN) {
+            auto test = save;
+            test.nextToken;
+            if (test.token == word) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    unittest {
+        enum text = "xxx ( word1 ( word2 word3 ) ) ( word4 )";
+        auto r = WastTokenizer(text);
+        assert(!r.isComponent("xxx"));
+        r.nextToken;
+        assert(!r.isComponent("xxx"));
+        assert(r.isComponent("word1"));
+        r.nextBlock;
+        assert(r.isComponent("word4"));
+        assert(equal(r.save.map!(t => t.token), only("(", "word4", ")")));
+
     }
 
     @nogc pure nothrow {
@@ -318,8 +376,6 @@ struct WastTokenizer {
         }
 
         void nextUntil(string fun, string paramName = "a")() {
-            import std.format;
-
             enum code = format(q{
                 alias goUntil=(%1$s) => %2$s; 
                 while((pos < text.length) && goUntil(text[pos])) {

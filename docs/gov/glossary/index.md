@@ -21,7 +21,7 @@ We here define it (in comparison to "privacy") according to what (action or acto
 |**Actor** <br />can be identified by 3rd party: |**Yes**|**No**|
 
 
-For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) and [federated Subsystem](/gov/glossary#federated-subsystem), this means repectively:
+For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) and [federated Subsystem](/gov/glossary#federated-subsystem), this means respectively:
 
 
 |In Tagion | **Full Privacy** |**Full Anonymity**|
@@ -86,7 +86,7 @@ In our governance area "network formation" we use this word analogous to its dua
 
 ## Governance 
 
-At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](/gov/glosary#on-chain-governance) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](#on-chain) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
 
 ## Money 
 

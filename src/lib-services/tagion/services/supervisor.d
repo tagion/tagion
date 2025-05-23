@@ -58,9 +58,10 @@ struct Supervisor {
     static assert(isFailHandler!(typeof(failHandler_)));
 
     void task(immutable(Options) opts, shared(SecureNet) shared_net) @safe {
-        immutable tn = opts.task_names;
+        TaskNames tn = opts.task_names;
         const local_net = shared_net.clone;
 
+        log("Starting as %s", local_net.pubkey.encodeBase64);
 
         shared(AddressBook) addressbook = new shared(AddressBook);
         { // Set addressbook
@@ -105,11 +106,14 @@ struct Supervisor {
         ActorHandle node_interface_handle;
         final switch (opts.wave.network_mode) {
         case NetworkMode.INTERNAL:
+            // We set of the nodeinterface here to the address in the addressbook, so we'll always use the correct address
+            // Make sure that none of the services above use the nodeinterface, because they'll use the old name in mode0.
+            tn.node_interface = addressbook[local_net.pubkey].get.address;
             node_interface_handle = _spawn!Mode0NodeInterfaceService(
                     tn.node_interface,
                     shared_net,
                     addressbook,
-                    tn.epoch_creator
+                    tn,
             );
             break;
         case NetworkMode.LOCAL,
@@ -146,6 +150,20 @@ struct Supervisor {
         handles ~= transcript_handle;
 
         handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);
+
+        version(none)
+        foreach(channel; addressbook.keys) {
+            try {
+                import tagion.dart.DARTcrud;
+                import tagion.hibon.Document;
+                import tagion.utils.pretend_safe_concurrency;
+                node_interface_handle.send(NodeReq(), channel, dartBullseye().toDoc);
+                receive(
+                        (NodeReq.Response _, Document doc) { log("%s", doc.toPretty); },
+                        (NodeReq.Error _, string msg) { log(msg); },
+                );
+            } catch(Exception e) { log.fatal(e); }
+        }
 
         run(
                 (EpochShutdown m, long shutdown_) { //

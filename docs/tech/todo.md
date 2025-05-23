@@ -52,7 +52,7 @@ Assignee: lr
 - [x] Refactor collector to uses concurrency fibers instead of using state map for each incoming contract
 - [x] Create epoch commit service to have more control over how recorders and fingerprints are redistributed  
     `And remove responibillity from transcript and dart service  
-- [x] Fix some instabillity in replicator read test  
+- [x] Fix some instability in replicator read test  
 - [x] Pass addressbook to individual services instead of using static global addressbook
 - [x] Create mode0 nodeinterface service
 Assignee: lr  
@@ -75,9 +75,9 @@ Assignee: lr
 ### Boot issue
 - [ ] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.  
 
-### Seperate HashNet and SecureNet
+### Separate HashNet and SecureNet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
-- [ ] Make hashnet and securenet seperate classes  
+- [ ] Make hashnet and securenet separate classes  
 
 ### Network Joining and participation (Mode2)
 Goal: Q3  
@@ -88,7 +88,7 @@ Goal: Q3
 ### Shell Cleanup
 Goal: Q2  
 - [ ] Fix memory leak
-- [ ] Move everything that is not related a part of the core functionality to a seperate module (forwarding rpc, caching)
+- [ ] Move everything that is not related a part of the core functionality to a separate module (forwarding rpc, caching)
 - [ ] Find out why request often end in htp 405,503,502,504  
 
 ### Deployment testing
@@ -99,8 +99,8 @@ Goal: May
 ### Distributed testing
 Description: We want the infrastruct to be able to test new version of the network in a distributed manner  
 Goal: Q2  
-- [ ] Create a service were peope can associate their public key with a machine
-- [ ] Create a tool were we can assign specific docker images to a group of public keys and assigne network boot data to that group
+- [ ] Create a service were people can associate their public key with a machine
+- [ ] Create a tool were we can assign specific docker images to a group of public keys and assigns network boot data to that group
 - [ ] Create a deployment/tutorial were people can setup a node and automatically updates to newly assigned images.  
 
 ### TVM Service

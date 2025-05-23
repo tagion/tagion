@@ -205,7 +205,7 @@ template GetLabel(alias member) {
 
     @RecordType("Wallet")
     struct RecoverGenerator {
-        Buffer[] Y; /// Recorvery seed
+        Buffer[] Y; /// Recovery seed
         Buffer S; /// Check value S=H(H(R))
         @Label("N") uint confidence;
         import tagion.betterC.hibon.HiBON;

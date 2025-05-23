@@ -28,8 +28,8 @@ import tagion.services.replicator;
 import tagion.json.JSONRecord;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.script.common;
+import tagion.script.methods;
 import tagion.services.exception;
-import tagion.services.rpcs;
 
 @safe:
 ///
@@ -109,7 +109,7 @@ struct DARTService {
             }
 
             immutable receiver = hirpc.receive(doc);
-            if (!(receiver.isMethod && accepted_dart_methods.canFind(receiver.method.name))) {
+            if (!(receiver.isMethod && public_dart_methods.canFind(receiver.method.name))) {
                 log("unsupported request or method");
                 const err = hirpc.error(receiver, ServiceCode.method.toString, ServiceCode.method);
                 req.respond(err.toDoc);

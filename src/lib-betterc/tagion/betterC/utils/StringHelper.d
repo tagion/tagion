@@ -127,7 +127,7 @@ unittest {
     //     pos = find_next_char(test, ',', pos);
     //     assert(pos == test.length);
     // }
-    // // one spliter
+    // // one splitter
     // {
     //     string test = "123,321";
     //     auto res = split_by_char(test, ',');
@@ -136,7 +136,7 @@ unittest {
     //     exp_res ~= "321";
     //     assert(res == exp_res);
     // }
-    // // one spliter many times
+    // // one splitter many times
     // {
     //     string test = "123,,,,,,321";
     //     auto res = split_by_char(test, ',');

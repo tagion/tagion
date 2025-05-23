@@ -56,12 +56,12 @@ class StdHashNet : HashNet {
     }
 }
 
-enum SignatureScheam {
+enum SignatureSchema {
     STANDARD
 }
 
-SecureNet createSecureNet(const SignatureScheam s = SignatureScheam.STANDARD) nothrow {
-    with (SignatureScheam) {
+SecureNet createSecureNet(const SignatureSchema s = SignatureSchema.STANDARD) nothrow {
+    with (SignatureSchema) {
         final switch (s) {
         case STANDARD:
             const h = new StdHashNet;
