@@ -354,6 +354,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             case EXTERNREF:
             case FUNCREF:
                 return "void*";
+            case V128:
+                return "Int128";
 
             }
         }
