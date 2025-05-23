@@ -30,7 +30,6 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.script.common;
 import tagion.script.methods;
 import tagion.services.exception;
-import tagion.services.rpcs;
 
 @safe:
 ///
