@@ -30,7 +30,7 @@ ___
 **Transaction:** unit of _database_-changes (add, edit, delete), including but not limited to currency related _transactions_
 
 ... that much said, we now have enough words to begin ...
-___
+
 ***
 
 
