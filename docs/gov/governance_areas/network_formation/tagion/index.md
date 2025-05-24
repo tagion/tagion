@@ -6,6 +6,6 @@ sidebar_position: 1
 
 In this section you will learn:
 
-1. [What "Proof of Community" is (good for)](.tagion/poc)
-2. [How "Genetics" feature in Proof of Community](.tagion/genetics)
-3. [How we calculate a "Reputation Score"](.tagion/reputation)
+1. [What "Proof of Community" is (good for)](https://docs.tagion.org/gov/governance_areas/network_formation/tagion/poc)
+2. [How "Genetics" feature in Proof of Community](https://docs.tagion.org/gov/governance_areas/network_formation/tagion/genetics)
+3. [How we calculate a "Reputation Score"](https://docs.tagion.org/gov/governance_areas/network_formation/tagion/reputation)
