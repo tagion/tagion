@@ -84,6 +84,7 @@ struct WastParser {
         TYPE,
         FUNC,
         TABLE,
+        GLOBAL,
         ELEMENT,
         PARAM,
         RESULT,
@@ -921,6 +922,50 @@ struct WastParser {
         r.nextToken;
     }
 
+    private ParserStage parseGlobal(ref WastTokenizer r) {
+        __write("GLOBAL %(%s %)", r.save.map!(t => t.token).take(5));
+        if (r.isComponent(WastKeywords.IMPORT)) {
+            __write("--- %(%s %)", r.save.map!(t => t.token).take(5));
+            parseModule(r, ParserStage.GLOBAL);
+            return ParserStage.IMPORT;
+        }
+        auto type=r.token.toType;
+        string label;
+        if (type is Types.VOID) {
+            label=r.token;
+            r.nextToken;
+            type = r.token.toType;
+        }
+                    FuncType void_func;
+                    CodeType code_offset;
+                    FunctionContext ctx;
+                    parseInstr(r, ParserStage.GLOBAL, code_offset, void_func, ctx);
+
+        return ParserStage.CODE;
+    }
+
+    private void parseImport(ref WastTokenizer r, const ParserStage stage) {
+        r.expect(TokenType.BEGIN);
+        scope(success) {
+            r.expect(TokenType.END);
+            r.nextToken;
+        }
+                r.nextToken;
+                r.expect(TokenType.WORD);
+                const label = r.token;
+                r.nextToken;
+                r.expect(TokenType.STRING);
+                const arg = r.token;
+                r.nextToken;
+                r.expect(TokenType.STRING);
+                const arg2 = r.token;
+                r.nextToken;
+                FuncType func_type;
+                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
+                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
+                        "Import state only allowed inside type or param");
+
+    }
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type is TokenType.COMMENT) {
             r.nextToken;
@@ -928,6 +973,7 @@ struct WastParser {
         if (r.type is TokenType.BEGIN) {
             string label;
             string arg;
+            auto component=r;
             r.nextToken;
             bool not_ended;
             scope (exit) {
@@ -1009,21 +1055,9 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.EXPORT;
             case WastKeywords.IMPORT:
-                string arg2;
-                r.nextToken;
-                r.expect(TokenType.WORD);
-                label = r.token;
-                r.nextToken;
-                r.expect(TokenType.STRING);
-                arg = r.token;
-                r.nextToken;
-                r.expect(TokenType.STRING);
-                arg2 = r.token;
-                r.nextToken;
-                FuncType func_type;
-                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
-                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
-                        "Import state only allowed inside type or param");
+                parseImport(component, ParserStage.MODULE);
+                r=component;
+                not_ended=true;
                 return stage;
             case WastKeywords.TABLE:
                 r.nextToken;

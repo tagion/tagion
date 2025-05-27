@@ -93,6 +93,7 @@ struct WastTokenizer {
         if (!flag) {
             Exception current_e;
             scope (exit) {
+                error_count++;
                 if (!e) {
                     e = current_e;
                 }
@@ -193,7 +194,7 @@ struct WastTokenizer {
     }
 
     void expect(const(char[]) word, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
-        valid(token == word, assumeWontThrow(format("Syntax error %s expected", word)));
+        valid(token == word, assumeWontThrow(format("Syntax error %s expected", word)), file, code_line);
     }
 
     enum hex_prefix = "0x";

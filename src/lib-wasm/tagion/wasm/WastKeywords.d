@@ -10,6 +10,7 @@ enum WastKeywords {
     FUNC = "func",
     ELEM = "elem",
     TABLE = "table",
+    GLOBAL = "global",
     IMPORT = "import",
     EXPORT = "export",
     MEMORY = "memory",
