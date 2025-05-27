@@ -36,14 +36,14 @@ ___
 
 ## starting from a general use-case
 
-A _user_ (s.a.) wants to enter some new pieces of information to the system. Let's assume that this information is about a particular use-case for which a _federate Subsystem_ (s.a.) has been set up.
+A _user_ (see above) wants to enter some new pieces of information to the system. Let's assume that this information is about a particular use-case for which a _federate Subsystem_ (see above) has been set up.
 
-The _user_ submits the information via an _app_ (s.a.), e.g. on their mobile phone. 
-This information can be new (it will be added to the _database_ - s.a.), or it can be a change to (or deletion of) existing data.
+The _user_ submits the information via an _app_ (see above), e.g. on their mobile phone. 
+This information can be new (it will be added to the _database_ - see above), or it can be a change to (or deletion of) existing data.
 
 The _app_ they use is built upon  -  and sometimes still called -   a "wallet application", a term inherited from the Tagion _Mainnet_ with it's principle use-cases centered around financial _transactions_ ("JustPay" is such a wallet application, more information about it on the [Decard website](https://www.decard.io/justpay)). The _application_ packages the information to be entered into the _database_. ~~This is (figuratively) called an "[envelope](https://docs.tagion.org/tech/protocols/envelope)". Next to the basic data-input and possibly some conditional instructions, the envelope also includes additional required information (timestamp, user identity, references to other data, required permissions), and the whole message inside the envelope is then called a "contract" (a term inherited from "blockchain" and "DLT" concepts, which will be explained below).~~
 
-These _contracts_ are sent to a _node_ (s.a.) via the internet or local communication networks. A _[contract](https://docs.tagion.org/tech/protocols/transactions/contract)_ is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
+These _contracts_ are sent to a _node_ (see above) via the internet or local communication networks. A _[contract](https://docs.tagion.org/tech/protocols/transactions/contract)_ is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
 
 ## from one node to many
 
