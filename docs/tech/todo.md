@@ -64,7 +64,7 @@ Assignee: lr
 ### Remove DARTFile.search
 - [ ] Remove the search function from dart and rewrite unittest that depend on it
 
-### Timezong override
+### Timezone override
 - [ ] Reimplemnt the toISOExtString from phobos without the LocalTime check the removes timezones
 - [ ] Create bug report for phobos when converting back and forth between unwhole timezones
 
@@ -73,11 +73,11 @@ Assignee: lr
 - [ ] Remove state info from NNR records
 
 ### Boot issue
-- [ ] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.  
+- [x] Fix issue where if an external dart request is sent on a slow machine before the transcript reads the head request it can timeout and the system will be stuck in a none starting state.  
 
 ### Separate HashNet and SecureNet
 Description: prepare to be able to use alternate hashing algorithm (ie. blake3)  
-- [ ] Make hashnet and securenet separate classes  
+- [x] Make hashnet and securenet separate classes  
 
 ### Network Joining and participation (Mode2)
 Goal: Q3  
