@@ -17,7 +17,7 @@ else version(CRuntime_Bionic)
 else version(Darwin)
     version = supports_backtrace;
 
-//import core.internal.execinfo;
+// import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
 // so they are declared here with @nogc because signal needs a @nogc function
 version(supports_backtrace) {
@@ -93,7 +93,7 @@ static if (ver.Posix && not_unittest) {
     import core.sys.posix.signal;
     import core.sys.posix.unistd : STDERR_FILENO;
 
-    enum BACKTRACE_SIZE = 0x80; /// Just big enough to hold the call stack
+    enum BACKTRACE_SIZE = 0x80; // Just big enough to hold the call stack
 
     version(supports_backtrace)
     static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) @nogc nothrow {
