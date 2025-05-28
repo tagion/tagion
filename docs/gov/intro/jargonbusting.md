@@ -1,7 +1,8 @@
 ---
-sidebar_class_name: hidden
+sidebar_position: 4
+sidebar_label: 101: How Tagion works
 ---
-# Step-by-Step: How Tagion works 
+# How Tagion works - step-by-step
 
 _written by [Decard](https://www.decard.io) - the stewardship company of the Tagion platform_
 
@@ -15,7 +16,7 @@ There is also complementary [Glossary](https://docs.tagion.org/gov/glossary) for
 :::
 
 
-## a bit of terminology up-front
+## Up first: a bit of terminology
 ___
 **User:** anybody making use of Tagion software, without being a _node_ operator
 
@@ -34,7 +35,7 @@ ___
 ***
 
 
-## starting from a general use-case
+## Starting from a general use-case
 
 A _user_ (see above) wants to enter some new pieces of information to the system. Let's assume that this information is about a particular use-case for which a _federate Subsystem_ (see above) has been set up.
 
@@ -45,7 +46,7 @@ The _app_ they use is built upon  -  and sometimes still called -   a "w
 
 These _contracts_ are sent to a _node_ (see above) via the internet or local communication networks. A _[contract](https://docs.tagion.org/tech/protocols/transactions/contract)_ is structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
 
-## from one node to many
+## Distribution: from one node to many
 
 The receiving _[node](https://docs.tagion.org/tech/architecture)_ checks the information sent in the _[enveloped contract](https://docs.tagion.org/tech/protocols/transactions)_ against the information already existing in its locally stored _database_ (e.g. if user identities and permissions are valid and other data is referenced correctly). It will then notify the other _nodes_ in the network about this new contract and its contents - because in a "distributed" system, all _nodes_ need to make sure that they maintain the same (copy of the) _database_. ~~However, as _contracts_ are constantly being submitted to different _nodes_ in the network, their individual versions of the _database_ will continuously diverge.~~
 
@@ -55,7 +56,7 @@ But for everything up to that point, a network-wide agreement about a correct an
 
 How _consensus_ on the _state_ of the network is achieved is different from one distributed network to the next. So called "blockchains" offered the first popular solution for _consensus_ without a central authority. And when the practical limitations of _blockchains_ became obvious and new solutions were sought, the collective term "DLTs" was introduced - which stands for "distributed ledger technologies" . The "ledger" part of that term was again inherited from the early use-cases of _DLTs_ in currency transactions and accounting.
 
-## how nodes know what other nodes know
+## Consensus: how nodes know what other know
 
 Common to all _DLTs_ _consensus_ mechanism is that _nodes_ constantly communicate with each other about their local versions of the _distributed database_. The scenario in which some _nodes_ fail to do so (be it [deliberate/maliciously](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/sybil), or because of [lost connectivity](https://docs.tagion.org/tech/architecture/network_modes)), is described as the so called "Byzantine General Problem". Consequently, _DLTs_ that solve that problem and can deal with a certain number of divergent _nodes_ are called "byzantine fault tolerant".
 
@@ -67,7 +68,7 @@ The second _protocol_ then establishes _consensus_ not by comparing the database
 
 Together, the two _protocols_ ensure that the communication between _nodes_ relates directly to the _state_ of their shared _database_. From the network-wide communication history, each _node_ can reconstruct by and for itself, and with mathematical certainty, what other _nodes_ in the network know. Once information about new _contracts/transactions_ (since the last epoch) has spread to enough  _nodes_ in the network (namely to [2/3+1 of all _nodes_](https://docs.tagion.org/tech/protocols/consensus/EpochRules)), _consensus_ about those _contracts_ is established and the database is updated up to that point. 
 
-## how our database is smarter than blockchains
+## DART: Smarter than blockchains
 
 Everything before that recent _epoch_ is then fixed in the database and no competing versions (in _blockchain_ systems those are called "forks") can occur. That is what is called "finality" in DLTs and while traditionally blockchains rely on "probabilistic finality" (because there is always a slight chance that a fork can gain consensus), Tagion features the absolute certainty with it's "deterministic finality", which is also described as "immutability". 
 
@@ -77,7 +78,7 @@ Another effect of the way Tagion achieves _consensus_ is that the order of chang
 
 As a last step, each node calculates a signet of the complete new version of their _database_. These signets are mathematical fingerprints (called "hashes") of the database. For Decard's specially designed database called "DART" (which stands for "[Distributed Archive of Random Transactions](https://docs.tagion.org/tech/architecture/DART)"), this fingerprint is called the "bullseye" (of the DART-board). And thanks to the patented architecture of the _DART database_, the calculation, sharing and storage of a _bullseye_ requires only minimal computing resources. Comparing the _bullseyes_ of a given epoch across the network will quickly flag up _nodes_ that had fallen out of sync. For a _Subsystem_ the _bullseyes_ are of additional importance because they get submitted to the Tagoin _Mainnet_ where they are [recorded](https://docs.tagion.org/tech/protocols/consensus/epoch_chain) to form a continuous audit trail of the _Subsystem's_ accurate operation. 
 
-## the best of two worlds
+## Tagion: best of two worlds
 
 Talking about accountability: another unique design feature of the _DART_ database is that all entries and edits have an "owner", typically the _user_ specified in the _contract_ that created the data entry. Access rights to each data point can be managed like the file permissions in a conventional computer system (e.g. read, write, own). In this regard, rules concerning privacy, anonymity and security can be determined individually for each (type of) entry, or for each _Subsystem database_, depending on its particular use-case. ~~Only for _contracts/transactions_ of "TGN", the native utility token on the Tagion _Mainnet_, the rules are fixed: they always reveal the amounts of the transactions, but not the identity of the actors, e.g. payer and payee.~~
 
