@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-sidebar_label: 101: How Tagion works
+sidebar_label: 101 - How Tagion works
 ---
 # How Tagion works - step-by-step
 
