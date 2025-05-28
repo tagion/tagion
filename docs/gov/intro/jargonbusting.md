@@ -2,7 +2,7 @@
 sidebar_position: 3
 sidebar_label: 101 - How Tagion works
 ---
-# How Tagion works - step-by-step
+# How Tagion works: step-by-step
 
 _written by [Decard](https://www.decard.io) - the stewardship company of the Tagion platform_
 
@@ -67,7 +67,7 @@ For Decard's platform two innovative "protocols" (meaning sets of rules about th
 
 The first of those two _protocols_, developed and patented by Decard, is called the "[Wavefront](https://docs.tagion.org/tech/protocols/wavefront)" protocol and it manages the _gossip-about-gossip_ as introduced above. It swiftly conveys how many new _contracts_ each of the two _nodes_ have received (directly or indirectly) since the last _epoch_, and then enables them to efficiently synchronise their local knowledge. This includes _contracts/transactions_ that were submitted to the communicating _nodes_ since the last _epoch_, but also the _contracts/transactions_ submitted to other _nodes_ which either of the communicating _nodes_ has already heard about.
 
-  The second _protocol_ then establishes _consensus_ not by comparing the databases themselves (or counting the number of blocks in a chain) but by tracking the level of shared knowledge that _nodes_ have communicated about in the wavefront protocol. This _consensus protocol_ was originally developed by Leemon Baird (co-founder of the "Hedera" project), under the now well established term "[Hashgraph consensus algorithm](https://docs.tagion.org/tech/protocols/consensus/HashGraph)".
+The second _protocol_ then establishes _consensus_ not by comparing the databases themselves (or counting the number of blocks in a chain) but by tracking the level of shared knowledge that _nodes_ have communicated about in the wavefront protocol. This _consensus protocol_ was originally developed by Leemon Baird (co-founder of the "Hedera" project), under the now well established term "[Hashgraph consensus algorithm](https://docs.tagion.org/tech/protocols/consensus/HashGraph)".
 
 Together, the two _protocols_ ensure that the communication between _nodes_ relates directly to the _state_ of their shared _database_. From the network-wide communication history, each _node_ can reconstruct by and for itself, and with mathematical certainty, what other _nodes_ in the network know. Once information about new _contracts/transactions_ (since the last epoch) has spread to enough  _nodes_ in the network (namely to [2/3+1 of all _nodes_](https://docs.tagion.org/tech/protocols/consensus/EpochRules)), _consensus_ about those _contracts_ is established and the database is updated up to that point. 
 
@@ -83,7 +83,7 @@ As a last step, each node calculates a signet of the complete new version of the
 
 ## Tagion: best of two worlds
 
-Talking about accountability: another unique design feature of the _DART_ database is that all entries and edits have an "owner", typically the _user_ specified in the _contract_ that created the data entry. Access rights to each data point can be managed like the file permissions in a conventional computer system (e.g. read, write, own). In this regard, rules concerning privacy, anonymity and security can be determined individually for each (type of) entry, or for each _Subsystem database_, depending on its particular use-case. ~~Only for _contracts/transactions_ of "TGN", the native utility token on the Tagion _Mainnet_, the rules are fixed: they always reveal the amounts of the transactions, but not the identity of the actors, e.g. payer and payee.~~
+Talking about accountability: another unique design feature of the _DART_ database is that all entries and edits have an "owner", typically the _user_ specified in the _contract_ that created the data entry. Access rights to each data point can be managed like the file permissions in a conventional computer system (e.g. read, write, own). In this regard, rules concerning privacy, anonymity and security can be determined individually for each (type of) entry, or for each _Subsystem database_, depending on its particular use-case. Only for _contracts/transactions_ of ["TGN", the native utility token](https://docs.tagion.org/gov/governance_areas/token_economy/utility_token) on the Tagion _Mainnet_, the rules are fixed: the amounts of the transactions are revealed, along with the identifiers of the payer and payee. But their actual identities are protected because, different from most _blockchains_, only the resulting balances of a _transaction/contract_ are stored in the new state of the database, not the contracts with the actors' information themselves.  
 
 In a _Subsystem_, the actors can be made visible (only to the participants of that _Subsystem_ or more widely), while the content kept in the Subsystem's own database can be protected as appropriate for the use-case or industry. The level of data-protection available can be configured to be compliant with any privacy and data-protection regulation or even up to government agency levels of classification - including but not limited to access-control, authentication and sharing services, and multi-signature requirements.
 
