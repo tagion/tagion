@@ -20,8 +20,8 @@ Becoming a member is not necessary for stakeholders that simply want to use TGN 
 In Tagion there are currently three types of nodes: 
 
 ### Core Nodes
-At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as [consensus](/gov/glossary#consensus). But not all nodes of this category actively particiapte in the consensus mechanism at any one time. Those that do uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
-Swapping nodes in and out from this function is one of Tagion's unqiue features achieve a [high level of decentralisation](https://docs.tagion.org/gov/governance_areas/network_formation/introductions). 
+At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as [consensus](/gov/glossary#consensus). But not all nodes of this category actively participate in the consensus mechanism at any one time. Those that do uphold the integrity and security of the system, ensuring that the data stored is accurate and protected.  
+Swapping nodes in and out from this function is one of Tagion's unique features achieve a [high level of decentralisation](https://docs.tagion.org/gov/governance_areas/network_formation/introductions). 
 
 ### Relay Nodes
 These nodes act as intermediaries, collecting, collating, and managing user requests to submit or retrieve data. Because they also filter out spam and unnecessary requests, they significantly reduce the load on core nodes, enhancing the overall efficiency of the system. 

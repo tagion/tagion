@@ -110,7 +110,7 @@ Refers to networks being built on Tagion code and being connected (open) or unco
 ## Ordering (fair)
 
 The order in which transactions sent to different nodes are committed to the(ir) database(s) is determined by the median time at which the [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph) of that epoch have received the transaction or knowledge of it (through the [wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
-In contrast to the order of transactions in conventional DLT systems - determined by the higest fee or by subjective preferences of node operators - we call Tagion's approach to ordering "fair", because every transaction has the same chance of being included in the next epoch, and manipulations such as frontrunning and sandwich attacs become impossible. 
+In contrast to the order of transactions in conventional DLT systems - determined by the highest fee or by subjective preferences of node operators - we call Tagion's approach to ordering "fair", because every transaction has the same chance of being included in the next epoch, and manipulations such as frontrunning and sandwich attacks become impossible. 
 
 ## Permission/Un-permissioned 
 
