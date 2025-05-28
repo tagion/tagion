@@ -40,7 +40,7 @@ help: help-doc
 ddoc: $(BUILDDOC)/.way
 	$(PRECMD) 
 	echo "making ddoc"
-	$(ADRDOX) --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)/lib-*/tagion $(BDD)/tagion
+	$(ADRDOX) --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)/lib-*/tagion
 
 .PHONY: ddoc
 
