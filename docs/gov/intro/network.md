@@ -22,7 +22,7 @@ In Tagion there are currently three types of nodes:
 ### Core Nodes
 At the heart of the system, core nodes are tasked with maintaining the database and reaching agreement on the data submitted and stored—a process referred to as [consensus](/gov/glossary#consensus). But not all nodes of this category actively particiapte in the consensus mechanism at any one time. Those that do uphold the integrity and security of the system, ensuring that the data stored is accurate and protected. Swapping nodes in and out from this function is one of Tagion's unqiue features achieve a [high level of decentralisation](https://docs.tagion.org/gov/governance_areas/network_formation/introductions). 
 <div class="text--right"> 
-  <img src="https://github.com/tagion/tagion/blob/56dd2182ffde18a9e1fe32e15bf7539762bbfeb0/assets/pools.png" /> 
+  <img src="https://github.com/tagion/tagion/blob/56dd2182ffde18a9e1fe32e15bf7539762bbfeb0/assets/pools.png" style={{width: 100}}/> 
 </div>
 
 
