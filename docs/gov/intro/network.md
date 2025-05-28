@@ -24,9 +24,7 @@ At the heart of the system, core nodes are tasked with maintaining the database 
 <div class="text--right"> 
   <img src="/assets/pools.png" /> 
 </div>
-![Swapping](/assets/pools.png)
 
-![Federated](/img/Federated.png)
 
 ### Relay Nodes
 These nodes act as intermediaries, collecting, collating, and managing user requests to submit or retrieve data. Because they also filter out spam and unnecessary requests, they significantly reduce the load on core nodes, enhancing the overall efficiency of the system. 
