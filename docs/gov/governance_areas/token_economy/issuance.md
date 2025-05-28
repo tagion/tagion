@@ -126,7 +126,7 @@ As was explained in our Townhall #13 (January 9th 2025, from minute 32 on the [r
 ---
  
 
-[^1]: This cap is not rigid and can be adjusted through [community decision](/gov/governance_areas/decision_making).We foresee two primary scenarios that might justify such an action. Firstly, should there be a shortage of incentives deterring node operators from participating in transaction validation. Secondly, if TGN developes money-like qualities in the future, it may become necessary to implement appropriate monetary policies to maintain economic stability and functionality. 
+[^1]: This cap is not rigid and can be adjusted through [community decision](/gov/governance_areas/decision_making).We foresee two primary scenarios that might justify such an action. Firstly, should there be a shortage of incentives deterring node operators from participating in transaction validation. Secondly, if TGN develops money-like qualities in the future, it may become necessary to implement appropriate monetary policies to maintain economic stability and functionality. 
 
 [^2]:This was previously called "vested" or "fully vested" supply, but since that term was sometimes confusing to our users, we now use this more intuitive and descriptive wording. 
 

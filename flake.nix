@@ -57,6 +57,7 @@
           buildInputs = with pkgs; [
             self.packages.${pkgs.system}.default.buildInputs
             self.packages.${pkgs.system}.default.nativeBuildInputs
+            typos
             dub
             gcc
             git
