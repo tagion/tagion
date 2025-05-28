@@ -5,10 +5,10 @@ sidebar_label: Introduction
 
 # Introduction to Tagion Governance 
 
-Welcome to these pages concerning the governance development- and documentation of the Tagion network.
-(For an overview of what Tagion "is", have a look at the website [tagion.org](https://tagion.org))
+Welcome to these pages concerning the governance development- and documentation of the Tagion network!  
+(For an overview of what Tagion "is", have a look at the short summary in the adjacent technical documentation pages, read our non-technical 101-guide to "[how Tagion works](https://docs.tagion.org/gov/intro/jargonbusting)" or check the project website [tagion.org](https://tagion.org))
 
-Here, you will find the current state of ideas and deliberation regarding Tagion's governance. 
+On this site, you will find the current state of ideas and deliberation regarding Tagion's governance. 
 
 We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
 
