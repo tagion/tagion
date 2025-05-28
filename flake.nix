@@ -58,24 +58,27 @@
             self.packages.${pkgs.system}.default.buildInputs
             self.packages.${pkgs.system}.default.nativeBuildInputs
             typos
-            dub
-            gcc
             git
+            clang
+            # secp256k1 build
             libtool
             autoconf
             automake
             autoreconfHook
+            # NNG build
             cmake
+            # Used by addrdox, d documentation generator
             libz
+            # Dlang dev tools
             dtools
+            dub
             dfmt-pull.legacyPackages.${pkgs.system}.dlang-dfmt
-            graphviz
-            wasmer # wasm-executor
-            clang # used for wasm compilation
-            wabt # conversion between wat <-> wasm
+            # Run network tests in their own network namespace via "make test UNSHARE_NET=1 TEST_STAGE=acceptance"
             bubblewrap
           ]
+          # Tool to convert c header files to d headers
           ++ lib.optionals stdenv.isLinux [ dstep ]
+          # D reference compiler, compiles faster than ldc and runs unittests
           ++ lib.optionals stdenv.isx86_64 [ dmd ];
         };
       });
