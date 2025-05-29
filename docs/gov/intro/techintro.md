@@ -1,6 +1,6 @@
 ---
 sidebar_class_name: hidden
-sidebar_label: Introduction
+sidebar_label: Tech-Pages Intro
 ---
 
 # Draft: Tagion's Tech Documentation
