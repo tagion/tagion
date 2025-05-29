@@ -1,6 +1,6 @@
 ---
 sidebar_class_name: hidden
-sidebar_label: Summary
+sidebar_label: What Tagion is
 ---
 # Draft: What is Tagion
 
