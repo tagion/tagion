@@ -2,7 +2,7 @@
 sidebar_position: 6
 sidebar_class_name: hidden
 ---
-# Archive of (former) Tagion publication 
+# Archive of (former) Tagion publications
 
 Some ideas and concepts described in the following PDFs are outdated or abandoned, they are here only listed for transparency.  
 
