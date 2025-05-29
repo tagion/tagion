@@ -4,7 +4,7 @@ sidebar_label: 101 - How Tagion works
 ---
 # How Tagion works: step-by-step
 
-_written by [Decard](https://www.decard.io) - the stewardship company of the Tagion platform_
+_Written by [Decard](https://www.decard.io) - the initial stewardship company of the Tagion platform._
 
 
 :::tip[Jargon Bustin']
