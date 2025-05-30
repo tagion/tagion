@@ -931,7 +931,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
-            void setLocal(Block* blk) {
+            void setLocal() {
+                auto blk = ctx.current;
                 if (!blk.isVoidType && !blk.local_defined) {
                     const block_types = types(blk.elm);
                     if (block_types.length == 1) {
@@ -947,7 +948,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
-            void setBreakLocals(Block* from_blk, Block* to_blk) {
+            void setBreakLocals(Block* from_blk) {
+                auto to_blk = ctx.current;
                 if (!to_blk.isVoidType) {
                     const to_block_types = types(to_blk.elm);
                     const from_block_types = types(from_blk.elm);
@@ -965,7 +967,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         const from_locals = ctx.peek(from_block_types.length);
                         foreach (i; 0 .. to_block_types.length) {
                             const result_local = format("%s[%d]", to_blk.block_result, i);
-                            /// 
                             if (i < from_locals.length) {
                                 bout.writefln("%s%s = %s; // setLocal", indent, result_local, from_locals[i]);
                             }
@@ -1060,7 +1061,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_ELSE:
                         bout.writefln("// if stack %-(%s, %)", ctx.stack);
-                        setLocal(ctx.current);
+                        setLocal;
                         const else_indent = indent[0 .. $ - spacer.length];
                         bout.writefln("%s}", else_indent);
                         bout.writefln("%selse {", else_indent);
@@ -1074,7 +1075,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const target_index = ctx.index(lth);
                             auto target_block = ctx[target_index];
-                            setLocal(ctx.current);
+                            setLocal;
 
                             if ((lth > 0) && !ctx.current.isVoidType) {
                                 bout.writefln("%s%s = %s;", indent, target_block.block_result,
@@ -1111,7 +1112,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const block_index = ctx.index(lth);
                             auto target_block = ctx[block_index];
                             const conditional_flag = ctx.pop;
-                            setLocal(ctx.current);
+                            //setLocal
+                            setBreakLocals(target_block);
                             ctx.push(ctx.current);
                             version (none)
                                 if ((lth > 0) && !ctx.current.isVoidType) {
@@ -1140,7 +1142,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                             }
                             const switch_select = ctx.pop;
-                            setLocal(ctx.current);
+                            //setLocal;
                             ctx.push(ctx.current);
                             bout.writefln("%sswitch(%s) {", indent, switch_select);
                             scope (exit) {
@@ -1162,6 +1164,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 if ((block_label_depth > 0) && !ctx.current.isVoidType) {
                                     const block_index = ctx.index(block_label_depth);
                                     auto target_block = ctx[block_index];
+                                    setBreakLocals(target_block);
+                                            version(none)
                                     bout.writefln("%s%s = %s;", local_indent,
                                             target_block.block_result,
                                             ctx.current.block_result);
@@ -1283,7 +1287,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         if (ctx.number_of_blocks > 0) {
                             auto block = ctx.current;
                             if (block.elm.code is IR.LOOP || block.elm.code is IR.IF || block.elm.code is IR.BLOCK) {
-                                setLocal(block);
+                                setLocal;
 
                             }
                         }
