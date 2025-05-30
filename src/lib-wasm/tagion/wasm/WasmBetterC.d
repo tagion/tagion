@@ -504,7 +504,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         protected Block*[] _blocks;
         override string toString() const pure nothrow {
-
             return assumeWontThrow(format("locals=%s stack=%s", locals, stack));
         }
 
@@ -528,6 +527,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return "Error stack is empty";
             }
             return stack[$ - 1];
+        }
+
+        string[] peek(const size_t amount) pure nothrow {
+            if (amount > stack.length) {
+                return ["Error peek stack is empty"];
+            }
+            return stack[$ - amount .. $];
         }
 
         string pop() pure nothrow {
@@ -560,19 +566,28 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return stack;
         }
 
-        void push(string value) pure nothrow {
+        void push(string value) pure nothrow
+        in (value.length)
+        do {
             stack ~= value;
         }
 
+        /** 
+         * Push the block_result onto the value stack
+         * and drops the inner block stack values
+         * Params:
+         *   blk = The block results to be push onto the stack
+         */
         void push(const(Block*) blk) pure {
             if (!blk.isVoidType) {
+                stack.length = blk.sp;
                 const block_types = types(blk.elm);
                 if (block_types.length == 1) {
-                    push(blk.block_result);
+                    push(blk.block_result ~ "/* push */");
                     return;
                 }
                 foreach_reverse (i; 0 .. block_types.length) {
-                    const value = assumeWontThrow(format("%s[%d]", blk.block_result, i));
+                    const value = assumeWontThrow(format("(%s[%d] /* %d */)", blk.block_result, i, i));
                     push(value);
                 }
 
@@ -644,8 +659,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         void set(const uint local_idx) pure nothrow {
-            __write("Stack %-(%s, %) local_idx=%d", stack, local_idx);
-            __write("Local %-(%s, %) local_idx=%d", locals, local_idx);
             locals[local_idx] = pop;
         }
 
@@ -729,6 +742,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return format("%s %s", block_type(blk), blk.block_result);
         }
 
+        invariant {
+
+            assert(stack.all!(s => s.length > 0), assumeWontThrow(format("%s", stack)));
+        }
+
     }
 
     enum BlockKind {
@@ -736,12 +754,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         LOOP, /// loop - block_#: do { ... } while (false);
         WHILE, /// loop - block_#: while (?) { ... }
         DO_WHILE, /// loop - block_#: do { ... } while (?);
-        END, ///  END - if (?) {  .... }
+        END, ///  END 
+        IF, /// if (?) { ... }
     }
 
     struct Block {
         const(ExprRange.IRElement) elm;
-        const(size_t) sp; /// Stack pointer;
+        const(size_t) sp; /// Stack pointer at block begin
         const(size_t) id;
         const(uint) idx; /// Block idx
         string condition;
@@ -791,6 +810,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             final switch (_kind) {
             case BlockKind.WHILE:
             case BlockKind.END:
+            case BlockKind.IF:
                 return "}";
             case BlockKind.DO_WHILE:
                 if (condition) {
@@ -826,7 +846,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         string block_result() const pure nothrow {
-            return assumeWontThrow(format("block_result_%d", id));
+            return assumeWontThrow(format("%s_result_%d", elm.instr.name, id));
         }
 
         string label() pure {
@@ -901,7 +921,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 ref ExprRange expr,
                 const(string) indent) {
 
-            void declare_block(Block* blk) {
+            void declareBlock(Block* blk) {
                 const declare = ctx.declare(blk);
                 if (declare) {
                     bout.writefln("%s%s;", indent, declare);
@@ -911,19 +931,49 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
-            void set_local(Block* blk) {
-                if (!blk.isVoidType) {
+            void setLocal(Block* blk) {
+                if (!blk.isVoidType && !blk.local_defined) {
                     const block_types = types(blk.elm);
                     if (block_types.length == 1) {
-                        bout.writefln("%s%s = %s;", indent, blk.block_result, ctx.pop);
+                        bout.writefln("%s%s = %s; // setLocal", indent, blk.block_result, ctx.pop);
                     }
                     else {
                         foreach (i; 0 .. block_types.length) {
                             const result_local = format("%s[%d]", blk.block_result, i);
-                            bout.writefln("%s%s = %s;", indent, result_local, ctx.pop);
+                            bout.writefln("%s%s = %s; // setLocal", indent, result_local, ctx.pop);
                         }
                     }
                     blk.define_local;
+                }
+            }
+
+            void setBreakLocals(Block* from_blk, Block* to_blk) {
+                if (!to_blk.isVoidType) {
+                    const to_block_types = types(to_blk.elm);
+                    const from_block_types = types(from_blk.elm);
+                    check(to_block_types.length <= from_block_types.length,
+                            format("The type of the exit block does not match %s -> %s",
+                            from_block_types, to_block_types));
+                    check(equal(from_block_types, to_block_types[0 .. from_block_types.length]),
+                            format("Block types does not match %s -> %s",
+                            from_block_types, to_block_types[0 .. from_block_types.length]));
+                    if (to_block_types.length == 1) {
+                        bout.writefln("%s%s = %s; // setBreakLocals", indent, to_blk.block_result, ctx.peek);
+                    }
+
+                    else {
+                        const from_locals = ctx.peek(from_block_types.length);
+                        foreach (i; 0 .. to_block_types.length) {
+                            const result_local = format("%s[%d]", to_blk.block_result, i);
+                            /// 
+                            if (i < from_locals.length) {
+                                bout.writefln("%s%s = %s; // setLocal", indent, result_local, from_locals[i]);
+                            }
+                            else {
+                                bout.writefln("%s%s = %s.init; // setLocal", indent, result_local, result_local);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -934,6 +984,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     final switch (elm.instr.irtype) {
                     case CODE:
                     case CODE_TYPE:
+                        if (elm.instr.irtype is IRType.CODE_TYPE) {
+                            bout.writefln("%s// ---- %-(%s, %)", indent, ctx.stack);
+                            bout.writefln("%s// ---- %s", indent, ctx.stack.map!(s => s.length));
+                        }
                         bout.writefln("%s// %s", indent, elm.instr.name);
                         ctx.perform(elm.code, elm.instr.pops);
                         break;
@@ -972,7 +1026,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.IF:
                             ctx.perform(elm.code, elm.instr.pops);
                             block.condition = ctx.pop;
-                            block.kind = BlockKind.END;
+                            block.kind = BlockKind.IF;
                             break;
                         case IR.LOOP:
                             block.kind = BlockKind.LOOP;
@@ -984,25 +1038,29 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             ctx.dropBlock;
                         }
                         innerBlock(block_bout, expr, indent ~ spacer);
-                        declare_block(ctx.current);
+                        declareBlock(ctx.current);
                         bout.writefln("%s%s", indent, block.begin);
                         bout.write(block_bout);
                         bout.writefln("%s%s", indent, block.end);
-                        ctx.stack.length = block.sp;
+                        bout.writefln("%s//ctx.stack.length=%d ctx.current.sp=%d",
+                                indent, ctx.stack.length, ctx.current.sp);
+                        //ctx.stack.length =ctx.current.sp;
+
                         ctx.push(block);
-                        if (ctx.number_of_blocks > 1) {
-                            const outer_block_index = ctx.index(1);
-                            const outer_block = ctx[outer_block_index];
-                            if (!outer_block.isVoidType && ctx.current.local_defined) {
-                                bout.writefln("%s%s = %s;", indent, outer_block.block_result, ctx
-                                        .current.block_result);
+                        version (none)
+                            if ((ctx.number_of_blocks > 1)) {
+                                const outer_block_index = ctx.index(1);
+                                const outer_block = ctx[outer_block_index];
+                                if (!outer_block.isVoidType && ctx.current.local_defined) {
+                                    bout.writefln("%s%s = %s;", indent, outer_block.block_result, ctx
+                                            .current.block_result);
+                                }
                             }
-                        }
                         bout.writefln("// END stack %-(%s, %)", ctx.stack);
                         break;
                     case BLOCK_ELSE:
                         bout.writefln("// if stack %-(%s, %)", ctx.stack);
-                        set_local(ctx.current);
+                        setLocal(ctx.current);
                         const else_indent = indent[0 .. $ - spacer.length];
                         bout.writefln("%s}", else_indent);
                         bout.writefln("%selse {", else_indent);
@@ -1016,7 +1074,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const target_index = ctx.index(lth);
                             auto target_block = ctx[target_index];
-                            set_local(ctx.current);
+                            setLocal(ctx.current);
 
                             if ((lth > 0) && !ctx.current.isVoidType) {
                                 bout.writefln("%s%s = %s;", indent, target_block.block_result,
@@ -1053,19 +1111,24 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const block_index = ctx.index(lth);
                             auto target_block = ctx[block_index];
                             const conditional_flag = ctx.pop;
-                            set_local(ctx.current);
+                            setLocal(ctx.current);
                             ctx.push(ctx.current);
-                            if ((lth > 0) && !ctx.current.isVoidType) {
-                                bout.writefln("%s%s = %s;", indent, target_block.block_result,
-                                        ctx.current.block_result);
-                            }
+                            version (none)
+                                if ((lth > 0) && !ctx.current.isVoidType) {
+                                    bout.writefln("%s%s = %s;", indent, target_block.block_result,
+                                            ctx.current.block_result);
+                                }
                             bout.writefln("%s// BR_IF %d", indent, lth);
                             if ((lth == 0) && (ctx.current.kind is BlockKind.LOOP)) {
                                 ctx.current.condition = conditional_flag;
                                 ctx.current.kind = BlockKind.WHILE;
                             }
-                            bout.writefln("%sif (%s) %s;",
-                                    indent, conditional_flag, ctx.jump(target_block));
+                            bout.writefln("%sif (%s) {",
+                                    indent, conditional_flag);
+                            const local_indent = indent ~ spacer;
+                            bout.writefln("%s%s;", local_indent,
+                                    ctx.jump(target_block));
+                            bout.writefln("%s}", indent);
                             break;
                         case IR.BR_TABLE:
                             auto br_table = elm.wargs.map!(w => w.get!uint);
@@ -1077,7 +1140,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                 }
                             }
                             const switch_select = ctx.pop;
-                            set_local(ctx.current);
+                            setLocal(ctx.current);
                             ctx.push(ctx.current);
                             bout.writefln("%sswitch(%s) {", indent, switch_select);
                             scope (exit) {
@@ -1132,12 +1195,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
-                        bout.writefln("%s//%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0].get!uint);
+                        bout.writefln("%s//%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0]
+                                .get!uint);
                         const type_idx = elm.wargs[0].get!uint;
                         //const type_idx = wasmstream.get!(Section.FUNCTION)[func_idx].idx;
                         const function_header = wasmstream.get!(Section.TYPE)[type_idx];
                         const function_call = format("(%-(%s,%))",
-                                 ctx.pops(function_header.params.length));
+                                ctx.pops(function_header.params.length));
                         string set_result;
                         if (function_header.results.length) {
                             set_result = format("const %s=", result_name);
@@ -1145,7 +1209,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         bout.writefln("%s//%s -- %s", indent, function_header, function_call);
                         bout.writefln("%s//%s%s;", indent, set_result, function_call);
-                         break;
+                        break;
                     case LOCAL:
                         bout.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
                         switch (elm.code) {
@@ -1216,10 +1280,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.push(value);
                         break;
                     case END:
-                        if (ctx.number_of_blocks) {
+                        if (ctx.number_of_blocks > 0) {
                             auto block = ctx.current;
-                            if (block.elm.code is IR.LOOP) {
-                                set_local(block);
+                            if (block.elm.code is IR.LOOP || block.elm.code is IR.IF || block.elm.code is IR.BLOCK) {
+                                setLocal(block);
 
                             }
                         }
@@ -1244,8 +1308,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 output.writefln("%sreturn %s;", indent, results_value);
             }
         }
-        auto expr_list = expr;
-        //bout.writefln("// List %s", expr_list.map!(e => e.code));
         innerBlock(bout, expr, indent);
     }
 
