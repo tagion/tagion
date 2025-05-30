@@ -44,17 +44,15 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the validity and order of transactions recorded in the [Database](/gov/glossary#distributed-database). It ensures the integrity, security, and trustlessness of the Tagion Network by making sure that all participants maintain a consistent view of the database without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participanting nodes maintain a consistent view of the current state of data without relying on a central authority. 
 
 In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
 
-A Gossip Protocol connects nodes through information sharing. 
+A patented communication protocol caooed Wavefront connects nodes through information sharing. 
 
-Timestamps and Ordering establish a chronological event sequence. 
+[Ordering](/gov/glossary#ordering-fair) is established from the chronological event sequence. 
 
-Finality emerges as a supermajority consensus, confirming agreed-upon transactions. 
-
-Through Hashgraph, Tagion attains decentralised consensus, enabling honest nodes to synchronise even in the face of potentially malicious participants. 
+Finality emerges as a supermajority consensus (2/3+1 of participating nodes) even in the face of up to 1/3 being non-cooperative (malicious or lost connection). 
 
 ## Contributors 
 
@@ -108,6 +106,11 @@ On-chain governance refers to formal processes—such as submitting proposals, c
 ## Open/Closed 
 
 Refers to networks being built on Tagion code and being connected (open) or unconnected (closed) to the mainnet. The latter is what we call “sub-systems”, the former need to comply with out licensing T&Cs.  
+
+## Ordering (fair)
+
+The order in which transactions sent to different nodes are committed to the(ir) database(s) is determined by the median time at which the [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph) of that epoch have received the transaction or knowledge of it (through the [wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
+In contrast to the order of transactions in conventional DLT systems - determined by the higest fee or by subjective preferences of node operators - we call Tagion's approach to ordering "fair", because every transaction has the same chance of being included in the next epoch, and manipulations such as frontrunning and sandwich attacs become impossible. 
 
 ## Permission/Un-permissioned 
 

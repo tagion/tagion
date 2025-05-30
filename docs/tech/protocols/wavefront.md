@@ -6,9 +6,7 @@ Node Alpha initiates a connections and sends it's initial known altitudes.
 Node Beta sends the difference between altitudes Alpha and it's own known altitudes.  
 Node Alpha sends the difference between Betas calculated altitudes and it's own altitudes.  
 
-The ideas and goals of the wavefront protocol are better described in the Tagion whitepaper.
-[tagion whitepaper](https://www.tagion.org/resources/tagion-whitepaper.pdf)*
-![diagram explaining the wavefront from tagion whitepaper](/assets/wavefront.png)
+![Wavefront diagram](/assets/wavefront.png)
 
 The different wavefront exchange states are defined here.
 [tagion.hashgraph.HashGraphBasic.ExchangeState](https://ddoc.tagion.org/tagion.hashgraph.HashGraphBasic.ExchangeState.html)

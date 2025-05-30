@@ -512,6 +512,11 @@ enum Types : ubyte {
     @("i64") I64 = 0x7E, /// i64 Value type
     @("f32") F32 = 0x7D, /// f32 Value type
     @("f64") F64 = 0x7C, /// f64 Value type
+    @("v128") V128 = 0x7B, /// 128 bits vector type
+}
+
+bool isNumType(const Types x) @nogc pure nothrow {
+    return only(Types.I32, Types.I64, Types.F32, Types.F64).canFind(x);
 }
 
 bool isRefType(const Types x) @nogc pure nothrow {
@@ -520,6 +525,10 @@ bool isRefType(const Types x) @nogc pure nothrow {
 
 bool isNotType(const ubyte x) @nogc pure nothrow {
     return (x & Types.VOID) !is Types.VOID;
+}
+
+bool isVecType(const ubyte x) @nogc pure nothrow {
+    return x is Types.V128;
 }
 
 Types toType(const(char[]) type_name) @nogc pure nothrow {

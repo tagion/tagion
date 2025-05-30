@@ -1,6 +1,6 @@
 ---
 sidebar_class_name: hidden
-sidebar_label: Introduction
+sidebar_label: Tech-Pages Intro
 ---
 
 # Draft: Tagion's Tech Documentation
@@ -25,7 +25,7 @@ But if you are interested in the history of our thinking, you can find the old p
 
 ## Process and Governance
 
-Currently, Tagion is developed by it's steward company Decard ([www.decard.io](https://www.decard.io/)). The code is published open-source on Github. 
+Currently, Tagion is developed by Decard ([www.decard.io](https://www.decard.io/)), it's stewardship-company. The code is published open-source on Github. 
 
 The Mainnet has been launched in a closed environment in December 2023, and a phased release process towards distribution and decentralization is scheduled to commence in the second half of 2025.
 

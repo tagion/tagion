@@ -9,7 +9,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : filter, countUntil, map, uniq, equal, canFind, all;
+import std.algorithm;
 import std.array;
 import std.file : chdir, exists, remove;
 import std.format;
@@ -247,15 +247,8 @@ int _neuewelle(string[] args) {
             }
             dbs ~= db;
         }
-        auto perspective_db = dbs[0];
-        static long epoch_number(E)(E epoch) => epoch.epoch_number;
-        long perspective_epoch = getHead(perspective_db).getEpoch(perspective_db).match!epoch_number;
-        writeln("Perspective ", perspective_epoch);
-        foreach(db; dbs[1..$]) {
-            const head = getHead(db);
-            const epoch = getEpoch(head, db);
-            long db_epoch = epoch.match!epoch_number;
-            writefln("is node0 behind %s %s at Epoch %s", db.filename, perspective_epoch < db_epoch, db_epoch);
+        scope(exit) {
+            dbs.each!(db => db.close);
         }
 
         auto bullseyes = dbs.map!(db => db.bullseye);
@@ -269,22 +262,15 @@ int _neuewelle(string[] args) {
 
         assert(!nodes.empty, "No node keys were available");
 
-        Exception dart_exception;
-        DART db = new DART(hash_net, node_options[0].dart.dart_path, dart_exception, Yes.read_only);
-        if (dart_exception !is null) {
-            throw dart_exception;
-        }
-
         // Currently we just use the node records from the genesis epoch since there is no way to get the currently active nodes without going through the entire epoch chain.
         version (USE_GENESIS_EPOCH) {
             const head = TagionHead();
         }
         else {
-            const head = getHead(db);
+            const head = getHead(dbs[0]);
         }
 
-        auto epoch = head.getEpoch(db);
-        db.close;
+        auto epoch = head.getEpoch(dbs[0]);
 
         log("Booting with Epoch %J", epoch);
 
