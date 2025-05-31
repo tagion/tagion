@@ -142,7 +142,8 @@ struct EpochCreatorService {
                 const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
                 if (receiver.isMethod) {
-                    gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
+                    req.respond(return_wavefront);
+                    // gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
                 }
             }
             catch (Exception e) {

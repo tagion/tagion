@@ -6,12 +6,16 @@ import core.time;
 import core.sys.posix.poll;
 
 import std.array;
+import std.exception;
 
+import tagion.crypto.Types;
+import tagion.communication.HiRPC;
+import tagion.communication.Envelope;
+import tagion.script.methods;
 // we use our own socket wrapper based on a struct so we can easily pass it to a different concurrency task
 import tagion.network.socket;
 import tagion.network.ReceiveBuffer;
 import tagion.actor : ActorHandle, run, Msg, thisActor;
-import tagion.crypto.Types;
 import tagion.gossip.AddressBook;
 import tagion.services.messages;
 import tagion.services.tasknames;
@@ -65,9 +69,9 @@ struct NodeInterface {
     string listen_address;
     Tid event_listener_tid;
     Socket listener_sock;
-    immutable(TaskNames) tn;
+    TaskNames tn;
 
-    this(string address, shared(AddressBook) address_book, immutable(TaskNames) task_names) {
+    this(string address, shared(AddressBook) address_book, TaskNames task_names) {
         this.listen_address = address;
         this.address_book = address_book;
         this.tn = task_names;
@@ -81,7 +85,7 @@ struct NodeInterface {
         Socket new_sock = listener_sock.accept;
         pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
         event_listener_tid.send(AddPoll(), thisTid, listener_poll);
-        Tid conn_tid = spawn(&connection, event_listener_tid, new_sock, CONNECTION_STATE.receive);
+        Tid conn_tid = spawn(&connection, event_listener_tid, tn, new_sock, CONNECTION_STATE.receive);
     }
 
     // Initial send before a connection has been established with a peer
@@ -90,7 +94,17 @@ struct NodeInterface {
         string address = address_book[channel].get().address;
         sock.connect(address);
 
-        Tid conn_tid = spawn(&connection, event_listener_tid, sock, CONNECTION_STATE.send);
+        Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
+
+        conn_tid.send(req, channel, doc);
+    }
+
+    void wave_send(WavefrontReq req, Pubkey channel, Document doc) {
+        Socket sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
+        string address = address_book[channel].get().address;
+        sock.connect(address);
+
+        Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
 
         conn_tid.send(req, channel, doc);
     }
@@ -118,94 +132,112 @@ enum CONNECTION_STATE {
 }
 
 
-void connection(Tid event_listener_tid, Socket sock, CONNECTION_STATE state) {
+void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
     scope(exit) event_listener_tid.send(RmPoll(), sock.handle);
     scope ubyte[0x8000] recv_frame; // 32kb
     enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
 
-    final switch (state) {
-        case state.send:
-            immutable(ubyte)[] send_buffer;
-            receive((NodeSend _, Pubkey channel, Document doc) { send_buffer = doc.serialize; });
-            // 1. try to send
-            size_t rc = sock.send(send_buffer);
-            // 2. if eagain add event listener
-            if(rc == -1 && wouldHaveBlocked()) {
-                pollfd pfd = pollfd(sock.handle, POLLOUT);
-                event_listener_tid.send(AddPoll(), thisTid(), pfd);
-            }
-            // 3. send again
-            pollfd poll_event;
-            receive((PollEvent _, pollfd fd) { poll_event = fd; });
-            if(poll_event.revents & POLLOUT) {
-                rc = sock.send(send_buffer);
-            }
-            // 4. if not everything is sent repeat
+    ActorHandle task_handle;
 
-            // 5. Set to send state
-            state = CONNECTION_STATE.receive;
-            break;
-        case state.receive:
-
-            ReceiveBuffer receive_buffer;
-            while(true) {
-                if(socket.wouldHaveBlocked) {
-                    pollfd pfd = pollfd(sock.handle, pollout);
-                    event_listener_tid.send(addpoll(), thistid(), pfd);
-                    receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                    if(!(poll_event.revents & POLLIN)) {
-                        // err;
-                        return;
-                    }
+    while(true) {
+        final switch (state) {
+            case state.send:
+                state = CONNECTION_STATE.receive;
+                immutable(ubyte)[] send_buffer;
+                receive(
+                    (NodeSend _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
+                    (dartHiRPCRR.Response _, Document doc) { send_buffer = doc.serialize;  },
+                    (readRecorderRR.Response _, Document doc) { send_buffer = doc.serialize; },
+                    (dartHiRPCRR.Error _, string msg) { /* err */ },
+                    (readRecorderRR.Error _, string msg) { /* err */ },
+                );
+                if(send_buffer.empty) {
+                    // err
+                    return;
                 }
-                auto result = receive_buffer.next(&sock.receive);
-                if(result == ReceiveBuffer.State.done) {
-                    break;
+                // 1. try to send
+                size_t rc = sock.send(send_buffer);
+                // 2. if eagain add event listener
+                if(sock.wouldHaveBlocked()) {
+                    pollfd pfd = pollfd(sock.handle, POLLOUT);
+                    event_listener_tid.send(AddPoll(), thisTid(), pfd);
                 }
-            }
-
-            // 1. try to receive
-            size_t len = sock.receive(recv_frame);
-            // 2. if eagain add event listener
-            if(len == -1 && socket.wouldHaveBlocked) {
-                pollfd pfd = pollfd(sock.handle, POLLIN);
-                event_listener_tid.send(addpoll(), thistid(), pfd);
-                // 3. receive again
+                // 3. send again
                 pollfd poll_event;
                 receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                if(poll_event.revents & POLLIN) {
-                    len = sock.receive(recv_frame);
+                if(poll_event.revents & POLLOUT) {
+                    rc = sock.send(send_buffer);
                 }
-            }
-            long expected_msg_size = doc_full_size(recv_frame[0..len]);
-            if(expected_msg_size > MAX_RECEIVE_SIZE) {
-                // TODO err
-            }
-            // immutable(ubyte[]) recv_buffer = new immutable(ubyte)[](expected_msg_size); // allocate the total expected buffer
-            immutable(ubyte)[] recv_buffer;
-            recv_buffer ~= recv_frame[0..len];
+                // 4. if not everything is sent repeat
 
-            // 4. if not everything is received repeat
+                break;
+            case state.receive:
+                state = CONNECTION_STATE.send;
+                ReceiveBuffer receive_buffer;
+                auto result_buffer = receive_buffer(
+                    (scope void[] buf) {
+                        ptrdiff_t rc = sock.receive(buf);
+                        if(sock.wouldHaveBlocked) {
+                            pollfd pfd = pollfd(sock.handle, POLLIN);
+                            event_listener_tid.send(AddPoll(), thisTid(), pfd);
+                            pollfd poll_event;
+                            receive((PollEvent _, pollfd fd) { poll_event = fd; });
+                            if(!(poll_event.revents & POLLIN)) {
+                                return -1;
+                            }
+                            rc = sock.receive(buf);
+                        }
+                        return rc;
+                    }
+                );
 
-            // 5. Set to send state
-            state = CONNECTION_STATE.send;
+                if(result_buffer.size < 0) {
+                    // err
+                    return;
+                }
 
-            // 6. Check data and send to relevant service
-            Document doc;
+                Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
+
+                if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
+                    // err
+                    return;
+                }
+
+                HiRPC hirpc = HiRPC(null);
+                const hirpcmsg = hirpc.receive(doc);
+                // if (hirpcmsg.pubkey == this.net.pubkey) {
+                //     // err
+                //     return;
+                // }
+                // if (!hirpcmsg.isSigned) {
+                //     // err
+                //     return;
+                // }
+                if(hirpcmsg.isResponse || hirpcmsg.isError) {
+                    task_handle.send(WavefrontReq(), doc);
+                }
+
+                switch(hirpcmsg.method.name) {
+                    case RPCMethods.dartRead:
+                    case RPCMethods.dartCheckRead:
+                    case RPCMethods.dartBullseye:
+                    case RPCMethods.dartRim:
+                        ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
+                        break;
+                    case RPCMethods.readRecorder:
+                        ActorHandle(tn.replicator).send(readRecorderRR(), doc);
+                        break;
+                    case RPCMethods.wavefront:
+                        task_handle = ActorHandle(tn.epoch_creator);
+                        task_handle.send(WavefrontReq(), doc);
+                        break;
+                    default:
+                        // err
+                }
+
             break;
+        }
     }
 
     // cleanup
-}
-
-// Same as Document.full_size.
-// Created such that we don't have to cast data to immutable and create Document object in order to get pre received data;
-private
-size_t doc_full_size(scope const(ubyte)[] data) @nogc {
-    import LEB128 = tagion.utils.LEB128;
-    if (data) {
-        const len = LEB128.decode!uint(data);
-        return len.size + len.value;
-    }
-    return 0;
 }

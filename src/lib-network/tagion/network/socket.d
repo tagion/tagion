@@ -28,10 +28,10 @@ public import std.socket :
     AddressFamily,
     SocketType,
     ProtocolType,
-    SocketFlags,
-    wouldHaveBlocked;
+    SocketFlags;
 
 import sys = core.sys.posix.sys.socket;
+import core.stdc.errno;
 import unistd = core.sys.posix.unistd;
 
 struct Socket {
@@ -124,7 +124,7 @@ struct Socket {
     @trusted nothrow
     ptrdiff_t receive(scope void[] buf) {
         SocketFlags flags;
-        int rc = sys.recv(fd, &buf[0], buf.length, flags);
+        size_t rc = sys.recv(fd, &buf[0], buf.length, flags);
         last_error = errno;
         return rc;
     }
@@ -133,7 +133,7 @@ struct Socket {
    @trusted nothrow
    ptrdiff_t send(const void[] buf) {
        SocketFlags flags;
-       int rc =  sys.send(fd, &buf[0], buf.length, flags);
+       size_t rc =  sys.send(fd, &buf[0], buf.length, flags);
        last_error = errno;
        return rc;
    }

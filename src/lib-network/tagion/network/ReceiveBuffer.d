@@ -10,10 +10,10 @@ struct ReceiveBuffer {
     ubyte[] buffer; /// Allocated buffer
     enum START_SIZE = 0x400;
     static size_t max_size = 0x4000;
-    alias Receive = ptrdiff_t delegate(scope void[] buf) nothrow @safe;
+    alias Receive = ptrdiff_t delegate(scope void[] buf) @safe;
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
 
-    const(ResultBuffer) opCall(const Receive receive) nothrow {
+    const(ResultBuffer) opCall(const Receive receive) {
         if (buffer is null) {
             buffer = new ubyte[START_SIZE];
         }
@@ -48,49 +48,6 @@ struct ReceiveBuffer {
         }
         return ResultBuffer(pos, buffer[0 .. total_size]);
     }
-
-    size_t pos;
-    ptrdiff_t total_size = -1;
-    enum State {
-        error,
-        done,
-        more,
-    }
-
-    State next(const Receive receive) {
-        if (buffer is null) {
-            buffer = new ubyte[START_SIZE];
-        }
-        if (total_size < 0 || pos <= total_size) {
-            const len = receive(buffer[pos .. $]);
-            if (len == 0) {
-                return State.done;
-            }
-            if (len < 0) {
-                return State.error;
-            }
-            pos += len;
-
-            if (total_size < 0) {
-                if (LEB128.isComplete(buffer[0 .. pos])) {
-                    const leb128_len = LEB128.decode!size_t(buffer);
-                    total_size = leb128_len.value + leb128_len.size;
-                    if (total_size > max_size) {
-                        return State.error;
-                    }
-                    if (buffer.length <= total_size) {
-                        buffer.length = total_size;
-                    }
-                    if (pos >= total_size) {
-                        return State.more;
-                    }
-                }
-            }
-
-        }
-        return State.done;
-    }
-
 } 
 
 version (unittest) {
