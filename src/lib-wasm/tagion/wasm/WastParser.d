@@ -1349,7 +1349,6 @@ struct WastParser {
             export_tokenizer = r.save;
             r.nextBlock;
         }
-        ExportType export_type;
         ParserStage arg_stage;
         WastTokenizer rewind;
         uint only_one_type_allowed;

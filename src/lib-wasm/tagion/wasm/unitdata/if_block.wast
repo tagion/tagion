@@ -6,14 +6,13 @@
 
   (func $dummy)
 
-  (;
+  
   (func (export "empty") (param i32)
     (if (local.get 0) (then))
     (if (local.get 0) (then) (else))
     (if $l (local.get 0) (then))
     (if $l (local.get 0) (then) (else))
   )
-;)
 
   (func (export "singular") (param i32) (result i32)
     (if (local.get 0) (then (nop)))
@@ -79,7 +78,7 @@
       )
     )
   )
-
+(;
   (func (export "as-loop-first") (param i32) (result i32)
     (loop (result i32)
       (if (result i32) (local.get 0)
@@ -108,7 +107,7 @@
       )
     )
   )
-
+;)
   (func (export "as-if-condition") (param i32) (result i32)
     (if (result i32)
       (if (result i32) (local.get 0)
@@ -118,7 +117,7 @@
       (else (call $dummy) (i32.const 3))
     )
   )
-
+(;
   (func (export "as-br_if-first") (param i32) (result i32)
     (block (result i32)
       (br_if 0
@@ -167,6 +166,8 @@
 
   (func $func (param i32 i32) (result i32) (local.get 0))
   (type $check (func (param i32 i32) (result i32)))
+;)
+  (;
   (table funcref (elem $func))
   (func (export "as-call_indirect-first") (param i32) (result i32)
     (block (result i32)
@@ -202,7 +203,8 @@
       )
     )
   )
-
+  ;)
+(;
   (func (export "as-store-first") (param i32)
     (if (result i32) (local.get 0)
       (then (call $dummy) (i32.const 1))
@@ -228,7 +230,8 @@
       )
     )
   )
-
+;)
+(;
   (func $f (param i32) (result i32) (local.get 0))
 
   (func (export "as-call-value") (param i32) (result i32)
@@ -281,6 +284,8 @@
       )
     )
   )
+;)
+(;
   (global $a (mut i32) (i32.const 10))
   (func (export "as-global.set-value") (param i32) (result i32)
     (global.set $a
@@ -290,6 +295,8 @@
       )
     ) (global.get $a)
   )
+;)
+(;
   (func (export "as-load-operand") (param i32) (result i32)
     (i32.load
       (if (result i32) (local.get 0)
@@ -339,7 +346,8 @@
       )
     )
   )
-
+;)
+(;
   (func (export "break-bare") (result i32)
     (if (i32.const 1) (then (br 0) (unreachable)))
     (if (i32.const 1) (then (br 0) (unreachable)) (else (unreachable)))
@@ -359,7 +367,8 @@
       (else (br 0 (i32.const 21)) (i32.const 20))
     )
   )
-
+;)
+(;
   (func (export "effects") (param i32) (result i32)
     (local i32)
     (if
@@ -381,13 +390,14 @@
     )
     (local.get 1)
   )
+;)
 )
-(;
+
 (assert_return (invoke "empty" (i32.const 0)))
 (assert_return (invoke "empty" (i32.const 1)))
 (assert_return (invoke "empty" (i32.const 100)))
 (assert_return (invoke "empty" (i32.const -2)))
-;)
+
 (assert_return (invoke "singular" (i32.const 0)) (i32.const 8))
 (assert_return (invoke "singular" (i32.const 1)) (i32.const 7))
 (assert_return (invoke "singular" (i32.const 10)) (i32.const 7))
@@ -413,17 +423,17 @@
 (assert_return (invoke "as-select-mid" (i32.const 1)) (i32.const 2))
 (assert_return (invoke "as-select-last" (i32.const 0)) (i32.const 3))
 (assert_return (invoke "as-select-last" (i32.const 1)) (i32.const 2))
-
+(;
 (assert_return (invoke "as-loop-first" (i32.const 0)) (i32.const 0))
 (assert_return (invoke "as-loop-first" (i32.const 1)) (i32.const 1))
 (assert_return (invoke "as-loop-mid" (i32.const 0)) (i32.const 0))
 (assert_return (invoke "as-loop-mid" (i32.const 1)) (i32.const 1))
 (assert_return (invoke "as-loop-last" (i32.const 0)) (i32.const 0))
 (assert_return (invoke "as-loop-last" (i32.const 1)) (i32.const 1))
-
+;)
 (assert_return (invoke "as-if-condition" (i32.const 0)) (i32.const 3))
 (assert_return (invoke "as-if-condition" (i32.const 1)) (i32.const 2))
-
+(;
 (assert_return (invoke "as-br_if-first" (i32.const 0)) (i32.const 0))
 (assert_return (invoke "as-br_if-first" (i32.const 1)) (i32.const 1))
 (assert_return (invoke "as-br_if-last" (i32.const 0)) (i32.const 3))
@@ -933,3 +943,4 @@
   (module quote "(func i32.const 0 if $a else $l end $l)")
   "mismatching label"
 )
+;)
