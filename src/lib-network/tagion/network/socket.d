@@ -1,6 +1,8 @@
 /// Simple c socket wrapper using struct instead of a class
 module tagion.network.socket;
 
+import tagion.network.address;
+
 @safe:
 
 import std.exception;
@@ -68,34 +70,18 @@ struct Socket {
         return (x & O_NONBLOCK) == 0;
     }
 
-    @trusted 
     void bind(string address) {
-        import core.sys.posix.sys.un;
-        assert(domain == AddressFamily.UNIX, "Only unix socket supported currently");
-        sockaddr_un sun;
-        enforce(address.length < sockaddr_un.sun_path.length);
-        // Socket paths can be 0 terminated, however linux abstract addresses require the proper length to be set
-        sun.sun_path = '0';
-        sun.sun_family = AddressFamily.UNIX;
-        sun.sun_path.ptr[0..address.length] = (cast(byte[])address)[];
-        assert(sun.sun_path.ptr !is cast(void*)&address[0]);
-        int rc = sys.bind(fd, cast(sys.sockaddr*)&sun, cast(sys.socklen_t)(sockaddr_un.sun_path.offsetof + address.length));
+        scope const addr = Address(address);
+        Sockaddr sys_addr = addr.toSockAddr();
+        int rc = sys.bind(fd, sys_addr.addr, sys_addr.length);
         last_error = errno;
         socket_check(rc != -1);
     }
 
-    @trusted 
     void connect(string address) {
-        import core.sys.posix.sys.un;
-        assert(domain == AddressFamily.UNIX, "Only unix socket supported currently");
-        sockaddr_un sun;
-        enforce(address.length < sockaddr_un.sun_path.length);
-        // Socket paths can be 0 terminated, however linux abstract addresses require the proper length to be set
-        sun.sun_path = '0';
-        sun.sun_family = AddressFamily.UNIX;
-        sun.sun_path.ptr[0..address.length] = (cast(byte[])address)[];
-        assert(sun.sun_path.ptr !is cast(void*)&address[0]);
-        int rc = sys.connect(fd, cast(sys.sockaddr*)&sun, cast(sys.socklen_t)(sockaddr_un.sun_path.offsetof + address.length));
+        scope const addr = Address(address);
+        Sockaddr sys_addr = addr.toSockAddr();
+        int rc = sys.connect(fd, sys_addr.addr, sys_addr.length);
         last_error = errno;
         socket_check(rc != -1);
     }
