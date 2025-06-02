@@ -1,5 +1,7 @@
 module tagion.network.address;
 
+@safe:
+
 import core.sys.posix.sys.socket;
 import core.sys.posix.sys.un;
 
@@ -51,6 +53,20 @@ struct Address {
         }
     }
 
+    AddressFamily domain() {
+        final switch(scheme) {
+            case Schemes.ipc:
+            case Schemes.abstract_:
+                return AddressFamily.UNIX;
+            case Schemes.tcp:
+                return AddressFamily.INET;
+            case Schemes.tcp6:
+                return AddressFamily.INET6;
+            case Schemes.unknown:
+                return AddressFamily.UNSPEC;
+        }
+    }
+
     string host() const {
         size_t idx = address.countUntil(':');
         if(idx <= 0) {
@@ -95,24 +111,24 @@ struct Address {
     }
 
     @trusted
-    Sockaddr toSockAddr() const {
+    socklen_t toSockAddr(sockaddr* sockaddr_) const {
+        assert(sockaddr_ !is null);
         switch(scheme) {
             case Schemes.abstract_:
-                sockaddr_un* sun = new sockaddr_un;
+                sockaddr_un* sun = cast(sockaddr_un*)sockaddr_;
                 sun.sun_family = AddressFamily.UNIX;
                 // check if the abstract address can fit in in a un addr pluss and extra '\0' byte
                 check(host.length < sockaddr_un.sun_path.length, "address to big for sun addr");
-                sun.sun_path = '0';
                 sun.sun_path[1..host.length+1] = (cast(byte[])host)[];
                 assert(&sun.sun_path[1] !is cast(void*)&host[0]);
-                return Sockaddr(cast(socklen_t)(sockaddr_un.sun_path.offsetof + address.length + 1), cast(sockaddr*)sun);
+                return cast(socklen_t)(sockaddr_un.sun_path.offsetof + host.length + 1);
             case Schemes.ipc:
-                sockaddr_un* sun = new sockaddr_un;
+                sockaddr_un* sun = cast(sockaddr_un*)sockaddr_;
                 check(host.length <= sockaddr_un.sun_path.length, "address to big for sun addr");
-                sun.sun_path = '0';
+                sun.sun_path = '\0';
                 sun.sun_path.ptr[0..host.length] = (cast(byte[])host)[];
                 assert(&sun.sun_path[0] !is cast(void*)&host[0]);
-                return Sockaddr(cast(socklen_t)(sockaddr_un.sun_path.offsetof + address.length), cast(sockaddr*)sun);
+                return cast(socklen_t)(sockaddr_un.sun_path.offsetof + host.length);
             default:
                 assert(0, format("No impl for converting type %s to sockaddr", scheme));
         }

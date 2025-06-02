@@ -16,13 +16,13 @@ class SocketOSException : Exception {
     }
 }
 
-void socket_check(bool check) {
+void socket_check(bool check, string msg = "") {
     import core.stdc.errno;
     import core.stdc.string;
     import std.string;
 
     if(!check) {
-        throw new SocketOSException((() @trusted => fromStringz(strerror(errno)))().idup, errno);
+        throw new SocketOSException((() @trusted => fromStringz(strerror(errno)))().idup ~ msg, errno);
     }
 }
 
@@ -40,12 +40,17 @@ struct Socket {
     protected int fd;
     int last_error;
 
-    AddressFamily domain;
+    Address address;
 
-    this(AddressFamily domain, SocketType type) {
-        this.domain = domain;
-        int protocol = 0;
-        fd = sys.socket(domain, type, protocol);
+    /* 
+     * 
+     * Params:
+     *   address = nng style address
+     */
+    this(string address) {
+        this.address = Address(address);
+        int protocol = 0; // use default for domain
+        fd = sys.socket(this.address.domain, SocketType.STREAM, protocol);
         last_error = errno;
         socket_check(fd != -1);
     }
@@ -70,20 +75,22 @@ struct Socket {
         return (x & O_NONBLOCK) == 0;
     }
 
-    void bind(string address) {
-        scope const addr = Address(address);
-        Sockaddr sys_addr = addr.toSockAddr();
-        int rc = sys.bind(fd, sys_addr.addr, sys_addr.length);
+    @trusted
+    void bind() {
+        sys.sockaddr sys_addr;
+        sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
+        int rc = sys.bind(fd, &sys_addr, sys_addr_len);
         last_error = errno;
-        socket_check(rc != -1);
+        socket_check(rc != -1, address.address);
     }
 
-    void connect(string address) {
-        scope const addr = Address(address);
-        Sockaddr sys_addr = addr.toSockAddr();
-        int rc = sys.connect(fd, sys_addr.addr, sys_addr.length);
+    @trusted
+    void connect() {
+        sys.sockaddr sys_addr;
+        sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
+        int rc = sys.connect(fd, &sys_addr, sys_addr_len);
         last_error = errno;
-        socket_check(rc != -1);
+        socket_check(rc != -1, address.address);
     }
 
 
@@ -102,7 +109,6 @@ struct Socket {
          socket_check(new_fd != -1);
          Socket new_sock;
          new_sock.fd = new_fd;
-         new_sock.domain = domain;
          return new_sock;
     }
 
@@ -126,6 +132,7 @@ struct Socket {
 
     void close() {
         unistd.close(fd);
+        // todo unlink UNIX file address
         last_error = errno;
     }
 

@@ -107,9 +107,9 @@ struct NodeInterface {
 
     // Initial send before a connection has been established with a peer
     void node_send(NodeSend req, Pubkey channel, Document doc) {
-        Socket sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
         string address = address_book[channel].get().address;
-        sock.connect(address);
+        Socket sock = Socket(address);
+        sock.connect();
 
         Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
 
@@ -118,10 +118,10 @@ struct NodeInterface {
 
     void wave_send(WavefrontReq req, Pubkey channel, Document doc) {
         try {
-            Socket sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
             string address = address_book[channel].get().address;
+            Socket sock = Socket(address);
             log("opening connection to %s", address);
-            sock.connect(address);
+            sock.connect();
 
             Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
 
@@ -138,14 +138,17 @@ struct NodeInterface {
         auto scheduler = new FiberScheduler;
         event_listener_tid = spawn(&event_listener, tn.event_listener);
         scheduler.start({
-                listener_sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
-                listener_sock.bind(listen_address);
+                listener_sock = Socket(listen_address);
+                listener_sock.bind();
                 listener_sock.listen(2);
                 log("listening on %s", listen_address);
                 listener_sock.blocking = false;
                 pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
                 event_listener_tid.send(AddPoll(), thisTid, listener_poll);
                 run(&node_send, &wave_send, &accept_conn);
+
+                listener_sock.close();
+                listener_sock.shutdown();
             }
         );
     }
