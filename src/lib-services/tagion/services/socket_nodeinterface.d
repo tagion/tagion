@@ -69,7 +69,12 @@ void event_listener(string task_name) {
                 Tid listener_tid = listeners[fd.fd];
                 send(listener_tid, PollEvent(), fd);
             }
-        } catch(Exception e) {
+        }
+        catch(OwnerTerminated e) {
+            log("Stopping");
+            return;
+        }
+        catch(Exception e) {
             log.fatal(e);
         }
     }
@@ -153,117 +158,126 @@ enum CONNECTION_STATE {
 
 
 void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
-    scope(exit) event_listener_tid.send(RmPoll(), sock.handle);
-    scope ubyte[0x8000] recv_frame; // 32kb
-    enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
+    try {
+        scope(exit) {
+            event_listener_tid.send(RmPoll(), sock.handle);
+            log("connection closed");
+        }
+        scope ubyte[0x8000] recv_frame; // 32kb
+        enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
 
-    log.task_name = format("%s(%s)", tn.node_interface, sock.handle);
-    log("hello");
+        log.task_name = format("%s(%s)", tn.node_interface, sock.handle);
 
-    ActorHandle task_handle;
+        ActorHandle task_handle;
 
-    while(true) {
-        final switch (state) {
-            case state.send:
-                state = CONNECTION_STATE.receive;
-                immutable(ubyte)[] send_buffer;
-                receive(
-                    (NodeSend _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
-                    (dartHiRPCRR.Response _, Document doc) { send_buffer = doc.serialize;  },
-                    (readRecorderRR.Response _, Document doc) { send_buffer = doc.serialize; },
-                    (dartHiRPCRR.Error _, string msg) { /* err */ },
-                    (readRecorderRR.Error _, string msg) { /* err */ },
-                    (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
-                );
-                if(send_buffer.empty) {
-                    // err
-                    return;
-                }
-                // 1. try to send
-                size_t rc = sock.send(send_buffer);
-                log("sent %s bytes", rc);
-                // // 2. if eagain add event listener
-                // if(sock.wouldHaveBlocked()) {
-                //     pollfd pfd = pollfd(sock.handle, POLLOUT);
-                //     event_listener_tid.send(AddPoll(), thisTid(), pfd);
-                // }
-                // // 3. send again
-                // pollfd poll_event;
-                // receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                // if(poll_event.revents & POLLOUT) {
-                //     rc = sock.send(send_buffer);
-                // }
-                // 4. if not everything is sent repeat
-
-                break;
-            case state.receive:
-                state = CONNECTION_STATE.send;
-                ReceiveBuffer receive_buffer;
-                auto result_buffer = receive_buffer(
-                    (scope void[] buf) {
-                        ptrdiff_t rc = sock.receive(buf);
-                        if(sock.wouldHaveBlocked) {
-                            pollfd pfd = pollfd(sock.handle, POLLIN);
-                            event_listener_tid.send(AddPoll(), thisTid(), pfd);
-                            pollfd poll_event;
-                            receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                            if(!(poll_event.revents & POLLIN)) {
-                                return -1;
-                            }
-                            rc = sock.receive(buf);
-                        }
-                        return rc;
-                    }
-                );
-
-                if(result_buffer.size < 0) {
-                    // err
-                    return;
-                }
-                log("recv %s bytes", result_buffer.size);
-
-                Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
-
-                if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
-                    // err
-                    return;
-                }
-
-                HiRPC hirpc = HiRPC(null);
-                const hirpcmsg = hirpc.receive(doc);
-                // if (hirpcmsg.pubkey == this.net.pubkey) {
-                //     // err
-                //     return;
-                // }
-                // if (!hirpcmsg.isSigned) {
-                //     // err
-                //     return;
-                // }
-                if(hirpcmsg.isResponse || hirpcmsg.isError) {
-                    task_handle.send(WavefrontReq(), doc);
-                }
-
-                switch(hirpcmsg.method.name) {
-                    case RPCMethods.dartRead:
-                    case RPCMethods.dartCheckRead:
-                    case RPCMethods.dartBullseye:
-                    case RPCMethods.dartRim:
-                        ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
-                        break;
-                    case RPCMethods.readRecorder:
-                        ActorHandle(tn.replicator).send(readRecorderRR(), doc);
-                        break;
-                    case RPCMethods.wavefront:
-                        task_handle = ActorHandle(tn.epoch_creator);
-                        task_handle.send(WavefrontReq(), doc);
-                        break;
-                    default:
+        while(true) {
+            final switch (state) {
+                case state.send:
+                    state = CONNECTION_STATE.receive;
+                    immutable(ubyte)[] send_buffer;
+                    receive(
+                        (NodeSend _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
+                        (WavefrontReq _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
+                        (dartHiRPCRR.Response _, Document doc) { send_buffer = doc.serialize;  },
+                        (readRecorderRR.Response _, Document doc) { send_buffer = doc.serialize; },
+                        (dartHiRPCRR.Error _, string msg) { /* err */ },
+                        (readRecorderRR.Error _, string msg) { /* err */ },
+                        // (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
+                    );
+                    if(send_buffer.empty) {
                         // err
-                }
+                        return;
+                    }
+                    // 1. try to send
+                    size_t rc = sock.send(send_buffer);
+                    log("sent %s bytes", rc);
+                    // // 2. if eagain add event listener
+                    // if(sock.wouldHaveBlocked()) {
+                    //     pollfd pfd = pollfd(sock.handle, POLLOUT);
+                    //     event_listener_tid.send(AddPoll(), thisTid(), pfd);
+                    // }
+                    // // 3. send again
+                    // pollfd poll_event;
+                    // receive((PollEvent _, pollfd fd) { poll_event = fd; });
+                    // if(poll_event.revents & POLLOUT) {
+                    //     rc = sock.send(send_buffer);
+                    // }
+                    // 4. if not everything is sent repeat
 
-            break;
+                    break;
+                case state.receive:
+                    state = CONNECTION_STATE.send;
+                    ReceiveBuffer receive_buffer;
+                    auto result_buffer = receive_buffer(
+                        (scope void[] buf) {
+                            ptrdiff_t rc = sock.receive(buf);
+                            if(sock.wouldHaveBlocked) {
+                                pollfd pfd = pollfd(sock.handle, POLLIN);
+                                event_listener_tid.send(AddPoll(), thisTid(), pfd);
+                                pollfd poll_event;
+                                receive((PollEvent _, pollfd fd) { poll_event = fd; });
+                                if(!(poll_event.revents & POLLIN)) {
+                                    return -1;
+                                }
+                                rc = sock.receive(buf);
+                            }
+                            return rc;
+                        }
+                    );
+
+                    if(result_buffer.size < 0) {
+                        // err
+                        return;
+                    }
+                    log("recv %s bytes", result_buffer.size);
+
+                    Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
+
+                    if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
+                        // err
+                        return;
+                    }
+
+                    HiRPC hirpc = HiRPC(null);
+                    const hirpcmsg = hirpc.receive(doc);
+                    // if (hirpcmsg.pubkey == this.net.pubkey) {
+                    //     // err
+                    //     return;
+                    // }
+                    // if (!hirpcmsg.isSigned) {
+                    //     // err
+                    //     return;
+                    // }
+                    if(hirpcmsg.isResponse || hirpcmsg.isError) {
+                        task_handle.send(WavefrontReq(), doc);
+                    }
+
+                    switch(hirpcmsg.method.name) {
+                        case RPCMethods.dartRead:
+                        case RPCMethods.dartCheckRead:
+                        case RPCMethods.dartBullseye:
+                        case RPCMethods.dartRim:
+                            ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
+                            break;
+                        case RPCMethods.readRecorder:
+                            ActorHandle(tn.replicator).send(readRecorderRR(), doc);
+                            break;
+                        case RPCMethods.wavefront:
+                            task_handle = ActorHandle(tn.epoch_creator);
+                            task_handle.send(WavefrontReq(), doc);
+                            break;
+                        default:
+                            // err
+                    }
+
+                    break;
+            }
         }
     }
-
-    // cleanup
+    catch(OwnerTerminated e) {
+        return;
+    }
+    catch(Exception e) {
+        log.fatal(e);
+    }
 }
