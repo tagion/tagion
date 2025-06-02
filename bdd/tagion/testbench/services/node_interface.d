@@ -12,7 +12,9 @@ import std.range;
 
 import tagion.actor;
 import tagion.services.nodeinterface;
+import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
+import tagion.services.tasknames;
 import tagion.script.namerecords;
 import tagion.script.standardnames;
 import tagion.communication.HiRPC;
@@ -73,18 +75,22 @@ class PubkeyASendsAMessageToPubkeyB {
     @Given("i have 2 listening node interfaces")
     Document interfaces() @trusted {
         thisActor.task_name = "JumboJet";
+        TaskNames tn;
+        tn.epoch_creator = thisActor.task_name;
 
         { // A
+            tn.node_interface = "interface_a";
             shared _net = cast(shared(StdSecureNet))(a_net.clone());
             immutable nnr = new NetworkNodeRecord(a_net.pubkey, opts_a.node_address);
             addressbook.set(nnr);
-            a_handle = _spawn!NodeInterfaceService("interface_a", opts_a, _net, addressbook, thisActor.task_name);
+            a_handle = _spawn!NodeInterface(tn.node_interface, opts_a.node_address, addressbook, tn);
         }
         { // B
+            tn.node_interface = "interface_b";
             shared _net = cast(shared(StdSecureNet))(b_net.clone());
             immutable nnr = new NetworkNodeRecord(b_net.pubkey, opts_b.node_address);
             addressbook.set(nnr);
-            b_handle = _spawn!NodeInterfaceService("interface_b", opts_b, _net, addressbook, thisActor.task_name);
+            b_handle = _spawn!NodeInterface(tn.node_interface, opts_b.node_address, addressbook, tn);
         }
 
         check(waitforChildren(Ctrl.ALIVE), "No all node_interfaces became alive");
@@ -111,7 +117,7 @@ class PubkeyASendsAMessageToPubkeyB {
             Wavefront wave;
             wave.state = ExchangeState.FIRST_WAVE;
             const sender = HiRPC(b_net).action("fromb2", wave);
-            b_handle.send(WavefrontReq(reqa.id), cast(Pubkey) a_net.pubkey, sender.toDoc);
+            reqa.respond(cast(Pubkey) a_net.pubkey, sender.toDoc);
             receiveOnlyTimeout(1.seconds, (WavefrontReq req, Document doc) {
                 reqb = req;
                 writeln("received ", doc.toPretty);
@@ -125,7 +131,7 @@ class PubkeyASendsAMessageToPubkeyB {
             // End communication by a result
             const tmp_receiver = hirpc.receive(hirpc.action("froma3", wave));
             const sender = hirpc.result(tmp_receiver, Document());
-            a_handle.send(WavefrontReq(reqb.id), cast(Pubkey) b_net.pubkey, sender.toDoc);
+            reqb.respond(cast(Pubkey) b_net.pubkey, sender.toDoc);
             receiveOnlyTimeout(1.seconds, (WavefrontReq _, Document doc) { writeln("received ", doc.toPretty); });
         }
 
