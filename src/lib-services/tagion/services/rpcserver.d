@@ -112,7 +112,8 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     // We copy here because the ubyte* nng gives us is not immutable
     // In most cases this doesn't matter except for "submit" methods
     // Because we are done using the document once the response is set
-    Document doc = msg.body_trim!(ubyte[])(msg.length).idup;
+    // Temporarily disable idup to see if it causes a leak
+    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length); // .idup;
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
