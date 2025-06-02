@@ -7,6 +7,7 @@ import core.sys.posix.poll;
 
 import std.array;
 import std.exception;
+import std.format;
 
 import tagion.crypto.Types;
 import tagion.communication.HiRPC;
@@ -14,6 +15,7 @@ import tagion.communication.Envelope;
 import tagion.script.methods;
 // we use our own socket wrapper based on a struct so we can easily pass it to a different concurrency task
 import tagion.network.socket;
+import tagion.logger;
 import tagion.network.ReceiveBuffer;
 import tagion.actor : ActorHandle, run, Msg, thisActor;
 import tagion.gossip.AddressBook;
@@ -29,37 +31,46 @@ alias AddPoll = Msg!"add_poll";
 enum POLL_TIMEOUT_MS = 100;
 
 @trusted
-void event_listener() {
+void event_listener(string task_name) {
     pollfd[int] poll_fds;
     Tid[int] listeners;
 
     void add_poll(AddPoll, Tid tid, pollfd poll_event) {
+        log("Add poll object %s", poll_event);
         poll_fds[poll_event.fd] = poll_event;
         listeners[poll_event.fd] = tid;
     }
 
     void rm_poll(RmPoll, int fd) {
+        log("Rm poll object %s", fd);
         poll_fds.remove(fd);
         listeners.remove(fd);
     }
 
+    thisActor.task_name = task_name;
+
     while(!thisActor.stop) {
-        bool received;
-        do {
-            receiveTimeout(Duration.zero, &add_poll, &rm_poll);
-        } while(!received);
+        try {
+            bool received;
+            do {
+                received = receiveTimeout(Duration.zero, &add_poll, &rm_poll);
+            } while(received);
 
-        pollfd[] poll_fds_arr = poll_fds.byValue.array;
-        int ready = poll(&poll_fds_arr[0], poll_fds_arr.length, POLL_TIMEOUT_MS);
-        if(ready == -1) continue;
+            pollfd[] poll_fds_arr = poll_fds.byValue.array;
+            int ready = poll(&poll_fds_arr[0], poll_fds_arr.length, POLL_TIMEOUT_MS);
+            if(ready == -1) continue;
 
-        foreach(fd; poll_fds_arr) {
-            if(fd.revents == 0) {
-                continue;
+            foreach(fd; poll_fds_arr) {
+                if(fd.revents == 0) {
+                    continue;
+                }
+                log("Event %s", fd);
+                poll_fds[fd.fd].events = 0;
+                Tid listener_tid = listeners[fd.fd];
+                send(listener_tid, PollEvent(), fd);
             }
-            poll_fds[fd.fd].events = 0;
-            Tid listener_tid = listeners[fd.fd];
-            send(listener_tid, PollEvent(), fd);
+        } catch(Exception e) {
+            log.fatal(e);
         }
     }
 }
@@ -82,6 +93,7 @@ struct NodeInterface {
         if(!(fd.revents & POLLIN)) {
             return;
         }
+        log("new incoming connection");
         Socket new_sock = listener_sock.accept;
         pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
         event_listener_tid.send(AddPoll(), thisTid, listener_poll);
@@ -100,27 +112,35 @@ struct NodeInterface {
     }
 
     void wave_send(WavefrontReq req, Pubkey channel, Document doc) {
-        Socket sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
-        string address = address_book[channel].get().address;
-        sock.connect(address);
+        try {
+            Socket sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
+            string address = address_book[channel].get().address;
+            log("opening connection to %s", address);
+            sock.connect(address);
 
-        Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
+            Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
 
-        conn_tid.send(req, channel, doc);
+            conn_tid.send(req, channel, doc);
+        }
+        catch (Exception e) {
+            log.error(e.msg);
+        }
+
     }
 
     void task() @trusted {
         import std.concurrency : FiberScheduler;
         auto scheduler = new FiberScheduler;
-        event_listener_tid = spawn(&event_listener);
+        event_listener_tid = spawn(&event_listener, tn.event_listener);
         scheduler.start({
                 listener_sock = Socket(AddressFamily.UNIX, SocketType.STREAM);
                 listener_sock.bind(listen_address);
                 listener_sock.listen(2);
+                log("listening on %s", listen_address);
                 listener_sock.blocking = false;
                 pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
                 event_listener_tid.send(AddPoll(), thisTid, listener_poll);
-                run(&node_send, &accept_conn);
+                run(&node_send, &wave_send, &accept_conn);
             }
         );
     }
@@ -137,6 +157,9 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
     scope ubyte[0x8000] recv_frame; // 32kb
     enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
 
+    log.task_name = format("%s(%s)", tn.node_interface, sock.handle);
+    log("hello");
+
     ActorHandle task_handle;
 
     while(true) {
@@ -150,6 +173,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     (readRecorderRR.Response _, Document doc) { send_buffer = doc.serialize; },
                     (dartHiRPCRR.Error _, string msg) { /* err */ },
                     (readRecorderRR.Error _, string msg) { /* err */ },
+                    (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
                 );
                 if(send_buffer.empty) {
                     // err
@@ -157,17 +181,18 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                 }
                 // 1. try to send
                 size_t rc = sock.send(send_buffer);
-                // 2. if eagain add event listener
-                if(sock.wouldHaveBlocked()) {
-                    pollfd pfd = pollfd(sock.handle, POLLOUT);
-                    event_listener_tid.send(AddPoll(), thisTid(), pfd);
-                }
-                // 3. send again
-                pollfd poll_event;
-                receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                if(poll_event.revents & POLLOUT) {
-                    rc = sock.send(send_buffer);
-                }
+                log("sent %s bytes", rc);
+                // // 2. if eagain add event listener
+                // if(sock.wouldHaveBlocked()) {
+                //     pollfd pfd = pollfd(sock.handle, POLLOUT);
+                //     event_listener_tid.send(AddPoll(), thisTid(), pfd);
+                // }
+                // // 3. send again
+                // pollfd poll_event;
+                // receive((PollEvent _, pollfd fd) { poll_event = fd; });
+                // if(poll_event.revents & POLLOUT) {
+                //     rc = sock.send(send_buffer);
+                // }
                 // 4. if not everything is sent repeat
 
                 break;
@@ -195,6 +220,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     // err
                     return;
                 }
+                log("recv %s bytes", result_buffer.size);
 
                 Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
 

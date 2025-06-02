@@ -47,7 +47,12 @@ private struct ActorInfo {
 
     @property @safe
     bool task_name(string name) nothrow const {
-        return log.task_name(name);
+        try {
+            register(name, thisTid);
+            return log.task_name(name);
+        } catch(Exception _) {
+            return false;
+        }
     }
 
     @property @safe

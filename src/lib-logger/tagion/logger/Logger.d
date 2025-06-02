@@ -102,28 +102,10 @@ static struct Logger {
         scope (exit) {
             pop();
         }
-        try {
-            locateLoggerTask();
-
-            const registered = locate(name);
-            const i_am_the_registered = registered is thisTid;
-            if (registered is Tid.init) {
-                register(name, thisTid);
-                _task_name = name;
-                setThreadName(name);
-                return true;
-            }
-            else if (i_am_the_registered) {
-                _task_name = name;
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        catch (Exception e) {
-            return false;
-        }
+        _task_name = name;
+        locateLoggerTask();
+        setThreadName(name);
+        return true;
     }
 
     shared bool silent; /// If true the log is silened (no logs is process from any tasks)
@@ -148,7 +130,7 @@ is ready and has been started correctly
         return logger_tid !is Tid.init;
     }
 
-    private void locateLoggerTask() @trusted const {
+    private void locateLoggerTask() @trusted const nothrow {
         if (!isLoggerServiceRegistered) {
             logger_tid = locate(logger_task_name);
         }
