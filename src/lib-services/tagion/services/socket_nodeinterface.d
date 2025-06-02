@@ -21,6 +21,7 @@ import tagion.actor : ActorHandle, run, Msg, thisActor;
 import tagion.gossip.AddressBook;
 import tagion.services.messages;
 import tagion.services.tasknames;
+import tagion.services.exception;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.hibon.Document;
 
@@ -166,34 +167,44 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
             event_listener_tid.send(RmPoll(), sock.handle);
             log("connection closed");
         }
-        scope ubyte[0x8000] recv_frame; // 32kb
-        enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
 
-        log.task_name = format("%s(%s)", tn.node_interface, sock.handle);
+        HiRPC hirpc = HiRPC(null);
+
+        // scope ubyte[0x8000] recv_frame; // 32kb
+        // enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
+
+        log.task_name = format("%s(%s,%s)", tn.node_interface, thisTid, sock.handle);
 
         ActorHandle task_handle;
 
         while(true) {
             final switch (state) {
                 case state.send:
+                    log("state sending");
                     state = CONNECTION_STATE.receive;
-                    immutable(ubyte)[] send_buffer;
+                    Document send_doc;
                     receive(
-                        (NodeSend _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
-                        (WavefrontReq _, Pubkey channel, Document doc) { send_buffer = doc.serialize; },
-                        (dartHiRPCRR.Response _, Document doc) { send_buffer = doc.serialize;  },
-                        (readRecorderRR.Response _, Document doc) { send_buffer = doc.serialize; },
-                        (dartHiRPCRR.Error _, string msg) { /* err */ },
-                        (readRecorderRR.Error _, string msg) { /* err */ },
-                        // (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
+                        (NodeSend _, Pubkey channel, Document doc) { send_doc = doc; },
+                        (WavefrontReq _, Pubkey channel, Document doc) { send_doc = doc; },
+                        (dartHiRPCRR.Response _, Document doc) { send_doc = doc;  },
+                        (readRecorderRR.Response _, Document doc) { send_doc = doc; },
+                        (dartHiRPCRR.Error _, string msg) { log(msg); },
+                        (readRecorderRR.Error _, string msg) { log(msg); },
+                        (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
                     );
-                    if(send_buffer.empty) {
-                        // err
+                    if(send_doc.empty) {
                         return;
                     }
-                    // 1. try to send
-                    size_t rc = sock.send(send_buffer);
+
+                    size_t rc = sock.send(send_doc.serialize);
                     log("sent %s bytes", rc);
+                    const hirpcmsg = hirpc.receive(send_doc);
+
+                    if(hirpcmsg.isResponse || hirpcmsg.isError) {
+                        sock.close();
+                        return;
+                    }
+
                     // // 2. if eagain add event listener
                     // if(sock.wouldHaveBlocked()) {
                     //     pollfd pfd = pollfd(sock.handle, POLLOUT);
@@ -209,12 +220,14 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
 
                     break;
                 case state.receive:
+                    log("state recv");
                     state = CONNECTION_STATE.send;
                     ReceiveBuffer receive_buffer;
                     auto result_buffer = receive_buffer(
                         (scope void[] buf) {
                             ptrdiff_t rc = sock.receive(buf);
                             if(sock.wouldHaveBlocked) {
+                                log("send wouldHaveBlocked");
                                 pollfd pfd = pollfd(sock.handle, POLLIN);
                                 event_listener_tid.send(AddPoll(), thisTid(), pfd);
                                 pollfd poll_event;
@@ -237,11 +250,8 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
 
                     if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
-                        // err
-                        return;
+                        check(false, "doc not in order");
                     }
-
-                    HiRPC hirpc = HiRPC(null);
                     const hirpcmsg = hirpc.receive(doc);
                     // if (hirpcmsg.pubkey == this.net.pubkey) {
                     //     // err
@@ -253,6 +263,9 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     // }
                     if(hirpcmsg.isResponse || hirpcmsg.isError) {
                         task_handle.send(WavefrontReq(), doc);
+                        sock.shutdown();
+                        sock.close();
+                        return;
                     }
 
                     switch(hirpcmsg.method.name) {
@@ -272,7 +285,6 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                         default:
                             // err
                     }
-
                     break;
             }
         }
