@@ -14,11 +14,11 @@ The consensus between network nodes is achieved by a version of the SWIRLDS [Has
 
 The Tagion Mainnet is designed to become highly decentralized, with security guaranteed through the innovative "[proof of community](https://docs.tagion.org/gov/governance_areas/network_formation/tagion)" and randomised rotation of validator nodes. 
 
-This is supplemented with [federated Subsystems](https://docs.tagion.org/gov/intro/network) which are independent in their governance, including node permissions and privacy setting. However, these Subsystems are required to submit regular signets of their current state to the Mainnet. This way, the Mainnet provides a quasi-public notary service and verification layer to the individual business and use-cases of the Subsystems, enhancing confidence and trust in any multi-stakeholder setting. 
+This is supplemented with [Federated Subsystems](https://docs.tagion.org/gov/intro/network) which are independent in their governance, including node permissions and privacy setting. However, these Subsystems are required to submit regular signets of their current state to the Mainnet. This way, the Mainnet provides a quasi-public notary service and verification layer to the individual business and use-cases of the Subsystems, enhancing confidence and trust in any multi-stakeholder setting. 
 
 Usage of the Tagion Mainnet is charged for in it's native [TGN utility tokens](https://docs.tagion.org/gov/governance_areas/token_economy/utility_token). 
 
-The Tagion technology stack was conceived of in 2017 and remains under continuous development by [Decard AG](https://www.decard.io/), the current stewardship entity guiding Tagion through to full deployment and decentralisation. All code is published open-source and use of the Tagion Mainnet as well as the operation of federated Subsystems does not incur licencing fees. 
+The Tagion technology stack was conceived of in 2017 and remains under continuous development by [Decard AG](https://www.decard.io/), the current stewardship entity guiding Tagion through to full deployment and decentralisation. All code is published open-source and use of the Tagion Mainnet as well as the operation of Federated Subsystems does not incur licencing fees. 
 
 The development and deployment of all aspects of the Tagion project have to comply with the guiding principles described in the [Tagion governance manifesto](https://docs.tagion.org/gov/intro/manifesto). 
 
