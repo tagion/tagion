@@ -140,9 +140,10 @@ struct Socket {
         return last_error == EAGAIN;
     }
 
-    void shutdown(int how = sys.SHUT_RDWR) {
+    int shutdown(int how = sys.SHUT_RDWR) {
         // Shutdown read/write
-        sys.shutdown(fd, how);
+        int rc = sys.shutdown(fd, how);
         last_error = errno;
+        return rc;
     }
 }

@@ -143,14 +143,16 @@ unittest {
     assert(abs_addr.scheme == Schemes.abstract_);
     assert(abs_addr.host == "mysocket:local", abs_addr.host);
     assertThrown(abs_addr.port);
-    assertNotThrown(abs_addr.toSockAddr);
+    scope sockaddr addr;
+    assertNotThrown(abs_addr.toSockAddr(&addr));
     }
     {
     Address ipc_addr = Address("ipc:///mysocket.local");
     assert(ipc_addr.scheme == Schemes.ipc);
     assert(ipc_addr.host == "/mysocket.local", ipc_addr.host);
     assertThrown(ipc_addr.port);
-    assertNotThrown(ipc_addr.toSockAddr);
+    scope sockaddr addr;
+    assertNotThrown(ipc_addr.toSockAddr(&addr));
     }
     {
     const ip4_addr = Address("tcp://localhost:9000");
