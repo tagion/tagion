@@ -96,9 +96,9 @@ collaboration, and contribution.
 ### 4. Autonomy
 Tagion shall operate fully autonomously, never relying on any
 external entity to function. It shall enable users to launch
-federated Subsystems with bespoke governance and provide the
+Federated Subsystems with bespoke governance and provide the
 greatest possible independence and versatility of these systems,
-while maintaining the integrity of the federated whole.
+while maintaining the integrity of the Federated whole.
 
 ### 5. Transparency
 All rules of the Tagion system and the amounts transacted
@@ -109,7 +109,7 @@ development shall be published.
 ### 6. Privacy and Anonymity
 Users of the decentralised Tagion Mainnet shall have full
 ownership and control over their personal data and how much of
-their identity they disclose to other parties. On federated
+their identity they disclose to other parties. On Federated
 Subsystems it shall be made possible to balance transparency,
 privacy and anonymity to allow for diverse use cases and all
 compliance requirements.
