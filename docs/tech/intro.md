@@ -1,13 +1,13 @@
 ---
-sidebar_class_name: hidden
 sidebar_label: Tech-Pages Intro
+sidebar_position: 0
 ---
 
-# Draft: Tagion's Tech Documentation
+# Tagion's Tech Documentation
 
 Welcome to the documentation pages of the Tagion project.
 
-On this site, you will find the current design and state of our [architecture](https://docs.tagion.org/tech/architecture), [protocols](https://docs.tagion.org/tech/protocols), how to [set up and use Tagion](https://docs.tagion.org/tech/guide) for yourself, and more (see side-menu).  
+On this site, you will find the current design and state of our [architecture](/tech/architecture), [protocols](/tech/protocols), how to [set up and use Tagion](/tech/guide) for yourself, and more (see side-menu).  
 
 For an overview of what Tagion "is", have a look at the following [short description](/gov/intro/tagion) and the project's [website tagion.org](https://tagion.org).
 
@@ -29,7 +29,7 @@ Currently, Tagion is developed by Decard ([www.decard.io](https://www.decard.io/
 
 The Mainnet has been launched in a closed environment in December 2023, and a phased release process towards distribution and decentralization is scheduled to commence in the second half of 2025.
 
-The development of Tagion's network governance is documented on an adjacent site - see ["Gov"](https://docs.tagion.org/gov/intro) in the main menu.  
+The development of Tagion's network governance is documented on an adjacent site - see ["Gov"](/gov/intro) in the main menu.  
 
 As our manifesto states, we use the word "decentralised" to mean a system in which no entity can impose its will and interests on the rest of the users and participants. 
 This also means that the governance of a decentralised system cannot be established upfront by the founders but must be co-developed, tested and refined with its stakeholders. 
