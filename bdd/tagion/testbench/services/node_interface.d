@@ -95,6 +95,8 @@ class PubkeyASendsAMessageToPubkeyB {
             addressbook.set(nnr);
             b_handle = _spawn!NodeInterface(tn.node_interface, opts_b.node_address, addressbook, tn);
         }
+        import core.thread;
+        Thread.sleep(100.msecs);
 
         check(waitforChildren(Ctrl.ALIVE), "No all node_interfaces became alive");
 

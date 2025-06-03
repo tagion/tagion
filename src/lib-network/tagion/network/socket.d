@@ -77,7 +77,7 @@ struct Socket {
 
     @trusted
     void bind() {
-        sys.sockaddr sys_addr;
+        scope sys.sockaddr sys_addr;
         sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
         int rc = sys.bind(fd, &sys_addr, sys_addr_len);
         last_error = errno;
@@ -86,7 +86,7 @@ struct Socket {
 
     @trusted
     void connect() {
-        sys.sockaddr sys_addr;
+        scope sys.sockaddr sys_addr;
         sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
         int rc = sys.connect(fd, &sys_addr, sys_addr_len);
         last_error = errno;

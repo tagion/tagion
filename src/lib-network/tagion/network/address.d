@@ -111,7 +111,7 @@ struct Address {
     }
 
     @trusted
-    socklen_t toSockAddr(sockaddr* sockaddr_) const {
+    socklen_t toSockAddr(scope sockaddr* sockaddr_) const {
         assert(sockaddr_ !is null);
         switch(scheme) {
             case Schemes.abstract_:
