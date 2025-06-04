@@ -40,7 +40,7 @@ struct Socket {
     protected int fd;
     int last_error;
 
-    Address address;
+    NNGAddress address;
 
     /* 
      * 
@@ -48,7 +48,7 @@ struct Socket {
      *   address = nng style address
      */
     this(string address) {
-        this.address = Address(address);
+        this.address = NNGAddress(address);
         int protocol = 0; // use default for domain
         fd = sys.socket(this.address.domain, SocketType.STREAM, protocol);
         last_error = errno;
@@ -77,18 +77,16 @@ struct Socket {
 
     @trusted
     void bind() {
-        scope sys.sockaddr sys_addr;
-        sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
-        int rc = sys.bind(fd, &sys_addr, sys_addr_len);
+        scope sock_addr = address.toSockAddr();
+        int rc = sys.bind(fd, sock_addr.name, sock_addr.nameLen);
         last_error = errno;
         socket_check(rc != -1, address.address);
     }
 
     @trusted
     void connect() {
-        scope sys.sockaddr sys_addr;
-        sys.socklen_t sys_addr_len = address.toSockAddr(&sys_addr);
-        int rc = sys.connect(fd, &sys_addr, sys_addr_len);
+        scope sock_addr = address.toSockAddr();
+        int rc = sys.connect(fd, sock_addr.name, sock_addr.nameLen);
         last_error = errno;
         socket_check(rc != -1, address.address);
     }

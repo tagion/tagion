@@ -10,7 +10,8 @@ import std.conv;
 import std.format;
 import std.algorithm;
 import tagion.errors.tagionexceptions;
-import std.socket : AddressFamily, InternetAddress;
+import std.socket : AddressFamily, Address;
+static import std.socket;
 
 class AddressException : TagionException {
     @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__)
@@ -34,10 +35,10 @@ struct Sockaddr {
     const sockaddr* addr;
 }
 
-struct Address {
+struct NNGAddress {
     string address;
 
-    Schemes scheme() const {
+    Schemes scheme() const pure {
         size_t idx = address.countUntil(':');
         if(idx <= 0) {
             return Schemes.unknown;
@@ -53,7 +54,7 @@ struct Address {
         }
     }
 
-    AddressFamily domain() {
+    AddressFamily domain() pure {
         final switch(scheme) {
             case Schemes.ipc:
             case Schemes.abstract_:
@@ -67,7 +68,7 @@ struct Address {
         }
     }
 
-    string host() const {
+    string host() const pure {
         size_t idx = address.countUntil(':');
         if(idx <= 0) {
             return Schemes.unknown;
@@ -96,7 +97,7 @@ struct Address {
         return host;
     }
 
-    ushort port() const {
+    ushort port() const pure {
         size_t port_sep;
         foreach_reverse(i, c; address) {
             if(c == ':') {
@@ -110,60 +111,65 @@ struct Address {
         return address[port_sep + 1..$].to!ushort;
     }
 
-    @trusted
-    socklen_t toSockAddr(scope sockaddr* sockaddr_) const {
-        assert(sockaddr_ !is null);
+    Address toSockAddr() const {
         switch(scheme) {
             case Schemes.abstract_:
-                sockaddr_un* sun = cast(sockaddr_un*)sockaddr_;
-                sun.sun_family = AddressFamily.UNIX;
-                // check if the abstract address can fit in in a un addr pluss and extra '\0' byte
-                check(host.length < sockaddr_un.sun_path.length, "address to big for sun addr");
-                sun.sun_path[1..host.length+1] = (cast(byte[])host)[];
-                assert(&sun.sun_path[1] !is cast(void*)&host[0]);
-                return cast(socklen_t)(sockaddr_un.sun_path.offsetof + host.length + 1);
+                string host_str = '\0' ~ host;
+                auto un = new std.socket.UnixAddress(host_str);
+                return un;
             case Schemes.ipc:
-                sockaddr_un* sun = cast(sockaddr_un*)sockaddr_;
-                check(host.length <= sockaddr_un.sun_path.length, "address to big for sun addr");
-                sun.sun_path = '\0';
-                sun.sun_path.ptr[0..host.length] = (cast(byte[])host)[];
-                assert(&sun.sun_path[0] !is cast(void*)&host[0]);
-                return cast(socklen_t)(sockaddr_un.sun_path.offsetof + host.length);
+                auto un = new std.socket.UnixAddress(host);
+                return un;
+            case Schemes.tcp:
+                auto in4 = new std.socket.InternetAddress(host, port);
+                return in4;
+            case Schemes.tcp6:
+                auto in6 = new std.socket.Internet6Address(host, port);
+                return in6;
             default:
-                assert(0, format("No impl for converting type %s to sockaddr", scheme));
+                check(false, format("No impl for converting type %s to sockaddr", scheme));
         }
-        assert(0, "TODO!");
+        assert(0, "Unreachable!");
     }
 }
 
 unittest {
     import std.exception;
     {
-    const abs_addr = Address("abstract://mysocket:local");
+    const abs_addr = NNGAddress("abstract://interface_addr12345");
     assert(abs_addr.scheme == Schemes.abstract_);
-    assert(abs_addr.host == "mysocket:local", abs_addr.host);
+    assert(abs_addr.host == "interface_addr12345", abs_addr.host);
     assertThrown(abs_addr.port);
-    scope sockaddr addr;
-    assertNotThrown(abs_addr.toSockAddr(&addr));
+    Address addr = abs_addr.toSockAddr();
+    assert(addr.nameLen > 0);
+    assert(addr.name.sa_family == AddressFamily.UNIX);
     }
     {
-    Address ipc_addr = Address("ipc:///mysocket.local");
+    const ipc_addr = NNGAddress("ipc:///mysocket.local");
     assert(ipc_addr.scheme == Schemes.ipc);
     assert(ipc_addr.host == "/mysocket.local", ipc_addr.host);
     assertThrown(ipc_addr.port);
-    scope sockaddr addr;
-    assertNotThrown(ipc_addr.toSockAddr(&addr));
+    Address addr = ipc_addr.toSockAddr();
+    assert(addr.nameLen > 0);
+    assert(addr.name.sa_family == AddressFamily.UNIX);
     }
     {
-    const ip4_addr = Address("tcp://localhost:9000");
+    const ip4_addr = NNGAddress("tcp://localhost:9000");
     assert(ip4_addr.scheme == Schemes.tcp);
     assert(ip4_addr.host == "localhost", ip4_addr.host);
     assert(ip4_addr.port == 9000);
+    Address addr = ip4_addr.toSockAddr();
+    assert(addr.nameLen > 0);
+    assert(addr.name.sa_family == AddressFamily.INET);
     }
     {
-    const ip6_addr = Address("tcp6://[::1]:9000");
+    const ip6_addr = NNGAddress("tcp6://[::1]:9000");
     assert(ip6_addr.scheme == Schemes.tcp6);
+    // Fix parse ip6 addr
     assert(ip6_addr.host == "[::1]", ip6_addr.host);
     assert(ip6_addr.port == 9000);
+    // Address addr = ip6_addr.toSockAddr();
+    // assert(addr.nameLen > 0);
+    // assert(addr.name.sa_family == AddressFamily.INET6);
     }
 }
