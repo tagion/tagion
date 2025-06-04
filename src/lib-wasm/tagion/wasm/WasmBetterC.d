@@ -773,6 +773,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             bool _label_defined;
             BlockKind _kind;
         }
+        bool returned;
         @disable this();
         this(Context ctx,
                 const ref ExprRange.IRElement elm,
@@ -949,9 +950,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     bout.writefln("%s//### setLocal", indent);
                 }
             }
-
+            //bool set_return;
             void setResults(Block* target_blk) {
+                bout.writefln("%s// setResults %d", indent, ctx.current.id);
                 auto blk = ctx.current;
+                if (blk.returned) {
+                    return;
+                }
                 if (!blk.isVoidType) {
                     const blk_types = types(blk.elm);
                     const target_blk_types = (target_blk) ? types(target_blk.elm) : blk_types;
@@ -977,7 +982,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
-            bool set_local;
             while (!expr.empty) {
                 const elm = expr.front;
                 expr.popFront;
@@ -997,8 +1001,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
                         break;
                     case RETURN:
-                        set_local = false;
-                        bout.writefln("%s%s %s;", indent, elm.instr.name, results_value);
+                        //set_return = true;
+                        ctx.current.returned = true;
+                            bout.writefln("%sreturn %s;// block %d ", indent, results_value, ctx.current.id);
                         break;
                     case OP_STACK:
                         switch (elm.code) {
@@ -1016,7 +1021,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case BLOCK_CONDITIONAL:
                     case BLOCK:
-                        set_local = true;
                         auto block_bout = new OutBuffer;
                         auto block = ctx.create(elm);
                         scope (exit) {
@@ -1039,7 +1043,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         innerBlock(block_bout, expr, indent ~ spacer);
                         declareBlock(ctx.current);
-                        bout.writefln("%s%s // BEGIN", indent, block.begin);
+                        bout.writefln("%s%s // BEGIN %d", indent, block.begin, ctx.current.id);
                         bout.write(block_bout);
                         setResults(null);
                         bout.writefln("%s%s // END", indent, block.end);
@@ -1066,8 +1070,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const target_index = ctx.index(lth);
                             auto target_block = ctx[target_index];
-                            setLocal;
-
+                            
+                                    //setLocal;
+                            setResults(target_block);
+                            ctx.current.returned = true;
+                                   version(none) 
                             if ((lth > 0) && !ctx.current.isVoidType) {
                                 bout.writefln("%s%s = %s;", indent, target_block.result,
                                         ctx.current.result);
