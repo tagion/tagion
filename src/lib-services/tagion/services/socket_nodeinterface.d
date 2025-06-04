@@ -175,12 +175,11 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
     try {
         // count how many times this connection has sent or received some data
         uint statistic_state_change;
-        // sock.blocking = false;
 
         scope(exit) {
+            event_listener_tid.send(RmPoll(), sock.handle);
             sock.shutdown();
             sock.close();
-            event_listener_tid.send(RmPoll(), sock.handle);
             log("connection closed %s", statistic_state_change);
         }
 
@@ -217,7 +216,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     do {
                         sent = sock.send(serialized_doc[(sent == 0)? sent : sent+1 .. $]);
                         // todo if the op would have blocked wait for it to be ready 
-                        check(sent != -1, "Failed to send");
+                        socket_check(sent != -1, "Failed to send");
                         total_sent += sent;
                     } while(total_sent < serialized_doc.length);
 
@@ -236,18 +235,18 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     debug(nodeinterface) log("state recv");
                     state = CONNECTION_STATE.send;
                     ReceiveBuffer receive_buffer;
+                    // receive_buffer will keep calling the callback until the entire document has been received
                     auto result_buffer = receive_buffer(
                         (scope void[] buf) {
                             ptrdiff_t rc = sock.receive(buf);
                             if(sock.wouldHaveBlocked) {
                                 debug(nodeinterface) log("send wouldHaveBlocked");
-                                pollfd pfd = pollfd(sock.handle, POLLIN);
+                                pollfd pfd = pollfd(sock.handle, POLLIN | POLLHUP);
                                 event_listener_tid.send(AddPoll(), thisTid(), pfd);
                                 pollfd poll_event;
                                 receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                                if(!(poll_event.revents & POLLIN)) {
-                                    return -1;
-                                }
+                                check(!(poll_event.revents & POLLHUP), "remote closed while receiving");
+                                check(poll_event.revents & POLLIN, "socket event but was not ready to read");
                                 rc = sock.receive(buf);
                             }
                             return rc;
