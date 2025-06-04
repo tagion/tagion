@@ -135,7 +135,7 @@ struct Socket {
     }
 
     bool wouldHaveBlocked() {
-        return last_error == EAGAIN;
+        return last_error == EAGAIN || last_error == EWOULDBLOCK;
     }
 
     int shutdown(int how = sys.SHUT_RDWR) {
