@@ -17,7 +17,7 @@ struct ReceiveBuffer {
 
     const(ResultBuffer) opCall(const Receive receive) {
         if (!buffer) {
-            buffer = new ubyte[START_SIZE];
+            buffer = new ubyte[](START_SIZE);
         }
         size_t pos;
         ptrdiff_t total_size = -1;

@@ -68,7 +68,7 @@ void event_listener(string task_name) {
                 if(fd.revents == 0) {
                     continue;
                 }
-                log("Event %s", fd);
+                debug(nodeinterface) log("Event %s", fd);
                 poll_fds[fd.fd].events = 0;
                 Tid listener_tid = listeners[fd.fd];
                 send(listener_tid, PollEvent(), fd);
@@ -186,7 +186,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
 
         log.task_name = format("%s(%s,%s)", tn.node_interface, thisTid, sock.handle);
 
-        actor.ActorHandle task_handle;
+        string method;
 
         while(true) {
             statistic_state_change++;
@@ -205,29 +205,32 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                         // (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
                     );
                     if(send_doc.empty) {
-                        log("empty doc");
+                        debug(nodeinterface) log("empty doc");
                         return;
                     }
 
                     size_t rc = sock.send(send_doc.serialize);
                     // TODO retry if not everything sent
-                    log("sent %s bytes", rc);
+                    debug(nodeinterface) log("sent %s bytes", rc);
                     const hirpcmsg = hirpc.receive(send_doc);
 
-                    if(hirpcmsg.isResponse || hirpcmsg.isError) {
-                        return;
+                    if(hirpcmsg.isMethod) {
+                        method = hirpcmsg.method.name;
+                    }
+                    else {
+                        return; // close connection
                     }
 
                     break;
                 case state.receive:
-                    log("state recv");
+                    debug(nodeinterface) log("state recv");
                     state = CONNECTION_STATE.send;
                     ReceiveBuffer receive_buffer;
                     auto result_buffer = receive_buffer(
                         (scope void[] buf) {
                             ptrdiff_t rc = sock.receive(buf);
                             if(sock.wouldHaveBlocked) {
-                                log("send wouldHaveBlocked");
+                                debug(nodeinterface) log("send wouldHaveBlocked");
                                 pollfd pfd = pollfd(sock.handle, POLLIN);
                                 event_listener_tid.send(AddPoll(), thisTid(), pfd);
                                 pollfd poll_event;
@@ -242,10 +245,10 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     );
 
                     if(result_buffer.size <= 0) {
-                        // err
-                        return;
+                            // err
+                            return;
                     }
-                    log("recv %s bytes", result_buffer.size);
+                    debug(nodeinterface) log("recv %s bytes", result_buffer.size);
 
                     Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
 
@@ -262,36 +265,30 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     //     return;
                     // }
 
-                    Tid epoch_tid = locate(tn.epoch_creator);
-                    epoch_tid.send(WavefrontReq(), doc);
-
-                    if(hirpcmsg.isResponse || hirpcmsg.isError) {
-                        // task_handle.send(WavefrontReq(), doc);
-                        return;
+                    if(hirpcmsg.isMethod) {
+                        method = hirpcmsg.method.name;
                     }
 
-                    break;
-
-
-                    version(none)
-                    switch(hirpcmsg.method.name) {
+                    switch(method) {
                         case RPCMethods.dartRead:
                         case RPCMethods.dartCheckRead:
                         case RPCMethods.dartBullseye:
                         case RPCMethods.dartRim:
-                            actor.ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
+                            locate(tn.dart).send(dartHiRPCRR(), doc);
                             break;
                         case RPCMethods.readRecorder:
-                            actor.ActorHandle(tn.replicator).send(readRecorderRR(), doc);
+                            locate(tn.replicator).send(readRecorderRR(), doc);
                             break;
                         case RPCMethods.wavefront:
-                            task_handle = actor.ActorHandle(tn.epoch_creator);
-                            task_handle.send(WavefrontReq(), doc);
+                            locate(tn.epoch_creator).send(WavefrontReq(), doc);
                             break;
                         default:
                             check(false, format("Unsupported method %s", hirpcmsg.method.name));
                     }
-                    break;
+
+                    if(hirpcmsg.isResponse || hirpcmsg.isError) {
+                        return; // close connection;
+                    }
             }
         }
     }
