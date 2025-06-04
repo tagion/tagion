@@ -150,7 +150,7 @@ struct NodeInterface {
         // scheduler.start({
                 listener_sock = Socket(listen_address);
                 listener_sock.bind();
-                listener_sock.listen(2);
+                listener_sock.listen(128);
                 log("listening on %s", listen_address);
                 listener_sock.blocking = false;
                 pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
@@ -173,7 +173,9 @@ enum CONNECTION_STATE {
 @trusted
 void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
     try {
+        // count how many times this connection has sent or received some data
         uint statistic_state_change;
+        // sock.blocking = false;
 
         scope(exit) {
             sock.shutdown();
@@ -209,9 +211,17 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                         return;
                     }
 
-                    size_t rc = sock.send(send_doc.serialize);
-                    // TODO retry if not everything sent
-                    debug(nodeinterface) log("sent %s bytes", rc);
+                    size_t total_sent;
+                    size_t sent;
+                    immutable(ubyte)[] serialized_doc = send_doc.serialize;
+                    do {
+                        sent = sock.send(serialized_doc[(sent == 0)? sent : sent+1 .. $]);
+                        // todo if the op would have blocked wait for it to be ready 
+                        check(sent != -1, "Failed to send");
+                        total_sent += sent;
+                    } while(total_sent < serialized_doc.length);
+
+                    debug(nodeinterface) log("sent %s bytes", total_sent);
                     const hirpcmsg = hirpc.receive(send_doc);
 
                     if(hirpcmsg.isMethod) {
