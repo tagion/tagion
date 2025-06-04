@@ -54,7 +54,7 @@ struct NNGAddress {
         }
     }
 
-    AddressFamily domain() pure {
+    AddressFamily domain() const pure {
         final switch(scheme) {
             case Schemes.ipc:
             case Schemes.abstract_:
@@ -89,6 +89,9 @@ struct NNGAddress {
                     }
                     check(port_sep != 0, format("address missing port %s", address));
                     host = host[0..port_sep];
+                    if(scheme.tcp6 && host.length > 2 && host[0] == '[') {
+                        host = host[1..$-1]; // remove '[' ... ']'
+                    }
                 break;
                 default:
                     break;
@@ -118,14 +121,11 @@ struct NNGAddress {
                 auto un = new std.socket.UnixAddress(host_str);
                 return un;
             case Schemes.ipc:
-                auto un = new std.socket.UnixAddress(host);
-                return un;
+                return new std.socket.UnixAddress(host);
             case Schemes.tcp:
-                auto in4 = new std.socket.InternetAddress(host, port);
-                return in4;
+                return new std.socket.InternetAddress(host, port);
             case Schemes.tcp6:
-                auto in6 = new std.socket.Internet6Address(host, port);
-                return in6;
+                return new std.socket.Internet6Address(host, port);
             default:
                 check(false, format("No impl for converting type %s to sockaddr", scheme));
         }
@@ -154,9 +154,9 @@ unittest {
     assert(addr.name.sa_family == AddressFamily.UNIX);
     }
     {
-    const ip4_addr = NNGAddress("tcp://localhost:9000");
+    const ip4_addr = NNGAddress("tcp://127.0.0.1:9000");
     assert(ip4_addr.scheme == Schemes.tcp);
-    assert(ip4_addr.host == "localhost", ip4_addr.host);
+    assert(ip4_addr.host == "127.0.0.1", ip4_addr.host);
     assert(ip4_addr.port == 9000);
     Address addr = ip4_addr.toSockAddr();
     assert(addr.nameLen > 0);
@@ -165,11 +165,10 @@ unittest {
     {
     const ip6_addr = NNGAddress("tcp6://[::1]:9000");
     assert(ip6_addr.scheme == Schemes.tcp6);
-    // Fix parse ip6 addr
-    assert(ip6_addr.host == "[::1]", ip6_addr.host);
+    assert(ip6_addr.host == "::1", ip6_addr.host);
     assert(ip6_addr.port == 9000);
-    // Address addr = ip6_addr.toSockAddr();
-    // assert(addr.nameLen > 0);
-    // assert(addr.name.sa_family == AddressFamily.INET6);
+    Address addr = ip6_addr.toSockAddr();
+    assert(addr.nameLen > 0);
+    assert(addr.name.sa_family == AddressFamily.INET6);
     }
 }
