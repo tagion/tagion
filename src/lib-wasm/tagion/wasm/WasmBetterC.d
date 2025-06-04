@@ -589,7 +589,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     push(blk.result ~ "/* push */");
                     return;
                 }
-                foreach_reverse (i; 0 .. block_types.length) {
+                foreach(i; 0 .. block_types.length) {
                     const value = assumeWontThrow(format("(%s[%d] /* %d */)", blk.result, i, i));
                     push(value);
                 }
