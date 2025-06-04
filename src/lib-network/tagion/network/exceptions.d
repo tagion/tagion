@@ -1,3 +1,5 @@
+module tagion.network.exceptions;
+
 import tagion.errors.tagionexceptions;
 
 @safe

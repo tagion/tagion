@@ -10,6 +10,7 @@ import std.exception;
 import std.format;
 
 import tagion.crypto.Types;
+import tagion.crypto.SecureNet;
 import tagion.communication.HiRPC;
 import tagion.communication.Envelope;
 import tagion.script.methods;
@@ -17,7 +18,7 @@ import tagion.script.methods;
 import tagion.network.socket;
 import tagion.logger;
 import tagion.network.ReceiveBuffer;
-import tagion.actor : ActorHandle, run, Msg, thisActor;
+import actor = tagion.actor;
 import tagion.gossip.AddressBook;
 import tagion.services.messages;
 import tagion.services.tasknames;
@@ -25,9 +26,9 @@ import tagion.services.exception;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.hibon.Document;
 
-alias PollEvent = Msg!"poll_event";
-alias RmPoll = Msg!"rm_poll";
-alias AddPoll = Msg!"add_poll";
+alias PollEvent = actor.Msg!"poll_event";
+alias RmPoll = actor.Msg!"rm_poll";
+alias AddPoll = actor.Msg!"add_poll";
 
 enum POLL_TIMEOUT_MS = 100;
 
@@ -48,9 +49,11 @@ void event_listener(string task_name) {
         listeners.remove(fd);
     }
 
-    thisActor.task_name = task_name;
+    actor.thisActor.task_name = task_name;
 
-    while(!thisActor.stop) {
+    actor.setState(actor.Ctrl.ALIVE);
+    scope(exit) actor.setState(actor.Ctrl.END);
+    while(!actor.thisActor.stop) {
         try {
             bool received;
             do {
@@ -71,6 +74,10 @@ void event_listener(string task_name) {
                 send(listener_tid, PollEvent(), fd);
             }
         }
+        catch(PriorityMessageException) {
+            log("stopping priority message");
+            return;
+        }
         catch(OwnerTerminated e) {
             log("Stopping");
             return;
@@ -87,9 +94,11 @@ struct NodeInterface {
     Tid event_listener_tid;
     Socket listener_sock;
     TaskNames tn;
+    shared(SecureNet) shared_net;
 
-    this(string address, shared(AddressBook) address_book, TaskNames task_names) {
+    this(string address, shared(SecureNet) shared_net, shared(AddressBook) address_book, TaskNames task_names) {
         this.listen_address = address;
+        this.shared_net = shared_net;
         this.address_book = address_book;
         this.tn = task_names;
     }
@@ -138,7 +147,7 @@ struct NodeInterface {
         import std.concurrency : FiberScheduler;
         auto scheduler = new FiberScheduler;
         event_listener_tid = spawn(&event_listener, tn.event_listener);
-        scheduler.start({
+        // scheduler.start({
                 listener_sock = Socket(listen_address);
                 listener_sock.bind();
                 listener_sock.listen(2);
@@ -146,12 +155,12 @@ struct NodeInterface {
                 listener_sock.blocking = false;
                 pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
                 event_listener_tid.send(AddPoll(), thisTid, listener_poll);
-                run(&node_send, &wave_send, &accept_conn);
+                actor.waitforChildren(actor.Ctrl.ALIVE);
+                actor.run(&node_send, &wave_send, &accept_conn);
 
-                listener_sock.close();
                 listener_sock.shutdown();
-            }
-        );
+                listener_sock.close();
+        // });
     }
 }
 
@@ -161,23 +170,26 @@ enum CONNECTION_STATE {
 }
 
 
+@trusted
 void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
     try {
+        uint statistic_state_change;
+
         scope(exit) {
+            sock.shutdown();
+            sock.close();
             event_listener_tid.send(RmPoll(), sock.handle);
-            log("connection closed");
+            log("connection closed %s", statistic_state_change);
         }
 
         HiRPC hirpc = HiRPC(null);
 
-        // scope ubyte[0x8000] recv_frame; // 32kb
-        // enum MAX_RECEIVE_SIZE = 1_000_000; // 1MB
-
         log.task_name = format("%s(%s,%s)", tn.node_interface, thisTid, sock.handle);
 
-        ActorHandle task_handle;
+        actor.ActorHandle task_handle;
 
         while(true) {
+            statistic_state_change++;
             final switch (state) {
                 case state.send:
                     log("state sending");
@@ -190,33 +202,21 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                         (readRecorderRR.Response _, Document doc) { send_doc = doc; },
                         (dartHiRPCRR.Error _, string msg) { log(msg); },
                         (readRecorderRR.Error _, string msg) { log(msg); },
-                        (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
+                        // (Variant v) @trusted { throw new Exception(format("Unknown message %s", v)); },
                     );
                     if(send_doc.empty) {
+                        log("empty doc");
                         return;
                     }
 
                     size_t rc = sock.send(send_doc.serialize);
+                    // TODO retry if not everything sent
                     log("sent %s bytes", rc);
                     const hirpcmsg = hirpc.receive(send_doc);
 
                     if(hirpcmsg.isResponse || hirpcmsg.isError) {
-                        sock.close();
                         return;
                     }
-
-                    // // 2. if eagain add event listener
-                    // if(sock.wouldHaveBlocked()) {
-                    //     pollfd pfd = pollfd(sock.handle, POLLOUT);
-                    //     event_listener_tid.send(AddPoll(), thisTid(), pfd);
-                    // }
-                    // // 3. send again
-                    // pollfd poll_event;
-                    // receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                    // if(poll_event.revents & POLLOUT) {
-                    //     rc = sock.send(send_buffer);
-                    // }
-                    // 4. if not everything is sent repeat
 
                     break;
                 case state.receive:
@@ -241,7 +241,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                         }
                     );
 
-                    if(result_buffer.size < 0) {
+                    if(result_buffer.size <= 0) {
                         // err
                         return;
                     }
@@ -261,29 +261,35 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
                     //     // err
                     //     return;
                     // }
+
+                    Tid epoch_tid = locate(tn.epoch_creator);
+                    epoch_tid.send(WavefrontReq(), doc);
+
                     if(hirpcmsg.isResponse || hirpcmsg.isError) {
-                        task_handle.send(WavefrontReq(), doc);
-                        sock.shutdown();
-                        sock.close();
+                        // task_handle.send(WavefrontReq(), doc);
                         return;
                     }
 
+                    break;
+
+
+                    version(none)
                     switch(hirpcmsg.method.name) {
                         case RPCMethods.dartRead:
                         case RPCMethods.dartCheckRead:
                         case RPCMethods.dartBullseye:
                         case RPCMethods.dartRim:
-                            ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
+                            actor.ActorHandle(tn.dart).send(dartHiRPCRR(), doc);
                             break;
                         case RPCMethods.readRecorder:
-                            ActorHandle(tn.replicator).send(readRecorderRR(), doc);
+                            actor.ActorHandle(tn.replicator).send(readRecorderRR(), doc);
                             break;
                         case RPCMethods.wavefront:
-                            task_handle = ActorHandle(tn.epoch_creator);
+                            task_handle = actor.ActorHandle(tn.epoch_creator);
                             task_handle.send(WavefrontReq(), doc);
                             break;
                         default:
-                            // err
+                            check(false, format("Unsupported method %s", hirpcmsg.method.name));
                     }
                     break;
             }
@@ -292,7 +298,8 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
     catch(OwnerTerminated e) {
         return;
     }
-    catch(Exception e) {
+    catch(Throwable e) {
         log.fatal(e);
+        return;
     }
 }
