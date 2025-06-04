@@ -321,17 +321,6 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
-
-                // If the actor forgets to kill it's children we'll do it anyway
-                if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; thisActor.childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            ActorHandle(child_task_name).send(Sig.STOP);
-                        }
-                    }
-                    waitforChildren(Ctrl.END);
-                }
-
             }
             catch (Exception t) {
                 fail(t);
@@ -369,15 +358,6 @@ if (isActor!A) {
                 A actor = A(args);
                 setState(Ctrl.STARTING); // Tell the owner that you are starting.
                 actor.task();
-                // If the actor forgets to kill it's children we'll do it anyway
-                if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; thisActor.childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            ActorHandle(child_task_name).prioritySend(Sig.STOP);
-                        }
-                    }
-                    /* waitforChildren(Ctrl.END); */
-                }
             }
             catch (Exception t) {
                 fail(t);
@@ -450,7 +430,7 @@ void setState(Ctrl ctrl) @safe nothrow {
     try {
         log("setting state to %s", ctrl);
         assert(thisActor.task_name !is string.init, "Can not set the state for a task with no name");
-        ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
+        ownerTid.send(CtrlMsg(thisActor.task_name, ctrl));
     }
     catch (TidMissingException e) {
         log.error("Failed to set state %s", e.message);
