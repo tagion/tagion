@@ -1,7 +1,9 @@
 module tagion.network.ReceiveBuffer;
 
 import std.typecons : Tuple;
+import std.format;
 
+import tagion.network.exceptions;
 import LEB128 = tagion.utils.LEB128;
 
 @safe:
@@ -14,12 +16,13 @@ struct ReceiveBuffer {
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
 
     const(ResultBuffer) opCall(const Receive receive) {
-        if (buffer is null) {
+        if (!buffer) {
             buffer = new ubyte[START_SIZE];
         }
         size_t pos;
         ptrdiff_t total_size = -1;
-        while (total_size < 0 || pos <= total_size) {
+        while (total_size < 0 || pos < total_size) {
+            assert(pos != buffer.length, format("pos == buffer_len %s", pos));
             const len = receive(buffer[pos .. $]);
             if (len == 0) {
                 return ResultBuffer(pos, buffer[0 .. pos]);
@@ -33,11 +36,9 @@ struct ReceiveBuffer {
                 if (LEB128.isComplete(buffer[0 .. pos])) {
                     const leb128_len = LEB128.decode!size_t(buffer);
                     total_size = leb128_len.value + leb128_len.size;
-                    if (total_size > max_size) {
-                        return ResultBuffer(-2, null);
-                    }
-                    if (buffer.length <= total_size) {
-                        buffer.length = total_size;
+                    check(total_size <= max_size, format("total_size %s > max_size %s", total_size, max_size));
+                    if (buffer.length < total_size) {
+                        buffer.length = total_size; // realloc if the expected buffer doesn't fit in the initial size;
                     }
                     if (pos >= total_size) {
                         break;
