@@ -978,7 +978,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             bout.writefln("%s%s = %s; // setResults %d", indent, result_local, target_locals[i], local_count);
                         }
                     }
-                        local_count++;
+                    local_count++;
                 }
             }
 
@@ -1002,8 +1002,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case RETURN:
                         //set_return = true;
-                        ctx.current.returned = true;
-                            bout.writefln("%sreturn %s;// block %d ", indent, results_value, ctx.current.id);
+                        if (ctx.number_of_blocks) {
+                            ctx.current.returned = true;
+                        }
+                        bout.writefln("%sreturn %s;", indent, results_value);
                         break;
                     case OP_STACK:
                         switch (elm.code) {
@@ -1070,15 +1072,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                                     lth, ctx.number_of_blocks));
                             const target_index = ctx.index(lth);
                             auto target_block = ctx[target_index];
-                            
-                                    //setLocal;
+
+                            //setLocal;
                             setResults(target_block);
                             ctx.current.returned = true;
-                                   version(none) 
-                            if ((lth > 0) && !ctx.current.isVoidType) {
-                                bout.writefln("%s%s = %s;", indent, target_block.result,
-                                        ctx.current.result);
-                            }
+                            version (none)
+                                if ((lth > 0) && !ctx.current.isVoidType) {
+                                    bout.writefln("%s%s = %s;", indent, target_block.result,
+                                            ctx.current.result);
+                                }
 
                             scope (exit) {
                                 uint count;
