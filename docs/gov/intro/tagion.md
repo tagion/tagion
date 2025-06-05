@@ -1,8 +1,8 @@
 ---
 sidebar_class_name: hidden
-sidebar_label: What Tagion is
+sidebar_label: What is Tagion
 ---
-# Draft: What is Tagion
+# What is Tagion
 
 Tagion is the name of a groundbraking distributed database technology that combines highly efficient protocols for inter-node communication, consensus and decentralisation. 
 
