@@ -16,11 +16,11 @@ The Tagion Mainnet is designed to become highly decentralized, with security gua
 
 This is supplemented with [Federated Subsystems](https://docs.tagion.org/gov/intro/network) which are independent in their governance, including node permissions and privacy setting. However, these Subsystems are required to submit regular signets of their current state to the Mainnet. This way, the Mainnet provides a quasi-public notary service and verification layer to the individual business and use-cases of the Subsystems, enhancing confidence and trust in any multi-stakeholder setting. 
 
-Usage of the Tagion Mainnet is charged for in it's native [TGN utility tokens](https://docs.tagion.org/gov/governance_areas/token_economy/utility_token). 
+Utilisation of Tagion Technology, be it on the Mainnet or through a Federated Subsystems, incures usage fees payable in Tagion's native [TGN utility tokens](https://docs.tagion.org/gov/governance_areas/token_economy/utility_token).
 
-The Tagion technology stack was conceived of in 2017 and remains under continuous development by [Decard AG](https://www.decard.io/), the current stewardship entity guiding Tagion through to full deployment and decentralisation. All code is published open-source and use of the Tagion Mainnet as well as the operation of Federated Subsystems does not incur licencing fees. 
+The Tagion technology stack was conceived of in 2017 and remains under continuous development by [Decard AG](https://www.decard.io/),partly funded by tokens sales through Decard Services GmbH. Together, Decard Group  forms the initial stewardship entity guiding Tagion through to full deployment and decentralisation. All code is published open-source and use of Tagion Mainnet and operation of Federated Subsystems do not incur licencing fees for propriotary technologies and patents. 
 
-The development and deployment of all aspects of the Tagion project have to comply with the guiding principles described in the [Tagion governance manifesto](https://docs.tagion.org/gov/intro/manifesto). 
+Now and going forward, the development and deployment of all aspects of the Tagion project have to comply with the guiding principles described in the [Tagion governance manifesto](https://docs.tagion.org/gov/intro/manifesto). 
 
 A [non-technical step-by-step description](https://docs.tagion.org/gov/intro/jargonbusting) of the functionality of Tagion can be found on the adjacent governance development and documentation pages, which also cover questions of sybil resistance and tokenomics. 
 
