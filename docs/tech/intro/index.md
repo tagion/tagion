@@ -1,5 +1,5 @@
 ---
-sidebar_label: Tech-Pages Intro
+sidebar_label: Introduction
 sidebar_position: 0
 ---
 
