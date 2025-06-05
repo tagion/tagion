@@ -16,10 +16,10 @@ jobs:
         uses: actions/checkout@v4
       - name: docker build
         run: | 
-          docker build . -t tagion/tagion:${{ github.ref_name }}
+          docker build . -t tagion/tagion:${{ github.sha }}
       - name: Extract static binary
         run: |
-          id=$(docker create tagion/tagion:${{ github.ref_name }})
+          id=$(docker create tagion/tagion:${{ github.sha }})
           docker cp $id:/usr/local/bin/tagion tagion
           docker rm -v $id
 
