@@ -23,6 +23,7 @@ import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
 import tagion.services.epoch_creator;
 import tagion.services.mode0_nodeinterface;
+import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.services.options : NetworkMode;
@@ -57,18 +58,21 @@ class SendPayloadAndCreateEpoch {
     Node[] nodes;
     ActorHandle[] handles;
     Document send_payload;
+    bool mode1_comm;
 
     shared(AddressBook) addressbook;
 
-    this(EpochCreatorOptions epoch_creator_options, uint number_of_nodes) {
+    this(EpochCreatorOptions epoch_creator_options, bool mode1_comm, uint number_of_nodes) {
         import tagion.services.options;
 
         this.addressbook = new shared(AddressBook);
         this.number_of_nodes = number_of_nodes;
+        this.mode1_comm = mode1_comm;
 
         foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
-            immutable task_names = TaskNames(prefix);
+            auto task_names = TaskNames(prefix);
+            task_names.node_interface = format("abstract://node%s", i);
             auto net = createSecureNet;
             net.generateKeyPair(task_names.epoch_creator);
             shared shared_net = (() @trusted => cast(shared) net)();
@@ -87,12 +91,23 @@ class SendPayloadAndCreateEpoch {
         register("epoch_creator_tester", thisTid);
 
         foreach (n; nodes) {
-            handles ~= _spawn!Mode0NodeInterfaceService(
-                    n.task_names.node_interface,
-                    n.node_net,
-                    addressbook,
-                    n.task_names,
-            );
+            if(mode1_comm) {
+                handles ~= _spawn!NodeInterface(
+                        n.task_names.node_interface,
+                        n.task_names.node_interface,
+                        n.node_net,
+                        addressbook,
+                        n.task_names,
+                );
+            }
+            else {
+                handles ~= _spawn!Mode0NodeInterfaceService(
+                        n.task_names.node_interface,
+                        n.node_net,
+                        addressbook,
+                        n.task_names,
+                );
+            }
 
             handles ~= spawn!EpochCreatorService(
                     n.task_names.epoch_creator,
