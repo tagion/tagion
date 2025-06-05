@@ -28,8 +28,7 @@ A [non-technical step-by-step description](https://docs.tagion.org/gov/intro/jar
 
 :::info[Previous Documentation]
 
-Since 2019, preliminary ideas and concepts about Tagion had been described in "Technical", "Concept" and "Tokenomics" papers, published in PDF format.  
-They are all considered superseded by the information on these pages - everything current is now found here. 
+Since 2019, preliminary ideas and concepts about Tagion had been described in "Technical", "Concept" and "Tokenomics" papers, published in PDF format. They are all considered superseded by the information on these pages - everything current is now found here. 
 
 But if you are interested in the history of our thinking, you can find the old publications in our [archive](https://docs.tagion.org/gov/intro/archive).
 :::
