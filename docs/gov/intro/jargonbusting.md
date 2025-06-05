@@ -27,9 +27,10 @@ ___
 
 **Subsystem:** a bespoke network of _nodes_ for a particular use-case, independent of the Tagion _Mainnet_ in terms of rules and settings. It hosts its own _database_ and sends regular hashed/encrypted status updates to the _Mainnet_ (for validation and notary functions, further explained below). Because of this, _Subsystems_ are here called "federated" with the Tagion _Mainnet_.
 
-**Database:** large file with archived information that is maintained in/by the _node_ software ("DART" is the name of Tagion's custom-designed database system, further explained below)
+**Database:** structured system to store, manage and retreive data. Akin to a filing cabinet with labled drawers, rather than to the records in the drawers. 
+"DART" is the name of Tagion's custom-designed database system (further explained below) maintained in/by the Tagion _node_ software
 
-**App:** _user_-interface to make changes to the _database_, it sends info about changes to a _node_
+**App:** _user_-interface to make changes to the _database_, it sends info about intented changes to a _node_
 
 **Transaction:** unit of _database_-changes (add, edit, delete), including but not limited to currency related _transactions_
 
@@ -47,13 +48,13 @@ This information can be new (it will be added to the _database_ - see above), or
 
 The _app_ they use is built upon  -  and sometimes still called -   a "wallet application", a term inherited from the Tagion _Mainnet_ with it's principle use-cases centered around financial _transactions_ ("JustPay" is such a wallet application, more information about it on the [Decard website](https://www.decard.io/justpay)). The _application_ packages the information to be entered into the _database_. Next to the basic data-input and additional required information (timestamp, user identity, references to other data, required permissions) this might also contain conditional instructions for the node to "execute". This why the whole information package is here called a (smart) "contract" -a term inherited from "blockchain" and "DLT" concepts, which will be explained below.
 
-These _contracts_ are sent to a _node_ (see above, or [here for all details](https://docs.tagion.org/tech/architecture)) via the internet or local communication networks. To enable swift transmission under most bandwidth conditions, _[contracts](https://docs.tagion.org/tech/protocols/transactions/contract)_ are structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve the utmost efficiency in terms of storage and computing requirements for the network.
+These _contracts_ are sent to a _node_ (see above, or [here for all details](https://docs.tagion.org/tech/architecture)) via the internet or local communication networks. To enable swift transmission under most bandwidth conditions, _[contracts](https://docs.tagion.org/tech/protocols/transactions/contract)_ are structured/written according to our custom "HiRPC" communication format, which in turn is based on our general data format called "[HiBON](https://docs.tagion.org/tech/protocols/hibon)". We felt compelled to design those new formats to achieve highest level of security and flexibility for control of data at the record level. At the same time, these formats allow for the utmost efficiency in terms of storage and computing requirements for the network.
 
 ## Distribution: from one node to many
 
-The receiving _node_ [checks the information](https://docs.tagion.org/tech/protocols/transactions) sent in the _contract_ against the information already existing in its locally stored _database_ (e.g. if user identities and permissions are valid and other data is referenced correctly). Results are preliminarily stored in the memory of the _node's_ "[virtual machine](https://docs.tagion.org/tech/architecture/TVM)" - the computation and execution software interpreting the operations specified in a contract. Since those operations can be much more complex than simply "add this information to the database", _contracts_ in such advanced distribtued systems are called "smart", which sometimes also implies "self-executing". 
+The receiving _node_ [checks the information](https://docs.tagion.org/tech/protocols/transactions) sent in the _contract_ against the information already existing in its locally stored _database_ (e.g. if user identities and permissions are valid and other data is referenced correctly). Results are preliminarily stored in the memory of the _node's_ "[virtual machine](https://docs.tagion.org/tech/architecture/TVM)"  - the computation and execution software interpreting the operations specified in a contract. The Tagion Virtual Machine (TVM) is built on the popular open WebAssembly standard. Since those operations can be much more complex than simply "add this information to the database", _contracts_ in such advanced distribtued systems are called "smart", which sometimes also implies "self-executing". 
 
-However, for the moment nothing is entered into the database. Because in a "distributed" system without central control, all _nodes_ need to make sure they maintain the same (copy of the) _database_ and don't make changes to it without coordination. Thus, the _node_ will first notify other _nodes_ in the network about the receipt of any new contract and their contents. 
+However, for the moment none of the results of executing a contract is committed to the database. Because in a "distributed" system without central control, all _nodes_ need to make sure they maintain their individual copies of the _database_ in accurate synchonisation and don't make changes to it without coordination. Thus, the _nodes_ will first notify other _nodes_ in the network about the receipt of any new contract and their contents. 
 
 This continuous communicate between _nodes_ does not only concern _contracts_ they received individually, but also  _contracts_ submitted to other nodes which they consequently heard about. This propagation of information is here called "gossip about gossip". And in this way, all _nodes_ will eventually know of all recent submissions to the whole network - at least up to a certain point in the (not-so-distant) past.    
 
@@ -61,7 +62,9 @@ For everything before that point, a network-wide agreement about a correct and c
 
 This way the information in the network is synchronised up to the recent moment of _consensus_, and the resulting shared version of all individual _database(s)_ is called the "state" of the network (as in "state of play" or "the current situation"). 
 
-How _consensus_ on the _state_ of the network is achieved is different from one distributed network to the next. So called "blockchains" offered the first popular solution for _consensus_ without a central authority. And when the practical limitations of _blockchains_ became obvious and new solutions were sought, the collective term "DLTs" was introduced - which stands for "distributed ledger technologies" . The "ledger" part of that term was again inherited from the early use-cases of _DLTs_ in currency transactions and accounting.
+How _consensus_ on the _state_ of the network is achieved is different from one distributed network to the next. So called "blockchains" offered the first popular solution for _consensus_ without a central authority. And when the practical limitations of _blockchains_ became obvious and new solutions were sought, the collective term "DLTs" was introduced - which stands for "distributed ledger technologies" . The "ledger" part of that term was again inherited from the early use-cases of _DLTs_ in currency transactions and accounting. 
+
+Tagion however, as a network of distributed databases, has utilty far beyond ledger based accounting. But to understanding the concept and implementation of _consensus_ it is useful to consider its heritage. 
 
 ## Consensus: how nodes know what other know
 
