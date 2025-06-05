@@ -170,7 +170,7 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Tech Documentation',
+            title: 'Resources',
             items: [
               {
                 label: 'HiBON',
