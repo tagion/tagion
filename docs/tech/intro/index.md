@@ -9,7 +9,7 @@ Welcome to the documentation pages of the Tagion project.
 
 On this site, you will find the current design and state of our [architecture](/tech/architecture), [protocols](/tech/protocols), how to [set up and use Tagion](/tech/guide) for yourself, and more (see side-menu).  
 
-For an overview of what Tagion "is", have a look at the following [short description](/intro/tagion) and the project's [website tagion.org](https://tagion.org).
+For an overview of what Tagion "is", have a look at the following [short description](/tech/intro/tagion) and the project's [website tagion.org](https://tagion.org).
 
 
 
