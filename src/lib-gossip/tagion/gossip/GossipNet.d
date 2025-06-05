@@ -92,7 +92,7 @@ class NodeGossipNet : StdGossipNet {
     }
 
     override void send(Pubkey channel, const(HiRPC.Sender) sender) {
-        WavefrontReq req; 
+        WavefrontReq req = WavefrontReq();
         req.tid = nodeinterface.tid;
         send(req, channel, sender);
     }
