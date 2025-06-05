@@ -10,7 +10,7 @@ It combines a suite of privacy, transparency and data-control options previously
 
 It is based upon a patented database called DART - the "[Distributed Archive of Random Transactions](https://docs.tagion.org/tech/protocols/dart)". It allows for data-control (own,read, write, share) at the archive level. 
 
-**For enhanced security, the DART functions on a custom dataformat called [HiBON](https://www.hibon.org/posts/hibonproperties/) (Hash invariant Binary Object Notation), which features native ownership and control at the record level, easy verifyability, and unprecedented low storage and bandwidth requirments.**  
+**For enhanced security and native ownership and control at the record level, the DART functions on a custom dataformat called [HiBON](https://www.hibon.org/posts/hibonproperties/) (Hash invariant Binary Object Notation), which features easy verifyability and unprecedented low storage and bandwidth requirments.**  
 
 The consensus between network nodes is achieved by a version of the SWIRLDS [Hashgraph protocol](https://docs.tagion.org/tech/protocols/consensus/HashGraph), enhanced by [patented Wavefront](https://docs.tagion.org/tech/protocols/wavefront) communication protocol that achieves minimal overheads as an Atomic Broadcast Protocol.  It features a high tolerance toward Byzantine Faults (only 2/3 of all nodes need to be compliant) and provides fast and deterministic finality with fair timebased ordering. 
 
