@@ -1143,7 +1143,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.BR_TABLE:
                             auto br_table = elm.wargs.map!(w => w.get!uint);
                             scope (exit) {
-                                while (!expr.empty && expr.front.code != IR.END) {
+                                while (!expr.empty && (expr.front.code != IR.END && expr.front.code !is IR.ELSE)) {
                                     expr.popFront;
                                 }
                             }
