@@ -8,7 +8,7 @@ Tagion is the name of a groundbraking distributed database technology that combi
 
 It combines a suite of **privacy, transparency and data-control** options previously only found, in part, in traditional databases or DLT systems respectively. 
 
-It is based upon a patented database called **DART** - the "[Distributed Archive of Random Transactions](https://docs.tagion.org/tech/protocols/dart)". It allows for data-control (own,read, write, share) at the archive level. 
+It is based upon a patented database called **DART** - which stands for "[Distributed Archive of Random Transactions](https://docs.tagion.org/tech/protocols/dart)". It allows for data-control (own,read, write, share) at the archive level. 
 
 For enhanced security and native ownership and control at the record level, the DART functions on a custom dataformat called [**HiBON**](https://www.hibon.org/posts/hibonproperties/) (Hash invariant Binary Object Notation), which features easy verifyability and unprecedented low storage, bandwidth and processing power requirments. It is also the basis of our bespoke communication format [**HiRPC**](https://www.hibon.org/posts/hirpc/). 
 
