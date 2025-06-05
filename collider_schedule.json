@@ -200,6 +200,12 @@
       "stages": ["commit", "epoch"],
       "timeout": 0.0
     },
+    "epoch_creator_mode1": {
+      "args": ["mode1"],
+      "envs": {},
+      "stages": ["acceptance"],
+      "timeout": 0.0
+    },
     "tvm_service": {
       "args": [],
       "envs": {},
