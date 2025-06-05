@@ -12,7 +12,7 @@ It is based upon a patented database called [**DART**](https://docs.tagion.org/t
 
 The consensus between network nodes is achieved by a version of the SWIRLDS [**Hashgraph**](https://docs.tagion.org/tech/protocols/consensus/HashGraph) protocol, enhanced by patented [**Wavefront**](https://docs.tagion.org/tech/protocols/wavefront) communication protocol that achieves minimal overheads as an Atomic Broadcast Protocol.  It features a high tolerance toward Byzantine Faults (only 2/3 of all nodes need to be compliant) and provides **fast and deterministic** finality with timebased **fair ordering**. 
 
-Tagion's stateless smart contracts enable parallel excution on the **Tagion Virtual Machine** (TVM) which is based on the open WebAssembly standard.
+Tagion's stateless smart contracts enable parallel excution on the [**Tagion Virtual Machine**](https://docs.tagion.org/tech/architecture/TVM) (TVM) which is based on the open WebAssembly standard.
 
 The **Tagion Mainnet** is designed to become highly decentralized, with security guaranteed through the innovative "[**proof of community**](https://docs.tagion.org/gov/governance_areas/network_formation/tagion)" protocol and randomised rotation of validator nodes. 
 
