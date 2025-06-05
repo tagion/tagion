@@ -6,6 +6,9 @@ sidebar_label: 101 - How Tagion works
 
 _Written by [Decard](https://www.decard.io) - the initial stewardship company of the Tagion platform._
 
+:::info[Final Version pending]
+This is an advanced draft (last edit June 3rd 2025), final edits of some details and descriptions are pending. Once complete, this message will be removed.
+:::
 
 :::tip[Jargon Bustin']
 
