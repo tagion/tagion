@@ -5,7 +5,7 @@
 user_install() {
     INSTALL=${INSTALL:-${HOME}/.local/bin}
     mkdir -p "$INSTALL"
-    install -m +x usr/bin/tagion "$INSTALL"
+    install -m 755 usr/bin/tagion "$INSTALL"
     "$INSTALL/tagion" -s
 }
 
