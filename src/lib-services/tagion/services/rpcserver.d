@@ -10,9 +10,10 @@ import std.array;
 import std.algorithm : map, canFind, startsWith;
 import std.stdio;
 import std.format;
-import std.exception : assumeWontThrow;
+import std.exception;
 
 import tagion.actor;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
@@ -112,8 +113,13 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
     // We copy here because the ubyte* nng gives us is not immutable
     // In most cases this doesn't matter except for "submit" methods
     // Because we are done using the document once the response is set
-    Document doc = msg.body_trim!(ubyte[])(msg.length).idup;
-    msg.clear();
+    Document doc; {
+        ubyte[] doc_buf = new ubyte[](msg.length);
+        doc_buf[] = msg.body_trim!(ubyte[])(msg.length)[];
+        assert(doc_buf.ptr !is msg.bodyptr);
+        msg.clear();
+        doc = Document(doc_buf.assumeUnique);
+    }
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
         msg.set_error_msg(ServiceCode.hirpc);
