@@ -4,6 +4,7 @@ module tagion.services.socket_nodeinterface;
 
 import core.time;
 import core.sys.posix.poll;
+import core.stdc.errno;
 
 import std.array;
 import std.exception;
@@ -60,6 +61,8 @@ void event_listener(string task_name) {
                 received = receiveTimeout(Duration.zero, &add_poll, &rm_poll);
             } while(received);
 
+            if(poll_fds.empty) continue;
+
             pollfd[] poll_fds_arr = poll_fds.byValue.array;
             assert(poll_fds_arr.length <= uint.max);
             int ready = poll(&poll_fds_arr[0], cast(uint)poll_fds_arr.length, POLL_TIMEOUT_MS);
@@ -83,8 +86,9 @@ void event_listener(string task_name) {
             log("Stopping");
             return;
         }
-        catch(Exception e) {
+        catch(Throwable e) {
             log.fatal(e);
+            return;
         }
     }
 }
@@ -185,7 +189,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
     }
 }
 
-void connection_impl(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
+void connection_impl(Tid event_listener_tid, TaskNames tn, Socket sock, CONNECTION_STATE state) {
     // count how many times this connection has sent or received some data
     uint statistic_state_change;
 
@@ -223,6 +227,12 @@ void connection_impl(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECT
                 return;
             }
 
+            pollfd pfd = pollfd(sock.handle, POLLOUT | POLLHUP);
+            event_listener_tid.send(AddPoll(), thisTid(), pfd);
+            pollfd poll_event;
+            receive((PollEvent _, pollfd fd) { poll_event = fd; });
+            check(cast(bool)(poll_event.revents & POLLOUT), format("event should be ready to send %s", poll_event));
+
             size_t total_sent;
             size_t sent;
             immutable(ubyte)[] serialized_doc = send_doc.serialize;
@@ -258,19 +268,19 @@ void connection_impl(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECT
                         event_listener_tid.send(AddPoll(), thisTid(), pfd);
                         pollfd poll_event;
                         receive((PollEvent _, pollfd fd) { poll_event = fd; });
-                        check(!(poll_event.revents & POLLHUP), "remote closed while receiving");
-                        check(poll_event.revents & POLLIN, "socket event but was not ready to read");
+                        check(cast(bool)(poll_event.revents & POLLIN), format("event should be ready to recv %s", poll_event));
                         rc = sock.receive(buf);
                     }
                     return rc;
                 }
             );
 
+            debug(nodeinterface) log("recv %s bytes", result_buffer.size);
+
             if(result_buffer.size <= 0) {
                     // err
                     return;
             }
-            debug(nodeinterface) log("recv %s bytes", result_buffer.size);
 
             Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
 
