@@ -47,6 +47,7 @@ struct Socket {
      * Params:
      *   address = nng style address
      */
+    @trusted
     this(string address) {
         this.address = NNGAddress(address);
         int protocol = 0; // use default for domain
@@ -55,7 +56,8 @@ struct Socket {
         socket_check(fd != -1);
     }
 
-    void blocking(bool byes) @trusted {
+    @trusted 
+    void blocking(bool byes) {
         import core.sys.posix.fcntl;
         int x = fcntl(fd, F_GETFL, 0);
         socket_check(-x != -1);
@@ -91,7 +93,7 @@ struct Socket {
         socket_check(rc != -1, address.address);
     }
 
-
+    @trusted
     void listen(int backlog) {
         int rc = sys.listen(fd, backlog);
         last_error = errno;
@@ -138,6 +140,7 @@ struct Socket {
         return last_error == EAGAIN || last_error == EWOULDBLOCK;
     }
 
+    @trusted
     int shutdown(int how = sys.SHUT_RDWR) {
         // Shutdown read/write
         int rc = sys.shutdown(fd, how);

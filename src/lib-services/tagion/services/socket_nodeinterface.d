@@ -61,7 +61,8 @@ void event_listener(string task_name) {
             } while(received);
 
             pollfd[] poll_fds_arr = poll_fds.byValue.array;
-            int ready = poll(&poll_fds_arr[0], poll_fds_arr.length, POLL_TIMEOUT_MS);
+            assert(poll_fds_arr.length <= uint.max);
+            int ready = poll(&poll_fds_arr[0], cast(uint)poll_fds_arr.length, POLL_TIMEOUT_MS);
             if(ready == -1) continue;
 
             foreach(fd; poll_fds_arr) {
