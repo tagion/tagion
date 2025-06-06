@@ -187,7 +187,7 @@ int _main(string[] args) {
     ]; // ~ args;
     Tid tid = spawn(&wrap_neuewelle, neuewelle_args);
     string test_task_name = "genesis_testing";
-    log.task_name = test_task_name;
+    thisActor.task_name = test_task_name;
     log.registerSubscriptionTask(test_task_name);
 
     Thread.sleep(15.seconds);

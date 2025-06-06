@@ -74,10 +74,6 @@ abstract class StdGossipNet : GossipNet {
     }
 
     void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender);
-
-    void send(Pubkey channel, const(HiRPC.Sender) sender) {
-        send(WavefrontReq(), channel, sender);
-    }
 }
 
 private void sleep(Duration dur) @trusted {
@@ -85,6 +81,7 @@ private void sleep(Duration dur) @trusted {
 }
 
 class NodeGossipNet : StdGossipNet {
+    import tagion.utils.pretend_safe_concurrency;
     uint delay;
     private ActorHandle nodeinterface;
     this(uint avrg_delay_msecs, ActorHandle nodeinterface, shared(AddressBook) addressbook) {
@@ -94,13 +91,19 @@ class NodeGossipNet : StdGossipNet {
         super(addressbook);
     }
 
+    override void send(Pubkey channel, const(HiRPC.Sender) sender) {
+        WavefrontReq req = WavefrontReq();
+        req.tid = nodeinterface.tid;
+        send(req, channel, sender);
+    }
+
     override void send(WavefrontReq req, Pubkey channel, const(HiRPC.Sender) sender) {
         version (RANDOM_DELAY)
             sleep((cast(int) uniform(0.5f, 1.5f, random) * delay).msecs);
         else
             sleep(delay.msecs);
 
-        nodeinterface.send(WavefrontReq(req.id), channel, sender.toDoc);
+        req.tid.send(WavefrontReq(req.id), channel, sender.toDoc);
         debug (EPOCH_LOG) {
             log.trace("sending to %s (Node_%s) %d bytes", channel.encodeBase64, _pkeys.countUntil(channel), sender
                     .toDoc.serialize.length);

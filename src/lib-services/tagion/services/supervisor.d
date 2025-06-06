@@ -39,6 +39,7 @@ else {
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
 import tagion.services.mode0_nodeinterface;
+import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
 
@@ -118,13 +119,24 @@ struct Supervisor {
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
-            node_interface_handle = _spawn!NodeInterfaceService(
-                    tn.node_interface,
-                    opts.node_interface,
-                    shared_net,
-                    addressbook,
-                    tn.epoch_creator
-            );
+            version(socket_nodeinterface) {
+                node_interface_handle = _spawn!NodeInterface(
+                        tn.node_interface,
+                        opts.node_interface.node_address,
+                        shared_net,
+                        addressbook,
+                        tn,
+                );
+            }
+            else {
+                node_interface_handle = _spawn!NodeInterfaceService(
+                        tn.node_interface,
+                        opts.node_interface,
+                        shared_net,
+                        addressbook,
+                        tn.epoch_creator
+                );
+            }
             break;
         }
         handles ~= node_interface_handle;

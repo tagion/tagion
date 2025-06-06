@@ -20,6 +20,8 @@ import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.script.methods;
 
+alias Mode0Send = Msg!"mode0send";
+
 ///
 struct Mode0NodeInterfaceService {
     const(SecureNet) net;
@@ -40,16 +42,16 @@ struct Mode0NodeInterfaceService {
     // Send a message to another node
     void wave_send(WavefrontReq req, Pubkey channel, Document doc) {
         const nnr = addressbook[channel].get;
-        Tid node_tid = locate(nnr.address);
-        if(node_tid is Tid.init) {
+        Tid remote_tid = locate(nnr.address);
+        if(remote_tid is Tid.init) {
             log.error("Tid node address '%s' is not registered", nnr.address);
             return;
         }
-        node_tid.send(req, doc);
+        remote_tid.send(Mode0Send(), doc);
     }
 
     // Receive a message from another node
-    void wave_recv(WavefrontReq req, Document doc) {
+    void wave_recv(Mode0Send, Document doc) {
         if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
             log.error("received document was invalid %s", doc);
             return;
@@ -63,7 +65,7 @@ struct Mode0NodeInterfaceService {
             log.error("Received hirpc was not signed\n%s", doc.toPretty);
             return;
         }
-        epoch_creator_handle.send(req, doc);
+        epoch_creator_handle.send(WavefrontReq(), doc);
     }
 
     // Send a message to another node and get the dart response back

@@ -19,7 +19,6 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
-import tagion.network.ReceiveBuffer;
 import tagion.script.TagionCurrency;
 import tagion.tools.Basic;
 import tagion.tools.revision;

@@ -17,7 +17,6 @@ import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONFile : fread, fwrite;
-import tagion.network.ReceiveBuffer;
 import tagion.script.TagionCurrency;
 import tagion.tools.Basic;
 import tagion.tools.revision;

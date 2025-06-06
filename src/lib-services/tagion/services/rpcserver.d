@@ -102,7 +102,7 @@ void hirpc_cb(NNGMessage* msg, void* ctx) @trusted {
         return;
     }
 
-    thisActor.task_name = format("rpc_%s", thisTid);
+    log.task_name = format("rpc_%s", thisTid);
     auto cnt = cast(RPCWorkerContext*) ctx;
     if (cnt is null) {
         log.error("the context was nil");
