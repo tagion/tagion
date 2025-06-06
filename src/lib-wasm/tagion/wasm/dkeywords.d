@@ -1,4 +1,4 @@
-module tagion.wasm.dkeyword;
+module tagion.wasm.dkeywords;
 
 @safe
 struct DKeywords {
