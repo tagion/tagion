@@ -84,6 +84,7 @@ struct WastParser {
         TYPE,
         FUNC,
         TABLE,
+        GLOBAL,
         ELEMENT,
         PARAM,
         RESULT,
@@ -393,31 +394,43 @@ struct WastParser {
                     }
 
                     if (block_ir is IR.IF) {
-
-                        if ((r.type is TokenType.BEGIN) && (r.save.drop(1).front.token == PseudoWastInstr.then)) {
-                            r.drop(2);
-                        }
-                        else {
-                            getArguments;
-                        }
+                        getArguments;
+                        __write("After arguments %s %(%s %)", block_ir, r.save.map!(t => t.token).take(5));
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
-                        innerInstr(wasmexpr, r, wasm_results, next_stage);
-                        if (r.type is TokenType.BEGIN) {
-                            auto r_else = r.save;
-                            r_else.nextToken;
-                            const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
-                            check(else_ir is IR.ELSE,
-                                    format("'else' statement expected not '%s' %s",
-                                    r_else.token, else_ir));
-                            r_else.nextToken;
-                            if (r_else.type is TokenType.END) {
-                                r = r_else; /// Empty else '(else)' skip the else IR 
+
+                        __write("IF before expression %(%s %)", r.save.map!(t => t.token).take(5));
+                        if (r.isComponent(PseudoWastInstr.then)) { // (then ... ) 
+                            //r.drop(2);
+                            r.nextToken;
+                            r.nextToken;
+                            scope (exit) {
+                                r.expect(TokenType.END);
+                                r.nextToken;
                             }
-                            else {
+                            while (r.type is TokenType.BEGIN) {
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
                             }
                         }
+                        if (r.isComponent(instrTable[IR.ELSE].wast)) {
+                            innerInstr(wasmexpr, r, wasm_results, next_stage);
+                        }
+                        version (none)
+                            if (r.type is TokenType.BEGIN) {
+                                auto r_else = r.save;
+                                r_else.nextToken;
+                                const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
+                                check(else_ir is IR.ELSE,
+                                        format("'else' statement expected not '%s' %s",
+                                        r_else.token, else_ir));
+                                r_else.nextToken;
+                                if (r_else.type is TokenType.END) {
+                                    r = r_else; /// Empty else '(else)' skip the else IR 
+                                }
+                                else {
+                                    innerInstr(wasmexpr, r, wasm_results, next_stage);
+                                }
+                            }
 
                     }
                     else {
@@ -921,6 +934,51 @@ struct WastParser {
         r.nextToken;
     }
 
+    private ParserStage parseGlobal(ref WastTokenizer r) {
+        __write("GLOBAL %(%s %)", r.save.map!(t => t.token).take(5));
+        if (r.isComponent(WastKeywords.IMPORT)) {
+            __write("--- %(%s %)", r.save.map!(t => t.token).take(5));
+            parseModule(r, ParserStage.GLOBAL);
+            return ParserStage.IMPORT;
+        }
+        auto type = r.token.toType;
+        string label;
+        if (type is Types.VOID) {
+            label = r.token;
+            r.nextToken;
+            type = r.token.toType;
+        }
+        FuncType void_func;
+        CodeType code_offset;
+        FunctionContext ctx;
+        parseInstr(r, ParserStage.GLOBAL, code_offset, void_func, ctx);
+
+        return ParserStage.CODE;
+    }
+
+    private void parseImport(ref WastTokenizer r, const ParserStage stage) {
+        r.expect(TokenType.BEGIN);
+        scope (success) {
+            r.expect(TokenType.END);
+            r.nextToken;
+        }
+        r.nextToken;
+        r.expect(TokenType.WORD);
+        const label = r.token;
+        r.nextToken;
+        r.expect(TokenType.STRING);
+        const arg = r.token;
+        r.nextToken;
+        r.expect(TokenType.STRING);
+        const arg2 = r.token;
+        r.nextToken;
+        FuncType func_type;
+        const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
+        r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
+                "Import state only allowed inside type or param");
+
+    }
+
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type is TokenType.COMMENT) {
             r.nextToken;
@@ -928,6 +986,7 @@ struct WastParser {
         if (r.type is TokenType.BEGIN) {
             string label;
             string arg;
+            auto component = r;
             r.nextToken;
             bool not_ended;
             scope (exit) {
@@ -1009,21 +1068,9 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.EXPORT;
             case WastKeywords.IMPORT:
-                string arg2;
-                r.nextToken;
-                r.expect(TokenType.WORD);
-                label = r.token;
-                r.nextToken;
-                r.expect(TokenType.STRING);
-                arg = r.token;
-                r.nextToken;
-                r.expect(TokenType.STRING);
-                arg2 = r.token;
-                r.nextToken;
-                FuncType func_type;
-                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type);
-                r.valid(ret == ParserStage.TYPE || ret == ParserStage.PARAM,
-                        "Import state only allowed inside type or param");
+                parseImport(component, ParserStage.MODULE);
+                r = component;
+                not_ended = true;
                 return stage;
             case WastKeywords.TABLE:
                 r.nextToken;
@@ -1302,7 +1349,6 @@ struct WastParser {
             export_tokenizer = r.save;
             r.nextBlock;
         }
-        ExportType export_type;
         ParserStage arg_stage;
         WastTokenizer rewind;
         uint only_one_type_allowed;

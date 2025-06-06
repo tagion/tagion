@@ -10,7 +10,7 @@ COPY . ./src
 WORKDIR /tmp/src/
 RUN echo DFLAGS+=--static >> local.mk
 
-RUN make tagion install RELEASE=1 INSTALL=/usr/local/bin/ DC=ldc2
+RUN make tagion install SYMBOLS_ENABLE=1 DEBUG_ENABLE=1 RELEASE=1 INSTALL=/usr/local/bin/ DC=ldc2
 
 # Final image
 FROM alpine:3.21

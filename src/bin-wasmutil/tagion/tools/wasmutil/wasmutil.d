@@ -135,11 +135,6 @@ int _main(string[] args) {
             return 0;
         }
 
-        version (none)
-            if (__verbose_switch && (!print || outputfilename.length is 0)) {
-                verbose.mode = VerboseMode.STANDARD;
-            }
-
         if (main_args.helpWanted) {
             help;
             return 0;
@@ -215,6 +210,7 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
+                check(tokenizer.error_count == 0, "Wast parsing failed");
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
@@ -223,11 +219,6 @@ int _main(string[] args) {
         }
 
         immutable(ubyte)[] data_out;
-        version (none)
-            if (!wasm_writer) {
-                assert(wasm_reader !is WasmReader.init, "Missing wasm-reader module");
-                wasm_writer = WasmWriter(wasm_reader);
-            }
         if (inject_gas) {
             assert(wasm_writer !is null, "Missing wasm module");
             auto wasmgas = WasmGas(wasm_writer);

@@ -13,7 +13,6 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    //    wasm_testsuite.testsuite=buildPath(__FILE__.dirName, "tvm", "testsuite");
     wasm_testsuite.testsuite = buildPath(env.reporoot, "src", "lib-wasm", "tagion", "wasm", "unitdata");
 
     writefln("args=%s", args);

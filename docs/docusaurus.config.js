@@ -170,12 +170,8 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Tech Documentation',
+            title: 'Resources',
             items: [
-              {
-                 label: 'Concept paper',
-                to: 'https://www.tagion.org/resources/tagion-whitepaper.pdf',
-              },
               {
                 label: 'HiBON',
                 href: 'https://www.hibon.org',
@@ -184,6 +180,10 @@ const config = {
                 label: 'Ddoc',
                 href: 'https://ddoc.tagion.org',
               },
+               {
+                 label: 'Archive',
+                to: 'https://docs.tagion.org/gov/intro/archive',
+              }
             ],
           },
           {

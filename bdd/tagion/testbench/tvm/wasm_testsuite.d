@@ -60,6 +60,8 @@ class ShouldConvertswastfileTestsuiteToWasmFileFormat {
         writer = new WasmWriter;
         auto wast_parser = WastParser(writer);
         wast_parser.parse(tokenizer);
+        writefln("tokenizer=%s", tokenizer.error_count);
+        check(tokenizer.error_count == 0, format("Wast pasing failed for %s", wast_file));
         return result_ok;
     }
 

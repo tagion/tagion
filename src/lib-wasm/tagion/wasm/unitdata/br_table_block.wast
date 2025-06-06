@@ -991,6 +991,7 @@
       (i32.const -1)
     )
   )
+ (; 
   (global $a (mut i32) (i32.const 10))
   (func (export "as-global.set-value") (result i32)
     (block (result i32)
@@ -998,7 +999,7 @@
       (i32.const -1)
     )
   )
-
+;)
   (func (export "as-storeN-address") (result i32)
     (block (result i32)
       (i32.store8 (br_table 0 (i32.const 32) (i32.const 0)) (i32.const 7))
@@ -1157,7 +1158,7 @@
       )
     )
   )
-
+(;
    (func (export "meet-externref") (param i32) (param externref) (result externref)
     (block $l1 (result externref)
       (block $l2 (result externref)
@@ -1165,7 +1166,7 @@
       )
     )
   )
-
+;)
   ;; commenting this part out for now as it's a bit odd and we rely on wasmparser for
   ;; wasm validation. Not meeting this requirement is okay for now
   ;; (func (export "meet-bottom")

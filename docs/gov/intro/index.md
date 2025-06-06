@@ -29,7 +29,7 @@ To us, governance means both the processes of managing a decentralised system an
 :::tip[The _Tagion Governance Manifesto_]
 
 Our **Manifesto** is the first approved and foundational element of Tagion's governance - download it as a [PDF](https://www.tagion.org/resources/tagion-manifesto.pdf), or read it online [here](./intro/manifesto). 
-Moving forward, you will be able to easily identify all approved elements via the menu. Everything else on these pages is considered a proposal and remains open for discussion. 
+Moving forward, you will be able to easily identify all approved elements by green notifications such as this. Everything else on these pages is considered a proposal and remains open for discussion. 
 
 :::
 

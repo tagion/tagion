@@ -98,13 +98,13 @@ Goal: May
 
 ### Distributed testing
 Description: We want the infrastruct to be able to test new version of the network in a distributed manner  
-Goal: Q2  
+Goal: Q3
 - [ ] Create a service were people can associate their public key with a machine
 - [ ] Create a tool were we can assign specific docker images to a group of public keys and assigns network boot data to that group
 - [ ] Create a deployment/tutorial were people can setup a node and automatically updates to newly assigned images.  
 
 ### TVM Service
-Goal: Q2
+Goal: Q3
 - [ ] Add wasm execute to tvm service
 - [ ] The tvm service should execute wasm script that are loaded from the dart.
 - [ ] The entrypoint function `run()`? should always take the inputs, reads and outputs  
@@ -112,14 +112,14 @@ Assignee: cbr
 
 ### Epoch MuSig:
 Description:  
-Goal: Q3  
+Goal: Q4  
 - [/] implement Schnoor MuSig
 - [ ] Make sure that multi user signatures don't leak private keys.
 - [ ] Replace signatures in epoch chain with aggregated MuSig  
 Assignee: cbr  
 
 ### DART Blake3
-Goal: Q2  
+Goal: Q3  
 - [ ] Write a TIP proposal for how to migrate and explaining the motivation
 - [ ] add blake3 hashing algorithm
 - [ ] create a translation table for old dartreads  
