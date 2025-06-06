@@ -1071,7 +1071,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         setResults(indent, null);
                         ctx.current.kind = BlockKind.ELSE;
                         const else_indent = indent[0 .. $ - spacer.length];
-
+                        bout.writefln("%s// BLOCK_ELSE", indent); 
                         bout.writefln("%s}", else_indent);
                         bout.writefln("%selse {", else_indent);
                         break;
@@ -1143,14 +1143,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.BR_TABLE:
                             auto br_table = elm.wargs.map!(w => w.get!uint);
                             scope (exit) {
-                                while (!expr.empty && (expr.front.code != IR.END && expr.front.code !is IR.ELSE)) {
+                                while (!expr.empty && (expr.front.code != IR.END && expr.front.code != IR.ELSE)) {
                                     expr.popFront;
                                 }
                             }
                             const switch_select = ctx.pop;
                             const if_block = ctx.current.elm.code is IR.IF;
                             if (!if_block) {
+                                bout.writefln("%s// Block %s", indent, ctx.current.elm.code);
                                 bout.writefln("%sswitch(%s) {", indent, switch_select);
+                            }
+                            else if (br_table.length == 1) {
+                                bout.writefln("%sif (false) {", indent);
                             }
                             scope (exit) {
                                 bout.writefln("%s}", indent);
@@ -1159,6 +1163,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             foreach (jump_idx, block_label_depth; br_table.enumerate) {
                                 if (jump_idx >= elm.wargs.length - 1) {
                                     if (if_block) {
+                                        bout.writefln("%s// if_block %s", indent, ctx.current.elm.code);
                                         bout.writefln("%s}", indent);
                                         bout.writefln("%selse {", indent);
                                     }

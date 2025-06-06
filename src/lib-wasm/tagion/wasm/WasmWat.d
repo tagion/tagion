@@ -386,10 +386,10 @@ alias check = Check!WatException;
                         break;
                     case BLOCK_ELSE:
                         const block_comment = format(";; %s innerBlock %d", elm.instr.irtype, block_count);
-                        const endif_elm = innerBlock(expr, indent ~ spacer, level);
+                        const local_indent = indent[0..indent.length-spacer.length];
+                        output.writefln("%s%s", local_indent, elm.instr.name);
+                        const endif_elm = innerBlock(expr, indent, level);
                         const endif_instr = instrTable[endif_elm.code];
-                        output.writefln("%s%s %s count=%d", indent,
-                                endif_instr.name, block_comment, count);
                         break;
                     case BRANCH:
                         if (elm.code is IR.BR_TABLE) {
