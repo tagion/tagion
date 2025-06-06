@@ -385,11 +385,9 @@ alias check = Check!WatException;
                         output.writefln("%s%s", indent, end_instr.name);
                         break;
                     case BLOCK_ELSE:
-                        const block_comment = format(";; %s innerBlock %d", elm.instr.irtype, block_count);
-                        const local_indent = indent[0..indent.length-spacer.length];
+                        const local_indent = indent[0 .. indent.length - spacer.length];
                         output.writefln("%s%s", local_indent, elm.instr.name);
-                        const endif_elm = innerBlock(expr, indent, level);
-                        const endif_instr = instrTable[endif_elm.code];
+                        innerBlock(expr, indent, level);
                         break;
                     case BRANCH:
                         if (elm.code is IR.BR_TABLE) {
@@ -410,7 +408,8 @@ alias check = Check!WatException;
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0].get!uint);
+                        output.writefln("%s%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0]
+                                .get!uint);
                         break;
                     case LOCAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);

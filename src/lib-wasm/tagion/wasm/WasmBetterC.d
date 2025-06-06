@@ -726,7 +726,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 case IR.IF:
                     return "goto";
                 default:
-                        return "break";
+                    return "break";
                 }
             }
             //string jump_command = (target_blk.elm.code is IR.LOOP) ? "continue" : "break";
@@ -911,6 +911,36 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return null;
         }
 
+        static void skipBlock(ref ExprRange expr) {
+            if (expr.empty) {
+                return;
+            }
+            if (only(IRType.BLOCK, IRType.BLOCK_CONDITIONAL).canFind(expr.front.instr.irtype)) {
+                expr.popFront;
+                skipBlock(expr);
+
+            }
+            while (!expr.empty && expr.front.code !is IR.END) {
+                __write("Block skip %s", expr.front.code);
+                expr.popFront;
+            }
+        }
+
+        static void skipTillEnd(ref ExprRange expr) {
+            if (expr.empty) {
+                return;
+            }
+            if (only(IRType.BLOCK, IRType.BLOCK_CONDITIONAL).canFind(expr.front.instr.irtype)) {
+                expr.popFront;
+                skipBlock(expr);
+                return;
+            }
+            while (!expr.empty && (expr.front.code !is IR.END && expr.front.code !is IR.ELSE)) {
+                __write("skip %s", expr.front.code);
+                expr.popFront;
+            }
+        }
+
         void innerBlock(
                 OutBuffer bout,
                 ref ExprRange expr,
@@ -927,7 +957,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
 
             void endBlock() {
-                auto blk=ctx.current;
+                auto blk = ctx.current;
                 if (blk.label_defined && (blk.elm.code is IR.IF)) {
                     bout.writefln("%s%s:", indent, blk.label);
                 }
@@ -1071,7 +1101,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         setResults(indent, null);
                         ctx.current.kind = BlockKind.ELSE;
                         const else_indent = indent[0 .. $ - spacer.length];
-                        bout.writefln("%s// BLOCK_ELSE", indent); 
+                        bout.writefln("%s// BLOCK_ELSE", indent);
                         bout.writefln("%s}", else_indent);
                         bout.writefln("%selse {", else_indent);
                         break;
@@ -1143,9 +1173,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.BR_TABLE:
                             auto br_table = elm.wargs.map!(w => w.get!uint);
                             scope (exit) {
-                                while (!expr.empty && (expr.front.code != IR.END && expr.front.code != IR.ELSE)) {
-                                    expr.popFront;
-                                }
+                                skipTillEnd(expr);
                             }
                             const switch_select = ctx.pop;
                             const if_block = ctx.current.elm.code is IR.IF;
