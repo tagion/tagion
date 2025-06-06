@@ -98,7 +98,7 @@ Goal: May
 
 ### Distributed testing
 Description: We want the infrastruct to be able to test new version of the network in a distributed manner  
-Goal: Q333  
+Goal: Q3
 - [ ] Create a service were people can associate their public key with a machine
 - [ ] Create a tool were we can assign specific docker images to a group of public keys and assigns network boot data to that group
 - [ ] Create a deployment/tutorial were people can setup a node and automatically updates to newly assigned images.  
