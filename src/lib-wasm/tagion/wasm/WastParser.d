@@ -611,7 +611,16 @@ struct WastParser {
                     switch (ir) {
                     case IR.REF_NULL:
                         __write("REF %s %s : %s", ir, arg.toType, arg);
-                        wasmexpr(ir, arg.toType);
+                        if (arg == WastKeywords.EXTERN) {
+                            wasmexpr(ir, Types.EXTERNREF);
+                        }
+                        else if (arg == WastKeywords.FUNC) {
+                            wasmexpr(ir, Types.FUNCREF);
+                        }
+                        else {
+                            r.check(0, "Expected arguments extern or func");
+                        }
+
                         break;
                     case IR.REF_IS_NULL:
                         assert(0, "Not implemented yet");

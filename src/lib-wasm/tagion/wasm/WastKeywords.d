@@ -23,6 +23,7 @@ enum WastKeywords {
     DECLARE = "declare",
     ITEM = "item",
     FUNCREF = "funcref",
+    EXTERN = "extern",
 }
 
 bool isReserved(const(char[]) word) @nogc pure nothrow {
