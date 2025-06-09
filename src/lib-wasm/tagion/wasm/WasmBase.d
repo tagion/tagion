@@ -348,8 +348,8 @@ enum IR : ubyte {
         @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, [Types.I32], [Types.F32]) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
         @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, [Types.I64], [Types.F64]) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
         // Reference Instructions
-        @Instr("ref.null", "ref.null", 1, IRType.REF) REF_NULL = 0xD0, /// ref.null
-        @Instr("ref.is_null", "ref.is_null", 1, IRType.REF) REF_IS_NULL = 0xD1, /// ref.is_null 
+        @Instr("ref.null", "ref.null", 1, IRType.REF, [], [Types.FUNCREF]) REF_NULL = 0xD0, /// ref.null
+        @Instr("ref.is_null", "ref.is_null", 1, IRType.REF, [Types.FUNCREF], [Types.I32]) REF_IS_NULL = 0xD1, /// ref.is_null 
         @Instr("ref.func", "ref.func", 1, IRType.REF) REF_FUNC = 0xD2, /// ref.func
         // Extended
         @Instr("(;extended;)", "(;extended;)", 1, IRType.CODE_EXTEND, [], [], true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
@@ -506,7 +506,7 @@ enum Mutable : ubyte {
 enum Types : ubyte {
     VOID = 0x40, /// Empty block
     @("func") FUNC = 0x60, /// Func type
-    @("externref") EXTERNREF = 0x6F, /// External ref (reftype)
+    @("externref") @("extern") EXTERNREF = 0x6F, /// External ref (reftype)
     @("funcref") FUNCREF = 0x70, /// funcref (reftype)
     @("i32") I32 = 0x7F, /// i32 Value type
     @("i64") I64 = 0x7E, /// i64 Value type
@@ -830,10 +830,11 @@ struct ExprRange {
         enum IRArgType : ubyte {
             NONE,
             DATA,
-            WARG,
-            WARGS,
-            TYPES,
-            INDEX,
+            WARG, /// Value argument as a wasm type
+            WARGS, /// Lost of value arguments as wasm types
+            TYPES, /// List of times
+            INDEX, /// i32 index number (func_idx, local_idx ... etc)
+            TYPE, /// Single type
         }
 
         int level;
@@ -844,6 +845,7 @@ struct ExprRange {
             const(WasmArg)[] _wargs;
             uint _typeidx;
             const(Types)[] _types;
+            Types _type;
         }
 
         IR code;
@@ -882,6 +884,12 @@ struct ExprRange {
                 return _typeidx;
             }
 
+            int type() @trusted const
+            in (argtype is IRArgType.TYPE, "Type expected")
+            do {
+                return _type;
+            }
+
             void warg(WasmArg arg) @trusted {
                 argtype = IRArgType.WARG;
                 _warg = arg;
@@ -900,6 +908,11 @@ struct ExprRange {
             void idx(const uint _idx) @trusted {
                 argtype = IRArgType.INDEX;
                 _typeidx = _idx;
+            }
+
+            void type(const Types t) @trusted {
+                argtype = IRArgType.TYPE;
+                _type = t;
             }
         }
     }
@@ -1027,8 +1040,20 @@ struct ExprRange {
                     _level--;
                     break;
                 case REF:
-                    check(0, "Ref instructions not supported yet");
-                    assert(0);
+                    switch (elm.code) {
+                    case IR.REF_NULL:
+                        elm.type = cast(Types) data[index++];
+                        break;
+                    case IR.REF_IS_NULL:
+                        assert(0, "Ref instructions not supported yet");
+
+                    case IR.REF_FUNC:
+                        assert(0, "Ref instructions not supported yet");
+                    default:
+                        assert(0, "Illegal instruction ");
+
+                    }
+                    break;
                 case ILLEGAL:
                     throw new WasmExprException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code), elm);
                     break;

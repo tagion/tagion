@@ -27,8 +27,10 @@ Types toType(const(char[]) type_name) pure nothrow @nogc {
     switch (type_name) {
         static foreach (E; EnumMembers!Types) {
             static if (hasUDA!(E, string)) {
-    case getUDAs!(E, string)[0]:
-                return E;
+                foreach (type_keyword; getUDAs!(E, string)) {
+    case type_keyword:
+                    return E;
+                }
             }
         }
     default:
@@ -40,6 +42,7 @@ Types toType(const(char[]) type_name) pure nothrow @nogc {
 unittest {
     assert(toType("i32") is Types.I32);
     assert(toType("bad type") is Types.VOID);
+    assert(toType("externref") is Types.EXTERNREF);
 }
 
 struct WastParser {
@@ -600,8 +603,25 @@ struct WastParser {
                 case PREFIX:
                     break;
                 case REF:
-                    check(0, "Ref instructions not supported yet");
-                    assert(0);
+                    r.nextToken;
+                    const arg = r.token;
+                    r.nextToken;
+
+                    const ir = irLookupTable[instr.name];
+                    switch (ir) {
+                    case IR.REF_NULL:
+                        __write("REF %s %s : %s", ir, arg.toType, arg);
+                        wasmexpr(ir, arg.toType);
+                        break;
+                    case IR.REF_IS_NULL:
+                        assert(0, "Not implemented yet");
+                    case IR.REF_FUNC:
+                        assert(0, "Not implemented yet");
+
+                    default:
+                        assert(0, "Illegal instructions");
+                    }
+                    break;
                 case ILLEGAL:
                     throw new WasmException(format("Undefined instruction %s", r.token));
                     break;
@@ -1071,6 +1091,7 @@ struct WastParser {
                         r.nextToken;
                     }
                 }
+                __write("global_type.desc.type %s", global_type.desc.type);
                 __write("Mid %(%s %)", r.save.map!(t => t.token).take(5));
                 __write("Mid global_type.desc %s", global_type.desc);
                 if ((global_type.desc.type is Types.VOID) && r.isComponent("mut")) {
