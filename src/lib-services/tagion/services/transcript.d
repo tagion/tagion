@@ -97,6 +97,7 @@ struct TranscriptService {
     void receiveBullseye(EpochCommitRR.Response res, Fingerprint bullseye, Fingerprint block_fingerprint) {
         const epoch_number = res.id;
 
+        votes[epoch_number].epoch.recorder_block = block_fingerprint;
         votes[epoch_number].epoch.bullseye = bullseye;
 
         ConsensusVoting own_vote = ConsensusVoting(

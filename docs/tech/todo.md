@@ -45,7 +45,7 @@ Assignee: cbr
 Description: docs.tagion.org/tips/6  
 Goal: May  
 - [x] add hash of executed contract to recorderchain
-- [ ] add hash of recorderblock to epochchain  
+- [x] add hash of recorderblock to epochchain  
 Assignee: lr  
 
 ### Service refactor
