@@ -119,22 +119,22 @@ struct Supervisor {
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
-            version(socket_nodeinterface) {
-                node_interface_handle = _spawn!NodeInterface(
-                        tn.node_interface,
-                        opts.node_interface.node_address,
-                        shared_net,
-                        addressbook,
-                        tn,
-                );
-            }
-            else {
+            version(nng_nodeinterface) {
                 node_interface_handle = _spawn!NodeInterfaceService(
                         tn.node_interface,
                         opts.node_interface,
                         shared_net,
                         addressbook,
                         tn.epoch_creator
+                );
+            }
+            else {
+                node_interface_handle = _spawn!NodeInterface(
+                        tn.node_interface,
+                        opts.node_interface.node_address,
+                        shared_net,
+                        addressbook,
+                        tn,
                 );
             }
             break;
