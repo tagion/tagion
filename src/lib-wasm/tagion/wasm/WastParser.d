@@ -219,19 +219,30 @@ struct WastParser {
         }
     }
 
+    int getGlobal(ref WastTokenizer tokenizer) const {
+        int result = global_lookup.get(tokenizer.token, -1);
+        if (result < 0) {
+            result = tokenizer.token
+                .to!int
+                .ifThrown!ConvException(-1);
+            tokenizer.valid(result >= 0, format("Global register %s not found", tokenizer.token));
+        }
+        return result;
+    }
+
     private ParserStage parseBodyInstr(
             ref WastTokenizer r,
             const ParserStage stage,
             ref WasmExpr func_wasmexpr, //ref CodeType code_type,
             ref const(FuncType) func_type,
             ref FunctionContext func_ctx) {
-        int getLocal(ref WastTokenizer tokenizer) @trusted {
-            int result = func_ctx.local_names[tokenizer.token].ifThrown!RangeError(int(-1));
+        int getLocal(ref WastTokenizer tokenizer) {
+            int result = func_ctx.local_names.get(tokenizer.token, -1);
             if (result < 0) {
                 result = tokenizer.token
                     .to!int
                     .ifThrown!ConvException(-1);
-                tokenizer.valid(result >= 0, "Local register expected");
+                tokenizer.valid(result >= 0, format("Local register expected %s not found", tokenizer.token));
             }
             return result;
         }
@@ -529,7 +540,6 @@ struct WastParser {
                     r.nextToken;
                     r.expect(TokenType.WORD);
                     const local_idx = getLocal(r);
-                    //const local_type = func_ctx.localType(local_idx);
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
@@ -538,9 +548,13 @@ struct WastParser {
                     break;
                 case GLOBAL:
                     r.nextToken;
-                    label = r.token;
                     r.expect(TokenType.WORD);
+                    const global_idx = getGlobal(r);
                     r.nextToken;
+                    foreach (i; 0 .. instr.pops.length) {
+                        innerInstr(wasmexpr, r, block_results, next_stage);
+                    }
+                    wasmexpr(irLookupTable[instr.name], global_idx);
                     break;
                 case MEMORY:
 
@@ -984,8 +998,8 @@ struct WastParser {
             r.nextToken;
         }
         if (r.type is TokenType.BEGIN) {
-            string label;
-            string arg;
+            //string label;
+            //string arg;
             auto component = r;
             r.nextToken;
             bool not_ended;
@@ -1017,7 +1031,7 @@ struct WastParser {
                         format("Result only allowed inside function declaration (But was %s)", stage));
                 r.nextToken;
                 r.expect(TokenType.WORD);
-                arg = r.token;
+                const arg = r.token;
                 r.nextToken;
                 return ParserStage.RESULT;
             case WastKeywords.MEMORY:
@@ -1032,6 +1046,52 @@ struct WastParser {
                     parseModule(r, ParserStage.MEMORY);
                 }
                 return ParserStage.MEMORY;
+            case WastKeywords.GLOBAL: /// (global label? type|(mut type) expr)
+                __write("--> %(%s %)", r.save.map!(t => t.token).take(5));
+                r.nextToken;
+                GlobalType global_type;
+                string label;
+                scope (exit) {
+                    if (label) {
+                        global_lookup[label] = cast(int) writer.section!(Section.GLOBAL).sectypes.length;
+                    }
+                    writer.section!(Section.GLOBAL).sectypes ~= global_type;
+                }
+                if (r.type is TokenType.WORD) {
+                    global_type.desc.type = r.token.toType;
+                    if (global_type.desc.type is Types.VOID) {
+                        label = r.token;
+                        r.nextToken;
+                        if (r.type is TokenType.WORD) {
+                            global_type.desc.type = r.token.toType;
+                            r.nextToken;
+                        }
+                    }
+                    else {
+                        r.nextToken;
+                    }
+                }
+                __write("Mid %(%s %)", r.save.map!(t => t.token).take(5));
+                __write("Mid global_type.desc %s", global_type.desc);
+                if ((global_type.desc.type is Types.VOID) && r.isComponent("mut")) {
+                    global_type.desc.mut = Mutable.VAR;
+                    r.nextToken;
+                    r.nextToken;
+                    global_type.desc.type = r.token.toType;
+                    r.nextToken;
+                    r.expect(TokenType.END);
+                    r.nextToken;
+                    __write("MUT After %(%s %)", r.save.map!(t => t.token).take(5));
+                }
+                __write("global_type.desc %s", global_type.desc);
+                __write("After %(%s %)", r.save.map!(t => t.token).take(5));
+                FuncType func_type;
+                CodeType code_global;
+                FunctionContext func_ctx;
+                parseInstr(r, ParserStage.GLOBAL, code_global, func_type, func_ctx);
+                global_type.expr = code_global.expr ~ IR.END;
+                __write("global_type %s", global_type);
+                return ParserStage.GLOBAL;
             case WastKeywords.SEGMENT:
                 DataType data_type;
                 scope (exit) {
@@ -1110,7 +1170,7 @@ struct WastParser {
                 Assert assert_type;
                 assert_type.method = Assert.Method.Trap;
                 assert_type.name = r.token;
-                label = r.token;
+                const label = r.token;
                 r.nextToken;
                 FuncType func_type;
                 CodeType code_invoke;
@@ -1128,7 +1188,7 @@ struct WastParser {
                 r.nextToken;
                 parseModule(r, ParserStage.ASSERT);
                 r.expect(TokenType.STRING);
-                arg = r.token;
+                const arg = r.token;
                 r.nextToken;
                 return ParserStage.ASSERT;
             default:
@@ -1371,6 +1431,7 @@ struct WastParser {
         int[string] func_lookup; /// Code section name lookup table
         int[string] type_lookup; /// Type section name lookup table
         int[string] table_lookup; /// Table section name lookup table
+        int[string] global_lookup; /// Global section name lookup table
     }
     void parse(ref WastTokenizer tokenizer) {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {

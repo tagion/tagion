@@ -175,8 +175,8 @@ enum IR : ubyte {
         @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
         @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
         @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.VOID], [Types.VOID])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
-        @Instr("global.get", "get_global", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
-        @Instr("global.set", "set_global", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
+        @Instr("global.get", "global.get", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
+        @Instr("global.set", "global.set", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 
         @Instr("i32.load", "i32.load", 2, IRType.MEMORY, [Types.I32], [Types.I32])          I32_LOAD            = 0x28, ///  i32.load     m:memarg
         @Instr("i64.load", "i64.load", 2, IRType.MEMORY, [Types.I32], [Types.I64])          I64_LOAD            = 0x29, ///  i64.load     m:memarg
@@ -989,7 +989,7 @@ struct ExprRange {
                     break;
                 case CALL_INDIRECT:
                     // typeidx tableidx
-                    elm.wargs=[get(Types.I32), get(Types.I32)];
+                    elm.wargs = [get(Types.I32), get(Types.I32)];
                     break;
                 case LOCAL, GLOBAL:
                     // localidx globalidx

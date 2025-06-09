@@ -199,7 +199,7 @@ alias check = Check!WatException;
     void global_sec(ref const(Global) _global) {
         //        auto _global=*mod[Section.GLOBAL];
         foreach (i, g; _global[].enumerate) {
-            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
+            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.desc));
             auto expr = g[];
             block(expr, indent ~ spacer);
             output.writefln("%s))", indent);

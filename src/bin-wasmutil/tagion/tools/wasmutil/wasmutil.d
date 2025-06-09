@@ -118,16 +118,16 @@ int _main(string[] args) {
                 "",
                 "Where:",
                 format("<in-file>           Is an input file in (%-(%s -%)) format",
-                    only(FileExtension.wasm, FileExtension.wat)),
+                        only(FileExtension.wasm, FileExtension.wat)),
                 format("<out-file>          Is an output file in (%-(%s -%)) format",
-                    only(FileExtension.wat, FileExtension.dsrc)),
+                        only(FileExtension.wat, FileExtension.dsrc)),
                 "                    stdout is used of the output is not specified the",
                 "",
 
                 "<option>:",
 
             ].join("\n"),
-                    main_args.options);
+            main_args.options);
         }
 
         if (version_switch) {
@@ -210,7 +210,11 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
-                check(tokenizer.error_count == 0, "Wast parsing failed");
+                if (tokenizer.error_count > 0) {
+                    error(tokenizer.e);
+                    //check(tokenizer.error_count == 0, "Wast parsing failed");
+                    return 1;
+                }
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",

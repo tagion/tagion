@@ -292,7 +292,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         auto ctx = new Context;
         const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
-            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
+            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.desc));
             auto expr = g[];
             block(expr, func_void, ctx, indent ~ spacer);
             output.writefln("%s))", indent);
