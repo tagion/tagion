@@ -233,8 +233,8 @@ void connection_impl(Tid event_listener_tid, TaskNames tn, Socket sock, CONNECTI
             receive((PollEvent _, pollfd fd) { poll_event = fd; });
             check(cast(bool)(poll_event.revents & POLLOUT), format("event should be ready to send %s", poll_event));
 
-            size_t total_sent;
-            size_t sent;
+            ptrdiff_t total_sent;
+            ptrdiff_t sent;
             immutable(ubyte)[] serialized_doc = send_doc.serialize;
             do {
                 sent = sock.send(serialized_doc[(sent == 0)? sent : sent+1 .. $]);

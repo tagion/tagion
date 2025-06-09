@@ -12,7 +12,7 @@ import tagion.script.standardnames;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 import tagion.hashgraph.HashGraphBasic;
-public import tagion.dart.DARTcrud : dartRead, dartBullseye, dartCheckRead, dartBullseye, dartRim, dartIndexCmd;
+public import tagion.dart.DARTcrud : dartRead, dartBullseye, dartCheckRead, dartBullseye, dartRim, dartIndexCmd, dartModify;
 
 enum RPCMethods {
     readRecorder = "readRecorder",
