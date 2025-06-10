@@ -73,10 +73,8 @@ struct Supervisor {
                 throw dart_exception;
             }
 
-            TagionHead head = TagionHead(); // getHead(db);
-            GenericEpoch epoch = getEpoch(head, db);
-            log("Booting with Epoch %J", epoch);
-            auto keys = getNodeKeys(epoch);
+            // Read the active node records or fallback to genesis epoch
+            auto keys = getNodeKeys(db);
             if (!opts.wave.address_file.empty) {
                 addressbook = (() @trusted => File(opts.wave.address_file, "r").byLine)().parseAddressFile;
             }

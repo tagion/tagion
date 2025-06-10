@@ -70,6 +70,7 @@ Assignee: lr
 - [ ] Create bug report for phobos when converting back and forth between unwhole timezones
 
 ### Active Nodes record
+- [x] Boot from the active nodes record
 - [ ] Create a record that is updated by transcript with the pubkeys of all the active nodes
 - [ ] Remove state info from NNR records
 

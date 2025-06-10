@@ -270,7 +270,7 @@ int _neuewelle(string[] args) {
             const head = getHead(dbs[0]);
         }
 
-        auto epoch = head.getEpoch(dbs[0]);
+        auto epoch = head.current_epoch.getEpoch(dbs[0]);
 
         log("Booting with Epoch %J", epoch);
 

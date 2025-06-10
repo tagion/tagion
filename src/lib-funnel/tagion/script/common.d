@@ -388,18 +388,14 @@ DARTIndex[] lockedArchiveIndices(Range)(Range epochs, const HashNet hash)
 @recordType("$@Active")
 struct Active {
     @label(HashNames.active) string name = TagionDomain; /// Default name should always be "tagion"
-    @label("nodes") const(Pubkey)[] nodes; /// All of the active nodes
-    mixin HiBONRecord!(q{
-        this(const(Pubkey)[] nodes) pure nothrow {
-            this.nodes = nodes;
-        }
-    });
+    @label("nodes") Pubkey[] nodes; /// All of the active nodes
 
     bool verify() const pure nothrow {
         import std.algorithm : isSorted;
 
         return nodes.isSorted;
     }
+    mixin HiBONRecord;
 }
 
 @recordType("wasm")

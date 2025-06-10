@@ -33,8 +33,8 @@ TagionHead getHead(DART db, const HashNet net = hash_net) {
 }
 
 
-GenericEpoch getEpoch(const TagionHead head, DART db, const HashNet net = hash_net) {
-    DARTIndex epoch_index = net.dartId(HashNames.epoch, head.current_epoch);
+GenericEpoch getEpoch(long epoch, DART db, const HashNet net = hash_net) {
+    DARTIndex epoch_index = net.dartId(HashNames.epoch, epoch);
     const epoch_recorder = db.loads([epoch_index], Archive.Type.NONE);
     check!ServiceException(!epoch_recorder[].empty, "There was no Archive at the index pointed to by head");
     const epoch_doc = epoch_recorder[].front.filed;
@@ -53,6 +53,23 @@ inout(Pubkey)[] getNodeKeys(inout GenericEpoch epoch_head) pure nothrow {
             (inout Epoch epoch) => epoch.active,
             (inout GenesisEpoch epoch) => epoch.nodes,
     );
+}
+
+// Gets the active nodes from a dart
+// Reads first the active nodes records or falls back to the GenesisEpoch
+Pubkey[] getNodeKeys(DART db, const HashNet net = hash_net) {
+    DARTIndex active_index = net.dartId(HashNames.active, TagionDomain);
+    const active_recorder = db.loads([active_index], Archive.Type.NONE);
+    if(!active_recorder.empty) {
+        Active active_record = Active(active_recorder[].front.filed);
+        return active_record.nodes;
+    }
+
+    DARTIndex epoch_index = net.dartId(HashNames.epoch, 0);
+    const recorder = db.loads([epoch_index], Archive.Type.NONE);
+    check(!recorder.empty, "No Active or GenesisEpoch record in dart");
+    GenesisEpoch gen_epoch = GenesisEpoch(recorder[].front.filed);
+    return gen_epoch.nodes;
 }
 
 /// Read the Node names records and put them in the addressbook

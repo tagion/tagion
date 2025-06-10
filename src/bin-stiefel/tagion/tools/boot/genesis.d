@@ -10,6 +10,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONtoText : decode;
 import tagion.script.common;
+import tagion.script.standardnames;
 import tagion.script.namerecords;
 import tagion.tools.Basic;
 import tagion.tools.toolsexception;
@@ -73,14 +74,14 @@ Document[] createGenesis(const(NodeSettings[]) node_settings, Document testamony
     auto node_pubkeys = node_settings
             .map!((node_setting) => node_setting.owner.mut)
             .array;
-            /* .sort; */
+    node_pubkeys.sort;
 
     genesis_epoch.nodes = node_pubkeys;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
     genesis_epoch.globals = globals;
 
-    Active active = Active(node_pubkeys);
+    Active active = Active(TagionDomain, node_pubkeys);
     
     name_cards.each!((name_card) => verbose("%s", name_card.toPretty));
     node_records.each!((name_card) => verbose("%s", name_card.toPretty));
