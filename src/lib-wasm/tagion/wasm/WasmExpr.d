@@ -83,7 +83,7 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case MEMORY:
+            case MEMOP:
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),
@@ -96,7 +96,7 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case MEMOP:
+            case MEMORY:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
                 bout.write(cast(ubyte)(0x00));

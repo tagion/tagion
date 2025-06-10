@@ -417,10 +417,10 @@ alias check = Check!WatException;
                     case GLOBAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
-                    case MEMORY:
+                    case MEMOP:
                         output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
-                    case MEMOP:
+                    case MEMORY:
                         output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:

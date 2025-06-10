@@ -559,7 +559,7 @@ struct WastParser {
                     }
                     wasmexpr(irLookupTable[instr.name], global_idx);
                     break;
-                case MEMORY:
+                case MEMOP:
 
                     r.nextToken;
                     for (uint i = 0; (i < 2) && (r.type is TokenType.WORD); i++) {
@@ -570,7 +570,7 @@ struct WastParser {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
                     break;
-                case MEMOP:
+                case MEMORY:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);

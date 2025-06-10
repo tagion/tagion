@@ -126,8 +126,8 @@ enum IRType {
     CALL_INDIRECT, /// Indirect subroutine call
     LOCAL, /// Local register storage instruction
     GLOBAL, /// Global register storage instruction
-    MEMORY, /// Memory instruction
-    MEMOP, /// Memory management instruction
+    MEMOP, /// Memory instruction
+    MEMORY, /// Memory management instruction
     CONST, /// Constant argument
     END, /// Block end instruction
     REF, /// Reference instruction
@@ -178,31 +178,31 @@ enum IR : ubyte {
         @Instr("global.get", "global.get", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
         @Instr("global.set", "global.set", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 
-        @Instr("i32.load", "i32.load", 2, IRType.MEMORY, [Types.I32], [Types.I32])          I32_LOAD            = 0x28, ///  i32.load     m:memarg
-        @Instr("i64.load", "i64.load", 2, IRType.MEMORY, [Types.I32], [Types.I64])          I64_LOAD            = 0x29, ///  i64.load     m:memarg
-        @Instr("f32.load", "f32.load", 2, IRType.MEMORY, [Types.I32], [Types.F32])          F32_LOAD            = 0x2A, ///  f32.load     m:memarg
-        @Instr("f64.load", "f64.load", 2, IRType.MEMORY, [Types.I32], [Types.F64])          F64_LOAD            = 0x2B, ///  f64.load     m:memarg
-        @Instr("i32.load8_s", "i32.load8_s", 2, IRType.MEMORY, [Types.I32], [Types.I32])       I32_LOAD8_S         = 0x2C, ///  i32.load8_s  m:memarg
-        @Instr("i32.load8_u", "i32.load8_u", 2, IRType.MEMORY, [Types.I32], [Types.I32])       I32_LOAD8_U         = 0x2D, ///  i32.load8_u  m:memarg
-        @Instr("i32.load16_s", "i32.load16_s", 2, IRType.MEMORY, [Types.I32], [Types.I32])      I32_LOAD16_S        = 0x2E, ///  i32.load16_s m:memarg
-        @Instr("i32.load16_u", "i32.load16_u", 2, IRType.MEMORY, [Types.I32], [Types.I32])      I32_LOAD16_U        = 0x2F, ///  i32.load16_u m:memarg
-        @Instr("i64.load8_s", "i64.load8_s", 2, IRType.MEMORY, [Types.I32], [Types.I32])       I64_LOAD8_S         = 0x30, ///  i64.load8_s  m:memarg
-        @Instr("i64.load8_u", "i64.load8_u", 2, IRType.MEMORY, [Types.I32], [Types.I64])       I64_LOAD8_U         = 0x31, ///  i64.load8_u  m:memarg
-        @Instr("i64.load16_s", "i64.load16_s", 2, IRType.MEMORY, [Types.I32], [Types.I64])      I64_LOAD16_S        = 0x32, ///  i64.load16_s m:memarg
-        @Instr("i64.load16_u", "i64.load16_u", 2, IRType.MEMORY, [Types.I32], [Types.I64])      I64_LOAD16_U        = 0x33, ///  i64.load16_u m:memarg
-        @Instr("i64.load32_s", "i64.load32_s", 2, IRType.MEMORY, [Types.I32], [Types.I64])      I64_LOAD32_S        = 0x34, ///  i64.load32_s m:memarg
-        @Instr("i64.load32_u", "i64.load32_u", 2, IRType.MEMORY, [Types.I32], [Types.I64])      I64_LOAD32_U        = 0x35, ///  i64.load32_u m:memarg
-        @Instr("i32.store", "i32.store", 2, IRType.MEMORY, [Types.I32, Types.I32])            I32_STORE           = 0x36, ///  i32.store    m:memarg
-        @Instr("i64.store", "i64.store", 2, IRType.MEMORY, [Types.I64, Types.I32])            I64_STORE           = 0x37, ///  i64.store    m:memarg
-        @Instr("f32.store", "f32.store", 2, IRType.MEMORY, [Types.F32, Types.I32])            F32_STORE           = 0x38, ///  f32.store    m:memarg
-        @Instr("f64.store", "f64.store", 2, IRType.MEMORY, [Types.F64, Types.I32])            F64_STORE           = 0x39, ///  f64.store    m:memarg
-        @Instr("i32.store8", "i32.store8", 2, IRType.MEMORY, [Types.I32, Types.I32])           I32_STORE8          = 0x3A, ///  i32.store8   m:memarg
-        @Instr("i32.store16", "i32.store16", 2, IRType.MEMORY, [Types.I32, Types.I32])          I32_STORE16         = 0x3B, ///  i32.store16  m:memarg
-        @Instr("i64.store8", "i64.store8", 2, IRType.MEMORY, [Types.I64, Types.I32])           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
-        @Instr("i64.store16", "i64.store16", 2, IRType.MEMORY, [Types.I64, Types.I32])          I64_STORE16         = 0x3D, ///  i64.store16  m:memarg
-        @Instr("i64.store32", "i64.store32", 2, IRType.MEMORY, [Types.I64, Types.I32])          I64_STORE32         = 0x3E, ///  i64.store32  m:memarg
-        @Instr("memory.size", "memory_size", 7, IRType.MEMOP)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
-        @Instr("memory.grow", "grow_memory", 7, IRType.MEMOP, [Types.I32])        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
+        @Instr("i32.load", "i32.load", 2, IRType.MEMOP, [Types.I32], [Types.I32])          I32_LOAD            = 0x28, ///  i32.load     m:memarg
+        @Instr("i64.load", "i64.load", 2, IRType.MEMOP, [Types.I32], [Types.I64])          I64_LOAD            = 0x29, ///  i64.load     m:memarg
+        @Instr("f32.load", "f32.load", 2, IRType.MEMOP, [Types.I32], [Types.F32])          F32_LOAD            = 0x2A, ///  f32.load     m:memarg
+        @Instr("f64.load", "f64.load", 2, IRType.MEMOP, [Types.I32], [Types.F64])          F64_LOAD            = 0x2B, ///  f64.load     m:memarg
+        @Instr("i32.load8_s", "i32.load8_s", 2, IRType.MEMOP, [Types.I32], [Types.I32])       I32_LOAD8_S         = 0x2C, ///  i32.load8_s  m:memarg
+        @Instr("i32.load8_u", "i32.load8_u", 2, IRType.MEMOP, [Types.I32], [Types.I32])       I32_LOAD8_U         = 0x2D, ///  i32.load8_u  m:memarg
+        @Instr("i32.load16_s", "i32.load16_s", 2, IRType.MEMOP, [Types.I32], [Types.I32])      I32_LOAD16_S        = 0x2E, ///  i32.load16_s m:memarg
+        @Instr("i32.load16_u", "i32.load16_u", 2, IRType.MEMOP, [Types.I32], [Types.I32])      I32_LOAD16_U        = 0x2F, ///  i32.load16_u m:memarg
+        @Instr("i64.load8_s", "i64.load8_s", 2, IRType.MEMOP, [Types.I32], [Types.I32])       I64_LOAD8_S         = 0x30, ///  i64.load8_s  m:memarg
+        @Instr("i64.load8_u", "i64.load8_u", 2, IRType.MEMOP, [Types.I32], [Types.I64])       I64_LOAD8_U         = 0x31, ///  i64.load8_u  m:memarg
+        @Instr("i64.load16_s", "i64.load16_s", 2, IRType.MEMOP, [Types.I32], [Types.I64])      I64_LOAD16_S        = 0x32, ///  i64.load16_s m:memarg
+        @Instr("i64.load16_u", "i64.load16_u", 2, IRType.MEMOP, [Types.I32], [Types.I64])      I64_LOAD16_U        = 0x33, ///  i64.load16_u m:memarg
+        @Instr("i64.load32_s", "i64.load32_s", 2, IRType.MEMOP, [Types.I32], [Types.I64])      I64_LOAD32_S        = 0x34, ///  i64.load32_s m:memarg
+        @Instr("i64.load32_u", "i64.load32_u", 2, IRType.MEMOP, [Types.I32], [Types.I64])      I64_LOAD32_U        = 0x35, ///  i64.load32_u m:memarg
+        @Instr("i32.store", "i32.store", 2, IRType.MEMOP, [Types.I32, Types.I32])            I32_STORE           = 0x36, ///  i32.store    m:memarg
+        @Instr("i64.store", "i64.store", 2, IRType.MEMOP, [Types.I64, Types.I32])            I64_STORE           = 0x37, ///  i64.store    m:memarg
+        @Instr("f32.store", "f32.store", 2, IRType.MEMOP, [Types.F32, Types.I32])            F32_STORE           = 0x38, ///  f32.store    m:memarg
+        @Instr("f64.store", "f64.store", 2, IRType.MEMOP, [Types.F64, Types.I32])            F64_STORE           = 0x39, ///  f64.store    m:memarg
+        @Instr("i32.store8", "i32.store8", 2, IRType.MEMOP, [Types.I32, Types.I32])           I32_STORE8          = 0x3A, ///  i32.store8   m:memarg
+        @Instr("i32.store16", "i32.store16", 2, IRType.MEMOP, [Types.I32, Types.I32])          I32_STORE16         = 0x3B, ///  i32.store16  m:memarg
+        @Instr("i64.store8", "i64.store8", 2, IRType.MEMOP, [Types.I64, Types.I32])           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
+        @Instr("i64.store16", "i64.store16", 2, IRType.MEMOP, [Types.I64, Types.I32])          I64_STORE16         = 0x3D, ///  i64.store16  m:memarg
+        @Instr("i64.store32", "i64.store32", 2, IRType.MEMOP, [Types.I64, Types.I32])          I64_STORE32         = 0x3E, ///  i64.store32  m:memarg
+        @Instr("memory.size", "memory_size", 7, IRType.MEMORY)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
+        @Instr("memory.grow", "grow_memory", 7, IRType.MEMORY, [Types.I32])        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
 
         @Instr("i32.const", "i32.const", 1, IRType.CONST, [], [Types.I32])          I32_CONST           = 0x41, ///  i32.const n:i32
         @Instr("i64.const", "i64.const", 1, IRType.CONST, [], [Types.I64])          I64_CONST           = 0x42, ///  i64.const n:i64
@@ -1008,11 +1008,11 @@ struct ExprRange {
                     // localidx globalidx
                     elm.warg = get(Types.I32);
                     break;
-                case MEMORY:
+                case MEMOP:
                     // [ offset, align ]
                     elm.wargs = [get(Types.I32), get(Types.I32)];
                     break;
-                case MEMOP:
+                case MEMORY:
                     index++;
                     break;
                 case CONST:

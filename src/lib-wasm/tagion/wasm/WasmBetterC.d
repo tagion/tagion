@@ -1281,11 +1281,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case GLOBAL:
                         bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
-                    case MEMORY:
+                    case MEMOP:
                         bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(
                                 elm.wargs));
                         break;
-                    case MEMOP:
+                    case MEMORY:
                         bout.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:
