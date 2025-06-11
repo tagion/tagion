@@ -641,6 +641,27 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
         }
 
+        string generate(Args...)(const IR ir, const Args agrs) {
+            static if ((Args.length > 0) && is(Args[0] : const(Types[]))) {
+                const pop_size = args[0].length;
+            }
+            else {
+                const pop_size = 0;
+            }
+            switch (pop_size) {
+            case 1:
+                assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
+                return format(instr_mt[ir], pop, args[1..$]);
+            case 2:
+                assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
+                return format(instr_extend_fmt[ir], pop, pop, args[1..$]);
+            default:
+                // empty
+            }
+            assert(0, format("Format arguments (%-(%s %)) not supported for %s", args, interTable[ir]
+                    .name));
+        }
+
         void get(const uint local_idx) pure nothrow {
 
             push(local_names[local_idx]);

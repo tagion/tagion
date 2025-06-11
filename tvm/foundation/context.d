@@ -15,8 +15,8 @@ struct Context {
      *   m = max block size
      */
     void set(const uint n, const uint m) {
-        data.length = 64 *  / size_t.sizeof * n;
-        mem_i8 = cast(ubyte[]) data;
+        data.length = (64 / size_t.sizeof) * n;
+        mem_i8 = cast(byte[]) data;
         mem_i16 = cast(short[]) data;
         mem_i32 = cast(int[]) data;
         mem_i64 = cast(long[]) data;
