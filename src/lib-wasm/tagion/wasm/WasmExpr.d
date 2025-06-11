@@ -83,7 +83,8 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case MEMOP:
+            case LOAD:
+            case STORE:
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),

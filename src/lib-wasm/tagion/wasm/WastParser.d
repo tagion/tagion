@@ -467,6 +467,7 @@ struct WastParser {
                     return stage;
                 case BRANCH:
                     const branch_ir = irLookupTable[instr.name];
+                    __write("BRANCH %s", branch_ir);
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
@@ -475,6 +476,7 @@ struct WastParser {
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
+                        __write("Write %s blk_idx %d", IR.BR, blk_idx);
                         wasmexpr(IR.BR, blk_idx);
                         break;
                     case IR.BR_IF:
@@ -559,16 +561,19 @@ struct WastParser {
                     }
                     wasmexpr(irLookupTable[instr.name], global_idx);
                     break;
-                case MEMOP:
-
+                case LOAD:
+                case STORE:
                     r.nextToken;
+                    uint[2] args; /// Align offset
+                    args[0] = instr.opcode;
                     for (uint i = 0; (i < 2) && (r.type is TokenType.WORD); i++) {
-                        label = r.token; // Fix this later
+                        args[i] = r.token.to!uint;
                         r.nextToken;
                     }
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
+                    wasmexpr(irLookupTable[instr.name], args[0], args[1]);
                     break;
                 case MEMORY:
                     r.nextToken;

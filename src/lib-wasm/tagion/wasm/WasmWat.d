@@ -417,7 +417,8 @@ alias check = Check!WatException;
                     case GLOBAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
-                    case MEMOP:
+                    case LOAD:
+                    case STORE:
                         output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMORY:

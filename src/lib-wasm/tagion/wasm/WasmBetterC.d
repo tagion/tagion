@@ -604,27 +604,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         void perform(const IR ir, const(Types[]) args) {
             switch (args.length) {
             case 0:
-                return;
+                break;
             case 1:
-                if (ir in instr_fmt) {
-                    push(format(instr_fmt[ir], pop));
-                    return;
-                }
-                push(format("Undefined %s pop %s", ir, pop));
+                assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
+                push(format(instr_fmt[ir], pop));
                 break;
             case 2:
-                if (ir in instr_fmt) {
-                    push(format(instr_fmt[ir], pop, pop));
-                    return;
-                }
-                push(format("Undefined %s pops %s %s", ir, pop, pop));
+                assert(ir in instr_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
+                push(format(instr_fmt[ir], pop, pop));
                 break;
             case 3:
-                if (ir in instr_fmt) {
-                    push(format(instr_fmt[ir], pop, pop, pop));
-                    return;
-                }
-                push(format("Undefined %s pops %s %s %s", ir, pop, pop, pop));
+                assert(ir in instr_fmt, format("Undefined %s pops %s %s %s", ir, pop, pop, pop));
+                push(format(instr_fmt[ir], pop, pop, pop));
                 break;
             default:
                 check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir]
@@ -636,18 +627,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         void perform(const IR_EXTEND ir, const(Types[]) args) {
             switch (args.length) {
             case 1:
-                if (ir in instr_extend_fmt) {
-                    push(format(instr_extend_fmt[ir], pop));
-                    return;
-                }
-                push(format("Undefined %s pop %s", ir, pop));
+                assert(ir in instr_extend_fmt, format("Undefined %s pop %s", ir, pop));
+                push(format(instr_extend_fmt[ir], pop));
                 break;
             case 2:
-                if (ir in instr_extend_fmt) {
-                    push(format(instr_extend_fmt[ir], pop, pop));
-                    return;
-                }
-                push(format("Undefined %s pops %s %s", ir, pop, pop));
+                assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
+                push(format(instr_extend_fmt[ir], pop, pop));
                 break;
             default:
                 check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir]
@@ -1281,9 +1266,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case GLOBAL:
                         bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
-                    case MEMOP:
-                        bout.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(
+                    case LOAD:
+                    case STORE:
+                        bout.writefln("%s//%s%s", indent, elm.instr.name, offsetAlignToString(
                                 elm.wargs));
+
                         break;
                     case MEMORY:
                         bout.writefln("%s%s", indent, elm.instr.name);
@@ -1547,6 +1534,12 @@ shared static this() {
         IR.SELECT: q{((%1$s)?%3$s:%2$s)},
         //
         IR.IF: q{(%1$s)},
+        // Memory
+        IR.I32_LOAD: q{ctx.load!(%2$s, %3$s, int)(%1$s)},
+        IR.I64_LOAD: q{ctx.load!(%2$s, %3$s, long)(%1$s)},
+        IR.F32_LOAD: q{ctx.load!(%2$s, %3$s, float)(%1$s)},
+        IR.F64_LOAD: q{ctx.load!(%2$s, %3$s, double)(%1$s)},
+
     ];
     instr_extend_fmt = [
         IR_EXTEND.I32_TRUNC_SAT_F32_S: q{math.trunc_sat!(int,float)(%1$s)},

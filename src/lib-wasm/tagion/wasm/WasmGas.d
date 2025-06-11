@@ -106,7 +106,8 @@ struct WasmGas {
                         wasmexpr(elm.code, elm.warg.get!uint);
                         //writefln("\t\tdata=%s",
                         break;
-                    case MEMOP:
+                    case LOAD:
+                    case STORE:
                         wasmexpr(elm.code, elm.wargs[0].get!uint, elm.wargs[1].get!uint);
                         break;
                     case MEMORY:
