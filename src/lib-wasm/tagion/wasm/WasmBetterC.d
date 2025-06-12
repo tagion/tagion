@@ -1545,10 +1545,28 @@ shared static this() {
         IR.F32_LOAD: q{ctx.load!(%2$s, %3$s, float)(%1$s)},
         IR.F64_LOAD: q{ctx.load!(%2$s, %3$s, double)(%1$s)},
 
+        IR.I32_LOAD8_S: q{ctx.load!(%2$s, %3$s, int, byte)(%1$s)},
+        IR.I32_LOAD8_U: q{ctx.load!(%2$s, %3$s, uint, byte)(%1$s)},
+        IR.I32_LOAD16_S: q{ctx.load!(%2$s, %3$s, int, short)(%1$s)},
+        IR.I32_LOAD16_U: q{ctx.load!(%2$s, %3$s, uint, short)(%1$s)},
+
+        IR.I64_LOAD8_S: q{ctx.load!(%2$s, %3$s, long, byte)(%1$s)},
+        IR.I64_LOAD8_U: q{ctx.load!(%2$s, %3$s, ulong, byte)(%1$s)},
+        IR.I64_LOAD16_S: q{ctx.load!(%2$s, %3$s, long, short)(%1$s)},
+        IR.I64_LOAD16_U: q{ctx.load!(%2$s, %3$s, ulong, short)(%1$s)},
+        IR.I64_LOAD32_S: q{ctx.load!(%2$s, %3$s, long, int)(%1$s)},
+        IR.I64_LOAD32_U: q{ctx.load!(%2$s, %3$s, ulong, int)(%1$s)},
+
         IR.I32_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(int)%1$s)},
         IR.I64_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(long)%1$s)},
         IR.F32_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(float)%1$s)},
         IR.F64_STORE: q{ctx.store!(%3$s, %4$s)(%3$s, cast(double)%1$s)},
+
+        IR.I32_STORE8: q{ctx.store!(%3$s, %4$s)(%2$s, cast(byte)%1$s)},
+        IR.I32_STORE16: q{ctx.store!(%3$s, %4$s)(%2$s, cast(short)%1$s)},
+        IR.I64_STORE8: q{ctx.store!(%3$s, %4$s)(%2$s, cast(byte)%1$s)},
+        IR.I64_STORE16: q{ctx.store!(%3$s, %4$s)(%2$s, cast(short)%1$s)},
+        IR.I64_STORE32: q{ctx.store!(%3$s, %4$s)(%2$s, cast(int)%1$s)},
 
     ];
     instr_extend_fmt = [

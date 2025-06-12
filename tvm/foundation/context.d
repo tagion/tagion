@@ -23,12 +23,12 @@ struct Context {
         mem_i64 = cast(long[]) data;
     }
 
-    template load(uint _align, uint _offset, T) {
+    template load(uint _align, uint _offset, T, U = T) {
         T load(const int idx) @trusted {
             static if (_align == 1) {
                 assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
-                const addr = cast(T*)&mem_i8[idx + _offset];
-                return *addr;
+                const addr = cast(U*)&mem_i8[idx + _offset];
+                return cast(T)*addr;
             }
             else static if (_align == 2) {
                 static if ((T.sizeof == int.sizeof) && (_offset == 0)) {
@@ -36,8 +36,8 @@ struct Context {
                 }
                 else {
                     assert(idx + _offset + T.sizeof / int.sizeof <= mem_i32.length, "Out of memory");
-                    const addr = cast(T*)&mem_i32[idx + _offset];
-                    return *addr;
+                    const addr = cast(U*)&mem_i32[idx + _offset];
+                    return cast(T)*addr;
 
                 }
             }
@@ -47,11 +47,23 @@ struct Context {
                 }
                 else {
                     assert(idx + _offset + T.sizeof / long.sizeof <= mem_i64.length, "Out of memory");
-                    const addr = cast(T*)&mem_i64[idx + _offset];
-                    return *addr;
+                    const addr = cast(U*)&mem_i64[idx + _offset];
+                    return cast(T)*addr;
 
                 }
             }
+            else static if (_align == 8) {
+                static if ((T.sizeof == long.sizeof) && (_offset == 0)) {
+                    return cast(T) mem_i64[idx];
+                }
+                else {
+                    assert(idx + _offset + T.sizeof / long.sizeof <= mem_i64.length, "Out of memory");
+                    const addr = cast(U*)&mem_i64[idx + _offset];
+                    return cast(T)*addr;
+
+                }
+            }
+
             else {
                 import std.format;
 
@@ -61,7 +73,12 @@ struct Context {
     }
 
     void store(uint _align, uint _offset, T)(int idx, T x) @trusted {
-        static if (_align == 2) {
+        static if (_align == 1) {
+            assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
+            auto addr = cast(T*)&mem_i8[idx + _offset];
+            *addr = x;
+        }
+        else static if (_align == 2) {
             static if (T.sizeof == int.sizeof) {
                 mem_i32[idx] = cast(int) x;
             }
@@ -75,12 +92,14 @@ struct Context {
                 static assert(0, "Not implemented yet");
             }
         }
-        else static if (_align == 1) {
-            assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
-            auto addr = cast(T*)&mem_i8[idx + _offset];
-            *addr = x;
-        }
         else static if (_align == 4) {
+            static if (T.sizeof == long.sizeof) {
+            }
+            else {
+                assert(idx + _offset + T.sizeof <= mem_i64.length, "Out of memory");
+            }
+        }
+        else static if (_align == 8) {
             static if (T.sizeof == long.sizeof) {
             }
             else {
