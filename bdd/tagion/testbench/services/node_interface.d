@@ -85,7 +85,7 @@ class PubkeyASendsAMessageToPubkeyB {
             shared _net = cast(shared(StdSecureNet))(a_net.clone());
             immutable nnr = new NetworkNodeRecord(a_net.pubkey, opts_a.node_address);
             addressbook.set(nnr);
-            a_handle = _spawn!NodeInterface(tn.node_interface, opts_a.node_address, _net, addressbook, tn);
+            a_handle = _spawn!NodeInterface(tn.node_interface, opts_a, _net, addressbook, tn);
         }
         { // B
             tn.node_interface = "interface_b";
@@ -93,7 +93,7 @@ class PubkeyASendsAMessageToPubkeyB {
             shared _net = cast(shared(StdSecureNet))(b_net.clone());
             immutable nnr = new NetworkNodeRecord(b_net.pubkey, opts_b.node_address);
             addressbook.set(nnr);
-            b_handle = _spawn!NodeInterface(tn.node_interface, opts_b.node_address, _net, addressbook, tn);
+            b_handle = _spawn!NodeInterface(tn.node_interface, opts_b, _net, addressbook, tn);
         }
 
         check(waitforChildren(Ctrl.ALIVE), "No all node_interfaces became alive");

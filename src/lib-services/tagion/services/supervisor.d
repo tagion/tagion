@@ -129,7 +129,7 @@ struct Supervisor {
             else {
                 node_interface_handle = _spawn!NodeInterface(
                         tn.node_interface,
-                        opts.node_interface.node_address,
+                        opts.node_interface,
                         shared_net,
                         addressbook,
                         tn,

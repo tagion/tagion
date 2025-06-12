@@ -24,6 +24,7 @@ import tagion.gossip.AddressBook;
 import tagion.services.messages;
 import tagion.services.tasknames;
 import tagion.services.exception;
+import tagion.services.nodeinterface;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.hibon.Document;
 
@@ -95,14 +96,14 @@ void event_listener(string task_name) {
 
 struct NodeInterface { 
     shared(AddressBook) address_book;
-    string listen_address;
+    immutable(NodeInterfaceOptions) opts;
     Tid event_listener_tid;
     Socket listener_sock;
     TaskNames tn;
     shared(SecureNet) shared_net;
 
-    this(string address, shared(SecureNet) shared_net, shared(AddressBook) address_book, TaskNames task_names) {
-        this.listen_address = address;
+    this(immutable(NodeInterfaceOptions) opts, shared(SecureNet) shared_net, shared(AddressBook) address_book, TaskNames task_names) {
+        this.opts = opts;
         this.shared_net = shared_net;
         this.address_book = address_book;
         this.tn = task_names;
@@ -117,7 +118,7 @@ struct NodeInterface {
         Socket new_sock = listener_sock.accept;
         pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
         event_listener_tid.send(AddPoll(), thisTid, listener_poll);
-        Tid conn_tid = spawn(&connection, event_listener_tid, tn, new_sock, CONNECTION_STATE.receive);
+        Tid conn_tid = spawn(&connection, event_listener_tid, opts, tn, new_sock, CONNECTION_STATE.receive);
     }
 
     // Initial send before a connection has been established with a peer
@@ -126,7 +127,7 @@ struct NodeInterface {
         Socket sock = Socket(address);
         sock.connect();
 
-        Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
+        Tid conn_tid = spawn(&connection, event_listener_tid, opts, tn, sock, CONNECTION_STATE.send);
 
         conn_tid.send(req, channel, doc);
     }
@@ -138,7 +139,7 @@ struct NodeInterface {
             log("opening connection to %s", address);
             sock.connect();
 
-            Tid conn_tid = spawn(&connection, event_listener_tid, tn, sock, CONNECTION_STATE.send);
+            Tid conn_tid = spawn(&connection, event_listener_tid, opts, tn, sock, CONNECTION_STATE.send);
 
             conn_tid.send(req, channel, doc);
         }
@@ -153,10 +154,10 @@ struct NodeInterface {
         auto scheduler = new FiberScheduler;
         event_listener_tid = spawn(&event_listener, tn.event_listener);
         scheduler.start({
-                listener_sock = Socket(listen_address);
+                listener_sock = Socket(opts.node_address);
                 listener_sock.bind();
                 listener_sock.listen(10);
-                log("listening on %s", listen_address);
+                log("listening on %s", opts.node_address);
                 listener_sock.blocking = false;
                 pollfd listener_poll = pollfd(listener_sock.handle, POLLIN, 0);
                 event_listener_tid.send(AddPoll(), thisTid, listener_poll);
@@ -175,9 +176,9 @@ enum CONNECTION_STATE {
 }
 
 @trusted
-void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_STATE state) {
+void connection(Tid event_listener_tid, immutable(NodeInterfaceOptions) opts, TaskNames tn , Socket sock, CONNECTION_STATE state) {
     try {
-        connection_impl(event_listener_tid, tn , sock, state);
+        connection_impl(event_listener_tid, opts, tn , sock, state);
     }
     catch(OwnerTerminated e) {
         return;
@@ -189,7 +190,7 @@ void connection(Tid event_listener_tid, TaskNames tn , Socket sock, CONNECTION_S
     }
 }
 
-void connection_impl(Tid event_listener_tid, TaskNames tn, Socket sock, CONNECTION_STATE state) {
+void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opts, TaskNames tn, Socket sock, CONNECTION_STATE state) {
     // count how many times this connection has sent or received some data
     uint statistic_state_change;
 
@@ -258,6 +259,7 @@ void connection_impl(Tid event_listener_tid, TaskNames tn, Socket sock, CONNECTI
             debug(nodeinterface) log("state recv");
             state = CONNECTION_STATE.send;
             ReceiveBuffer receive_buffer;
+            receive_buffer.max_size = opts.bufsize;
             // receive_buffer will keep calling the callback until the entire document has been received
             auto result_buffer = receive_buffer(
                 (scope void[] buf) {
