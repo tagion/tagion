@@ -25,30 +25,33 @@ struct Context {
 
     template load(uint _align, uint _offset, T) {
         T load(const int idx) @trusted {
-            static if (_align == 2) {
-                static if (T.sizeof == int.sizeof) {
+            static if (_align == 1) {
+                assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
+                const addr = cast(T*)&mem_i8[idx + _offset];
+                return *addr;
+            }
+            else static if (_align == 2) {
+                static if ((T.sizeof == int.sizeof) && (_offset == 0)) {
                     return cast(T) mem_i32[idx];
                 }
                 else {
-                    static assert(0, "Not implemented yet");
-                }
-            }
-            else static if (_align == 1) {
-                static if (T.sizeof == int.sizeof) {
-                    assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
-                    const addr = cast(T*)&mem_i8[idx + _offset];
+                    assert(idx + _offset + T.sizeof / int.sizeof <= mem_i32.length, "Out of memory");
+                    const addr = cast(T*)&mem_i32[idx + _offset];
                     return *addr;
 
                 }
+            }
+            else static if (_align == 4) {
+                static if ((T.sizeof == long.sizeof) && (_offset == 0)) {
+                    return cast(T) mem_i64[idx];
+                }
                 else {
-                    static assert(0, "Not implemented yet");
+                    assert(idx + _offset + T.sizeof / long.sizeof <= mem_i64.length, "Out of memory");
+                    const addr = cast(T*)&mem_i64[idx + _offset];
+                    return *addr;
+
                 }
             }
-       else static if (_align == 4( {
-            static if (T.sizeof == long.sizeof ^^ _) {
-        
-            return cast(T)mem_i64[idx];
-        }
             else {
                 import std.format;
 
