@@ -339,7 +339,7 @@ struct WastParser {
             r.expect(TokenType.WORD);
             const instr = instrWastLookup.get(r.token, illegalInstr);
             auto next_stage = ParserStage.CODE;
-            string label;
+            //string label;
             with (IRType) {
                 final switch (instr.irtype) {
                 case CODE:
@@ -380,7 +380,7 @@ struct WastParser {
                     goto case;
                 case BLOCK:
                     r.nextToken;
-                    label = null;
+                    string label;
                     if (r.type == TokenType.WORD) {
                         label = r.token;
                         r.nextToken;
@@ -409,7 +409,6 @@ struct WastParser {
 
                     if (block_ir is IR.IF) {
                         getArguments;
-                        __write("After arguments %s %(%s %)", block_ir, r.save.map!(t => t.token).take(5));
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
 
@@ -471,7 +470,7 @@ struct WastParser {
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
-                        const blk_idx = r.get!uint;
+                        const blk_idx = func_ctx.block_depth_index(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -481,7 +480,7 @@ struct WastParser {
                         break;
                     case IR.BR_IF:
                         r.nextToken;
-                        const blk_idx = r.get!uint;
+                        const blk_idx = func_ctx.block_depth_index(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -567,9 +566,21 @@ struct WastParser {
                     uint[2] args; /// Align offset
                     args[0] = instr.opcode;
                     for (uint i = 0; (i < 2) && (r.type is TokenType.WORD); i++) {
-                        args[i] = r.token.to!uint;
+                        const param_args = r.token.split("=");
+                        r.check(param_args.length == 2, "Expected align=x or offset=x");
+                        switch (param_args[0]) {
+                        case "align":
+                            args[0] = param_args[1].to!uint;
+                            break;
+                        case "offset":
+                            args[1] = param_args[1].to!uint;
+                            break;
+                        default:
+                            r.check(0, format("Illegal parameter %s expected align or offset", param_args[0]));
+                        }
                         r.nextToken;
                     }
+                    __write("args %s", args);
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }

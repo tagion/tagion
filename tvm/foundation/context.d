@@ -27,29 +27,67 @@ struct Context {
         T load(const int idx) @trusted {
             static if (_align == 2) {
                 static if (T.sizeof == int.sizeof) {
-                    return mem_i32[idx];
+                    return cast(T) mem_i32[idx];
                 }
                 else {
-                    static assert(00, "Not implemented yet");
+                    static assert(0, "Not implemented yet");
                 }
             }
+            else static if (_align == 1) {
+                static if (T.sizeof == int.sizeof) {
+                    assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
+                    const addr = cast(T*)&mem_i8[idx + _offset];
+                    return *addr;
+
+                }
+                else {
+                    static assert(0, "Not implemented yet");
+                }
+            }
+       else static if (_align == 4( {
+            static if (T.sizeof == long.sizeof ^^ _) {
+        
+            return cast(T)mem_i64[idx];
+        }
             else {
-                static assert(0, "Align value not supported");
+                import std.format;
+
+                static assert(0, format("Load align %s value not supported", _align));
             }
         }
     }
 
-    void store(uint _align, uint _offser, T)(int idx, T x) {
+    void store(uint _align, uint _offset, T)(int idx, T x) @trusted {
         static if (_align == 2) {
-            static if (is(T == int)) {
-                mem_i32[idx] = x;
+            static if (T.sizeof == int.sizeof) {
+                mem_i32[idx] = cast(int) x;
+            }
+            else static if (T.sizeof == long.sizeof) {
+                mem_i64[idx] = cast(long) x;
+            }
+            else static if (_align == 1) {
+                assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
             }
             else {
-                static assert(00, "Not implemented yet");
+                static assert(0, "Not implemented yet");
+            }
+        }
+        else static if (_align == 1) {
+            assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
+            auto addr = cast(T*)&mem_i8[idx + _offset];
+            *addr = x;
+        }
+        else static if (_align == 4) {
+            static if (T.sizeof == long.sizeof) {
+            }
+            else {
+                assert(idx + _offset + T.sizeof <= mem_i64.length, "Out of memory");
             }
         }
         else {
-            static assert(00, "Not implemented yet");
+            import std.format;
+
+            static assert(0, format("Store align %s value not supported", _align));
         }
     }
 }
