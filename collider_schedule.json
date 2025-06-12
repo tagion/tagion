@@ -119,7 +119,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "load"],
+          "call_indirect", "element", "conversions", "br_table", "load", "i32"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -128,6 +128,12 @@
                 "f32_export.wast", "f64_export.wast",
                 "f32_cmp_export.wast", "f64_cmp_export.wast",
                 "float_misc_export.wast"
+            ]
+        },
+        "i32" : {
+            "args" : [
+                "i32.wast"
+
             ]
         },
         "br_table" : {

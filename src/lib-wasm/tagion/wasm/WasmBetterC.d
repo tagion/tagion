@@ -605,13 +605,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return stack.empty;
         }
 
-        
         void perform(Args...)(ref const ExprRange.IRElement elm, Args args) {
             switch (elm.instr.pops.length) {
             case 0:
                 break;
             case 1:
-                __write("%s %s %s %s", instrFmt(elm), peek, args);
                 push(format(instrFmt(elm), pop, args));
                 break;
             case 2:
@@ -621,7 +619,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 push(format(instrFmt(elm), pop, pop, pop, args));
                 break;
             default:
-                check(0, format("Format arguments (%-(%s %)) not supported for %s", 
+                check(0, format("Format arguments (%-(%s %)) not supported for %s",
                         elm.instr.pops, elm.instr.name));
             }
         }
@@ -637,7 +635,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             default:
                 // empty
             }
-            assert(0, format("Format arguments (%-(%s %)) not supported for %s", args, elm.instr                    .name));
+            assert(0, format("Format arguments (%-(%s %)) not supported for %s", args, elm.instr.name));
         }
 
         void get(const uint local_idx) pure nothrow {
@@ -972,6 +970,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     bout.writefln("%s//### setLocal", indent);
                 }
             }
+
             void setResults(const string local_indent, Block* target_blk) {
                 bout.writefln("%s// setResults %d", local_indent, ctx.current.id);
                 auto blk = ctx.current;
@@ -1046,7 +1045,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         switch (elm.code) {
                         case IR.IF:
-                            ctx.perform(elm);//.code, elm.instr.pops);
+                            ctx.perform(elm); //.code, elm.instr.pops);
                             block.condition = ctx.pop;
                             block.kind = BlockKind.IF;
                             break;
@@ -1355,7 +1354,7 @@ immutable string[IR_EXTEND] instr_extend_fmt;
 
 static string instrFmt(ref const ExprRange.IRElement elm) {
     if (elm.instr.irtype is IRType.CODE_EXTEND) {
-        const extend_ir = cast(IR_EXTEND)elm.instr.opcode;
+        const extend_ir = cast(IR_EXTEND) elm.instr.opcode;
         assert(extend_ir in instr_extend_fmt, format("Not format text defined for %s", extend_ir));
         return instr_extend_fmt[extend_ir];
     }
@@ -1376,9 +1375,9 @@ shared static this() {
         IR.F64_CONST: q{/* const f64 */},
 
         // 32 bits integer operations
-        IR.I32_CLZ: q{wasm.clz(%s)},
-        IR.I32_CTZ: q{wasm.ctz(%s)},
-        IR.I32_POPCNT: q{wasm.popcnt(%s)},
+        IR.I32_CLZ: q{wasm.clz(%1$s)},
+        IR.I32_CTZ: q{wasm.ctz(%1$s)},
+        IR.I32_POPCNT: q{wasm.popcnt(%1$s)},
         IR.I32_ADD: q{(%2$s + %1$s)},
         IR.I32_SUB: q{(%2$s - %1$s)},
         IR.I32_MUL: q{(%2$s * %1$s)},
