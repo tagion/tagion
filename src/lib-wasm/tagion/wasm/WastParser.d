@@ -425,7 +425,7 @@ struct WastParser {
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
                             }
                         }
-                        if (r.isComponent(instrTable[IR.ELSE].wast)) {
+                        if (r.isComponent(instrTable[IR.ELSE].name)) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
                         version (none)
