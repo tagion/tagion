@@ -37,7 +37,7 @@ import tagion.utils.StdTime;
  * 4. The wave-from gossip state
  * 5. And the refinement of generated epochs
  */
-class HashGraph {
+final class HashGraph {
     enum default_scrap_depth = 10;
     int scrap_depth = default_scrap_depth;
     import tagion.errors.ConsensusExceptions;
@@ -215,6 +215,21 @@ class HashGraph {
         return _rounds.last_decided_round !is null;
     }
 
+    /// Do we have any events in the graph
+    bool isConnected() {
+        return _nodes.byValue.count!(n => n._event !is null) >= node_size;
+    }
+
+    /// Have we voted on any rounds
+    bool isVoting() {
+        return _rounds.last_decided_round !is null;
+    }
+
+    /// Can we send in new events to the graph
+    bool isActive() {
+        return isVoting && !mirror_mode;
+    }
+
     /**
      * The channel is the public key used by this node
      * Returns: channel of this nodes    
@@ -253,6 +268,7 @@ class HashGraph {
      */
     const(HiRPC.Sender) create_init_tide(lazy const Document payload, lazy const sdt_t time) {
         if (areWeInGraph) {
+            // Mirror mode will never send ind new payloads
             if (!mirror_mode) {
                 immutable epack = event_pack(time, null, payload);
                 const registered = registerEventPackage(epack);
@@ -442,7 +458,7 @@ class HashGraph {
             // event either from event_package_cache or event_cache.
             event = lookup(fingerprint);
             if(!event) { // FIXME: this check should only be ignored in booting the network
-                if(mirror_mode) {
+                if(isVoting) {
                     return event;
                 }
                 Event.check(0, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
@@ -501,6 +517,19 @@ class HashGraph {
 
         return front_seat_event;
     }
+
+    bool make_witness(const Fingerprint fingerprint) {
+        auto e = register(cast(const(Buffer)) fingerprint);
+        if(e) {
+            if(e.isWitness) {
+                return  true;
+            }
+            e.witness_event;
+            return true;
+        }
+        return false;
+    }
+
 
     @HiRPCMethod const(HiRPC.Sender) wavefront(
         const Wavefront wave,

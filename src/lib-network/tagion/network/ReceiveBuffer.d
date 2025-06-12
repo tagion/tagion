@@ -45,7 +45,6 @@ struct ReceiveBuffer {
                     }
                 }
             }
-
         }
         return ResultBuffer(pos, buffer[0 .. total_size]);
     }

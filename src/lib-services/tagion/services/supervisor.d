@@ -159,7 +159,9 @@ struct Supervisor {
 
         handles ~= transcript_handle;
 
-        handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);
+        NodeInterfaceOptions rpcserver_opts = opts.node_interface;
+        rpcserver_opts.node_address = opts.rpcserver.sock_addr;
+        handles ~= node_interface_handle = _spawn!NodeInterface(tn.rpcserver, rpcserver_opts, shared_net, addressbook, tn);
 
         version(none)
         foreach(channel; addressbook.keys) {

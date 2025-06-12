@@ -218,6 +218,7 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 (NodeSend _, Pubkey channel, Document doc) { send_doc = doc; },
                 (WavefrontReq _, Pubkey channel, Document doc) { send_doc = doc; },
                 (dartHiRPCRR.Response _, Document doc) { send_doc = doc;  },
+                (trtHiRPCRR.Response _, Document doc) { send_doc = doc;  },
                 (readRecorderRR.Response _, Document doc) { send_doc = doc; },
                 (dartHiRPCRR.Error _, string msg) { log(msg); },
                 (readRecorderRR.Error _, string msg) { log(msg); },
@@ -308,10 +309,20 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 case RPCMethods.dartCheckRead:
                 case RPCMethods.dartBullseye:
                 case RPCMethods.dartRim:
-                    locate(tn.dart).send(dartHiRPCRR(), doc);
+                    if(hirpcmsg.method.domain == "trt") {
+                        locate(tn.trt).send(trtHiRPCRR(), doc);
+                    }
+                    else {
+                        locate(tn.dart).send(dartHiRPCRR(), doc);
+                    }
                     break;
                 case RPCMethods.readRecorder:
                     locate(tn.replicator).send(readRecorderRR(), doc);
+                    break;
+                case RPCMethods.submit:
+                    locate(tn.hirpc_verifier).send(inputDoc(), doc);
+                    const response_ok = hirpc.result(hirpcmsg, ResultOk());
+                    thisTid.send(NodeSend(), Pubkey.init, response_ok.toDoc);
                     break;
                 case RPCMethods.wavefront:
                     locate(tn.epoch_creator).send(WavefrontReq(), doc);

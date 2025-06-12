@@ -41,21 +41,20 @@ HiRPC.Receiver sendHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc = Hi
 }
 
 HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirpc = HiRPC(null), Duration timeout = DEFAULT_TIMEOUT) {
-    int rc;
-    NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    sock.sendtimeout = timeout ;
-    sock.sendbuf = 0x4000;
-    sock.recvtimeout = timeout;
+    import tagion.network.socket;
+    import tagion.network.ReceiveBuffer;
 
-    rc = sock.dial(address);
-    check(rc == 0, format("Could not dial address %s: %s", address, nng_errstr(rc)));
+    Socket sock = Socket(address);
+    sock.connect();
 
-    rc = sock.send(contract.toDoc.serialize);
-    check(sock.errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", sock.errno));
-    check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
+    const _ = sock.send(contract.toDoc.serialize);
+    socket_check(sock.last_error == 0, "Error Sending");
 
-    const response_data = sock.receive!Buffer;
-    const response_doc = Document(response_data);
+    ReceiveBuffer receive_buffer;
+    auto result_buffer = receive_buffer((scope void[] buf) => sock.receive(buf));
+    socket_check(result_buffer.size > 0 , "Error receiving");
+
+    Document response_doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
     check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
     return hirpc.receive(response_doc);

@@ -792,25 +792,22 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
 
 const bullseye_handler = handler_helper!bullseye_handler_impl;
 void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
+    import tagion.network.socket;
+
     int attempts = 0;
 
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    Socket s = Socket(opt.node_dart_addr);
 
-    int rc;
-    while (!abort) {
-        rc = s.dial(opt.node_dart_addr);
-        if (rc == 0)
-            break;
-        enforce(++attempts < opt.sock_connectretry, "Couldn`t connect the kernel socket");
-    }
+    s.connect();
     scope (exit) {
         s.close();
     }
 
-    rc = s.send(crud.dartBullseye.toDoc.serialize);
+    s.send(crud.dartBullseye.toDoc.serialize);
+    socket_check(s.last_error == 0, "Error Send");
     ubyte[192] buf;
-    size_t len = s.receivebuf(buf, buf.length);
-    if (len == size_t.max && s.errno != 0) {
+    ptrdiff_t len = s.receive(buf);
+    if (len == size_t.max && s.last_error != 0) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.text = "socket error";
         return;

@@ -8,6 +8,7 @@ import core.sys.posix.sys.un;
 import std.traits;
 import std.conv;
 import std.format;
+import std.range;
 import std.algorithm;
 import tagion.errors.tagionexceptions;
 import std.socket : AddressFamily, Address;
@@ -123,9 +124,13 @@ struct NNGAddress {
             case Schemes.ipc:
                 return new std.socket.UnixAddress(host);
             case Schemes.tcp:
-                return new std.socket.InternetAddress(host, port);
+                auto addrinfos = std.socket.getAddressInfo(host, port.to!string, std.socket.SocketType.STREAM);
+                check(!addrinfos.empty, format("Could not resolve any address for %s", address));
+                return addrinfos[0].address;
             case Schemes.tcp6:
-                return new std.socket.Internet6Address(host, port);
+                auto addrinfos = std.socket.getAddressInfo(host, port.to!string, AddressFamily.INET6, std.socket.SocketType.STREAM);
+                check(!addrinfos.empty, format("Could not resolve any address for %s", address));
+                return addrinfos[0].address;
             default:
                 check(false, format("No impl for converting type %s to sockaddr", scheme));
         }
