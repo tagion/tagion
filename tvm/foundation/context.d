@@ -73,33 +73,31 @@ struct Context {
     }
 
     void store(uint _align, uint _offset, T)(int idx, T x) @trusted {
-        static if (_align == 1) {
+        static assert(_offset == 0, format("Store with offset %d not yet implemented", _offset));
+        static if (_align is 1) {
             assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
             auto addr = cast(T*)&mem_i8[idx + _offset];
             *addr = x;
         }
-        else static if (_align == 2) {
-            static if (T.sizeof == int.sizeof) {
+        else static if (_align is 2) {
+            static if ((T.sizeof is int.sizeof) && (_offset is 0)) {
                 mem_i32[idx] = cast(int) x;
             }
-            else static if (T.sizeof == long.sizeof) {
+            else static if ((T.sizeof is long.sizeof) && (_offset is 0)) {
                 mem_i64[idx] = cast(long) x;
-            }
-            else static if (_align == 1) {
-                assert(idx + _offset + T.sizeof <= mem_i8.length, "Out of memory");
             }
             else {
                 static assert(0, "Not implemented yet");
             }
         }
-        else static if (_align == 4) {
+        else static if (_align is 4) {
             static if (T.sizeof == long.sizeof) {
             }
             else {
                 assert(idx + _offset + T.sizeof <= mem_i64.length, "Out of memory");
             }
         }
-        else static if (_align == 8) {
+        else static if (_align is 8) {
             static if (T.sizeof == long.sizeof) {
             }
             else {

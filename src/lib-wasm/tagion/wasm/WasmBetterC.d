@@ -903,7 +903,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
             }
             while (!expr.empty && expr.front.code !is IR.END) {
-                __write("Block skip %s", expr.front.code);
                 expr.popFront;
             }
         }
@@ -918,7 +917,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 return;
             }
             while (!expr.empty && (expr.front.code !is IR.END && expr.front.code !is IR.ELSE)) {
-                __write("skip %s", expr.front.code);
                 expr.popFront;
             }
         }
@@ -1027,7 +1025,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         case IR.DROP:
                             const __value = ctx.peek;
                             bout.writefln("%s// drop %s", indent, ctx.pop);
-                            __write("%s// drop %s", indent, __value);
                             break;
                         default:
                             assert(0, format("Illegal instruction %s", elm.code));

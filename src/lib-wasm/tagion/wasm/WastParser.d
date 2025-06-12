@@ -412,7 +412,6 @@ struct WastParser {
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
 
-                        __write("IF before expression %(%s %)", r.save.map!(t => t.token).take(5));
                         if (r.isComponent(PseudoWastInstr.then)) { // (then ... ) 
                             //r.drop(2);
                             r.nextToken;
@@ -466,7 +465,6 @@ struct WastParser {
                     return stage;
                 case BRANCH:
                     const branch_ir = irLookupTable[instr.name];
-                    __write("BRANCH %s", branch_ir);
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
@@ -475,7 +473,6 @@ struct WastParser {
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
-                        __write("Write %s blk_idx %d", IR.BR, blk_idx);
                         wasmexpr(IR.BR, blk_idx);
                         break;
                     case IR.BR_IF:
@@ -580,7 +577,6 @@ struct WastParser {
                         }
                         r.nextToken;
                     }
-                    __write("args %s", args);
                     foreach (i; 0 .. instr.pops.length) {
                         innerInstr(wasmexpr, r, block_results, next_stage);
                     }
