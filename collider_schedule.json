@@ -120,7 +120,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "load", "i32", "store"],
+          "call_indirect", "element", "conversions", "br_table", "load",  "store", "align"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -181,6 +181,11 @@
         "store" : {
           "args" : [
             "store_1.wast"
+          ]
+        },
+        "align" : {
+          "args" : [
+            "align_1.wast"
           ]
         },
         "conversions" : {
