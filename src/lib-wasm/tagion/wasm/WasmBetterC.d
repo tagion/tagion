@@ -1262,7 +1262,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     case STORE:
                         bout.writefln("%s// %s%s", indent, elm.instr.name, offsetAlignToString(
                                 elm.wargs));
-                        bout.writefln("%s%s", indent, ctx.generate(elm, elm.wargs[0], elm.wargs[1]));
+                        bout.writefln("%s%s;", indent, ctx.generate(elm, elm.wargs[0].get!uint, elm.wargs[1].get!uint));
                         break;
                     case MEMORY:
                         bout.writefln("%s%s", indent, elm.instr.name);
@@ -1544,6 +1544,11 @@ shared static this() {
         IR.I64_LOAD: q{ctx.load!(%2$s, %3$s, long)(%1$s)},
         IR.F32_LOAD: q{ctx.load!(%2$s, %3$s, float)(%1$s)},
         IR.F64_LOAD: q{ctx.load!(%2$s, %3$s, double)(%1$s)},
+
+        IR.I32_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(int)%1$s)},
+        IR.I64_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(long)%1$s)},
+        IR.F32_STORE: q{ctx.store!(%3$s, %4$s)(%2$s, cast(float)%1$s)},
+        IR.F64_STORE: q{ctx.store!(%3$s, %4$s)(%3$s, cast(double)%1$s)},
 
     ];
     instr_extend_fmt = [

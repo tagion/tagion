@@ -112,7 +112,7 @@
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
           "if_block.wast", "loop_block.wast",
-            "load.wast" 
+            "load.wast", "store.wast" 
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -120,7 +120,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "load", "i32"],
+          "call_indirect", "element", "conversions", "br_table", "load", "i32", "store"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -176,6 +176,11 @@
         "load" : {
           "args" : [
             "load_1.wast"
+          ]
+        },
+        "store" : {
+          "args" : [
+            "store_1.wast"
           ]
         },
         "conversions" : {

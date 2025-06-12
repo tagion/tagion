@@ -193,10 +193,10 @@ enum IR : ubyte {
         @Instr("i64.load16_u", "i64.load16_u", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD16_U        = 0x33, ///  i64.load16_u m:memarg
         @Instr("i64.load32_s", "i64.load32_s", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD32_S        = 0x34, ///  i64.load32_s m:memarg
         @Instr("i64.load32_u", "i64.load32_u", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD32_U        = 0x35, ///  i64.load32_u m:memarg
-        @Instr("i32.store", "i32.store", 2, IRType.STORE, [Types.I32, Types.I32])            I32_STORE           = 0x36, ///  i32.store    m:memarg
-        @Instr("i64.store", "i64.store", 2, IRType.STORE, [Types.I64, Types.I32])            I64_STORE           = 0x37, ///  i64.store    m:memarg
-        @Instr("f32.store", "f32.store", 2, IRType.STORE, [Types.F32, Types.I32])            F32_STORE           = 0x38, ///  f32.store    m:memarg
-        @Instr("f64.store", "f64.store", 2, IRType.STORE, [Types.F64, Types.I32])            F64_STORE           = 0x39, ///  f64.store    m:memarg
+        @Instr("i32.store", "i32.store", 2, IRType.STORE, [Types.I32, Types.I32], [], 2)            I32_STORE           = 0x36, ///  i32.store    m:memarg
+        @Instr("i64.store", "i64.store", 2, IRType.STORE, [Types.I64, Types.I32], [], 3)            I64_STORE           = 0x37, ///  i64.store    m:memarg
+        @Instr("f32.store", "f32.store", 2, IRType.STORE, [Types.F32, Types.I32], [], 2)            F32_STORE           = 0x38, ///  f32.store    m:memarg
+        @Instr("f64.store", "f64.store", 2, IRType.STORE, [Types.F64, Types.I32], [], 3)            F64_STORE           = 0x39, ///  f64.store    m:memarg
         @Instr("i32.store8", "i32.store8", 2, IRType.STORE, [Types.I32, Types.I32])           I32_STORE8          = 0x3A, ///  i32.store8   m:memarg
         @Instr("i32.store16", "i32.store16", 2, IRType.STORE, [Types.I32, Types.I32])          I32_STORE16         = 0x3B, ///  i32.store16  m:memarg
         @Instr("i64.store8", "i64.store8", 2, IRType.STORE, [Types.I64, Types.I32])           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
@@ -1011,7 +1011,7 @@ struct ExprRange {
                     break;
                 case LOAD:
                 case STORE:
-                        // [ offset, align ]
+                    // [ offset, align ]
                     elm.wargs = [get(Types.I32), get(Types.I32)];
                     break;
                 case MEMORY:

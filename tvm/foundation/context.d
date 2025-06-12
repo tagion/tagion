@@ -38,6 +38,20 @@ struct Context {
             }
         }
     }
+
+    void store(uint _align, uint _offser, T)(int idx, T x) {
+        static if (_align == 2) {
+            static if (is(T == int)) {
+                mem_i32[idx] = x;
+            }
+            else {
+                static assert(00, "Not implemented yet");
+            }
+        }
+        else {
+            static assert(00, "Not implemented yet");
+        }
+    }
 }
 
 static Context ctx;
