@@ -370,7 +370,7 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
-shared static immutable(Instr[IR_EXTEND]) interExtendedTable;
+shared static immutable(Instr[IR_EXTEND]) instrExtendedTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
@@ -408,7 +408,7 @@ protected immutable(Instr[IR]) generate_instrTable() {
     return (() @trusted => assumeUnique(result))();
 }
 
-protected immutable(Instr[IR_EXTEND]) generate_interExtendedTable() {
+protected immutable(Instr[IR_EXTEND]) generate_instrExtendedTable() {
     Instr[IR_EXTEND] result;
     with (IR_EXTEND) {
         static foreach (E; EnumMembers!IR_EXTEND) {
@@ -422,7 +422,7 @@ protected immutable(Instr[IR_EXTEND]) generate_interExtendedTable() {
 
 shared static this() {
     instrTable = generate_instrTable;
-    interExtendedTable = generate_interExtendedTable;
+    instrExtendedTable = generate_instrExtendedTable;
     immutable(IR[string]) generateLookupTable() @safe {
         IR[string] result;
         foreach (ir, ref instr; instrTable) {
@@ -960,7 +960,7 @@ struct ExprRange {
                     break;
                 case CODE_EXTEND:
                     const opcode_arg = decode!IR_EXTEND(data, index);
-                    elm.instr = interExtendedTable.lookup(opcode_arg);
+                    elm.instr = instrExtendedTable.lookup(opcode_arg);
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extended insructions

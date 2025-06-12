@@ -13,6 +13,7 @@ import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget, isFloating
 import std.typecons : Tuple;
 import std.typecons;
 import std.uni : toLower;
+import std.outbuffer;
 import tagion.errors.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.wasm.WasmBase;
@@ -46,6 +47,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     protected {
         Output output;
+        OutBuffer init_out; /// Buffer for init code
         WasmReader wasmstream;
         string indent;
         string spacer;
@@ -58,6 +60,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         this.output = output;
         this.wasmstream = wasmstream;
         this.spacer = spacer;
+        init_out = new OutBuffer;
     }
 
     static string limitToString(ref const Limit limit) {
@@ -283,7 +286,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Memory = Sections[Section.MEMORY];
     void memory_sec(ref const(Memory) _memory) {
         foreach (i, m; _memory[].enumerate) {
-            output.writefln("%s(memory (;%d;) %s)", indent, i, limitToString(m.limit));
+            assert(i == 0, "Only one memory element support");
+            init_out.writefln("%sctx.set(%d, %d);", indent, m.limit.from, m.limit.to);
         }
     }
 
@@ -601,65 +605,39 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return stack.empty;
         }
 
-        void perform(const IR ir, const(Types[]) args) {
-            switch (args.length) {
+        
+        void perform(Args...)(ref const ExprRange.IRElement elm, Args args) {
+            switch (elm.instr.pops.length) {
             case 0:
                 break;
             case 1:
-                assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
-                push(format(instr_fmt[ir], pop));
+                __write("%s %s %s %s", instrFmt(elm), peek, args);
+                push(format(instrFmt(elm), pop, args));
                 break;
             case 2:
-                assert(ir in instr_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
-                push(format(instr_fmt[ir], pop, pop));
+                push(format(instrFmt(elm), pop, pop, args));
                 break;
             case 3:
-                assert(ir in instr_fmt, format("Undefined %s pops %s %s %s", ir, pop, pop, pop));
-                push(format(instr_fmt[ir], pop, pop, pop));
+                push(format(instrFmt(elm), pop, pop, pop, args));
                 break;
             default:
-                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, instrTable[ir]
-                        .name));
+                check(0, format("Format arguments (%-(%s %)) not supported for %s", 
+                        elm.instr.pops, elm.instr.name));
             }
-
         }
 
-        void perform(const IR_EXTEND ir, const(Types[]) args) {
-            switch (args.length) {
+        string generate(Args...)(const ref ExprRange.IRElement elm, const Args args) {
+            switch (elm.instr.pops.length) {
             case 1:
-                assert(ir in instr_extend_fmt, format("Undefined %s pop %s", ir, pop));
-                push(format(instr_extend_fmt[ir], pop));
-                break;
+                //assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
+                return format(instrFmt(elm), pop, args);
             case 2:
-                assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
-                push(format(instr_extend_fmt[ir], pop, pop));
-                break;
-            default:
-                check(0, format("Format arguments (%-(%s %)) not supported for %s", args, interExtendedTable[ir]
-                        .name));
-            }
-
-        }
-
-        string generate(Args...)(const IR ir, const Args agrs) {
-            static if ((Args.length > 0) && is(Args[0] : const(Types[]))) {
-                const pop_size = args[0].length;
-            }
-            else {
-                const pop_size = 0;
-            }
-            switch (pop_size) {
-            case 1:
-                assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
-                return format(instr_mt[ir], pop, args[1..$]);
-            case 2:
-                assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
-                return format(instr_extend_fmt[ir], pop, pop, args[1..$]);
+                //assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
+                return format(instrFmt(elm), pop, pop, args);
             default:
                 // empty
             }
-            assert(0, format("Format arguments (%-(%s %)) not supported for %s", args, interTable[ir]
-                    .name));
+            assert(0, format("Format arguments (%-(%s %)) not supported for %s", args, elm.instr                    .name));
         }
 
         void get(const uint local_idx) pure nothrow {
@@ -994,7 +972,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     bout.writefln("%s//### setLocal", indent);
                 }
             }
-            //bool set_return;
             void setResults(const string local_indent, Block* target_blk) {
                 bout.writefln("%s// setResults %d", local_indent, ctx.current.id);
                 auto blk = ctx.current;
@@ -1035,20 +1012,12 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     final switch (elm.instr.irtype) {
                     case CODE:
                     case CODE_TYPE:
-                        if (elm.instr.irtype is IRType.CODE_TYPE) {
-                            bout.writefln("%s// ---- %-(%s, %)", indent, ctx.stack);
-                            bout.writefln("%s// ---- %s", indent, ctx.stack.map!(s => s.length));
-                        }
-                        bout.writefln("%s// %s", indent, elm.instr.name);
-                        ctx.perform(elm.code, elm.instr.pops);
-                        break;
                     case CODE_EXTEND:
                         bout.writefln("%s// %s", indent, elm.instr.name);
-                        ctx.perform(cast(IR_EXTEND) elm.instr.opcode, elm.instr.pops);
+                        ctx.perform(elm);
                         break;
                     case RETURN:
                         bout.writefln("%s// RETURN <-----", indent);
-                        //set_return = true;
                         if (ctx.number_of_blocks) {
                             ctx.current.returned = true;
                         }
@@ -1077,7 +1046,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         switch (elm.code) {
                         case IR.IF:
-                            ctx.perform(elm.code, elm.instr.pops);
+                            ctx.perform(elm);//.code, elm.instr.pops);
                             block.condition = ctx.pop;
                             block.kind = BlockKind.IF;
                             break;
@@ -1288,10 +1257,13 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case LOAD:
+                        bout.writefln("%s// %s", indent, elm.instr.name);
+                        ctx.perform(elm, elm.wargs[0].get!uint, elm.wargs[1].get!uint);
+                        break;
                     case STORE:
-                        bout.writefln("%s//%s%s", indent, elm.instr.name, offsetAlignToString(
+                        bout.writefln("%s// %s%s", indent, elm.instr.name, offsetAlignToString(
                                 elm.wargs));
-
+                        bout.writefln("%s%s", indent, ctx.generate(elm, elm.wargs[0], elm.wargs[1]));
                         break;
                     case MEMORY:
                         bout.writefln("%s%s", indent, elm.instr.name);
@@ -1367,6 +1339,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         attributes.each!(attr => output.writefln("%s:", attr));
         //indent = spacer;
         scope (exit) {
+            output.writeln("static this() {");
+            output.writeln(init_out.toString);
+            output.writeln("}");
             output.writeln("// end ---");
         }
         wasmstream(this);
@@ -1377,6 +1352,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
 immutable string[IR] instr_fmt;
 immutable string[IR_EXTEND] instr_extend_fmt;
+
+static string instrFmt(ref const ExprRange.IRElement elm) {
+    if (elm.instr.irtype is IRType.CODE_EXTEND) {
+        const extend_ir = cast(IR_EXTEND)elm.instr.opcode;
+        assert(extend_ir in instr_extend_fmt, format("Not format text defined for %s", extend_ir));
+        return instr_extend_fmt[extend_ir];
+    }
+    assert(elm.code in instr_fmt, format("Not format text defined for %s", elm.code));
+    return instr_fmt[elm.code];
+}
 
 shared static this() {
     instr_fmt = [

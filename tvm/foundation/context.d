@@ -1,5 +1,6 @@
 module foundation.context;
 
+@safe:
 struct Context {
     private {
         size_t[] data;
@@ -23,7 +24,7 @@ struct Context {
     }
 
     template load(uint _align, uint _offset, T) {
-        T load(const idx) @trusted {
+        T load(const int idx) @trusted {
             static if (_align == 2) {
                 static if (T.sizeof == int.sizeof) {
                     return mem_i32[idx];
