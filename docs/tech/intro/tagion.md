@@ -23,13 +23,10 @@ The Tagion technology stack was conceived of in 2017 and remains under continuou
 
 Now and going forward, the development and deployment of all aspects of the Tagion project have to comply with the guiding principles described in the [**Tagion Manifesto**](https://docs.tagion.org/gov/intro/manifesto). 
 
-A [non-technical step-by-step description](https://docs.tagion.org/gov/intro/jargonbusting) of the functionality of Tagion can be found on the adjacent governance development and documentation pages, which also cover questions of sybil resistance and tokenomics. 
+***
 
-:::info[Previous Documentation]
+A non-technical step-by-step description of Tagion's functionality - our [**Tagion 101**](https://docs.tagion.org/gov/intro/jargonbusting) - can be found on the adjacent [governance development and documentation pages](https://docs.tagion.org/gov/intro), which also cover questions of sybil resistance and tokenomics. 
 
-Since 2019, preliminary ideas and concepts about Tagion had been described in "Technical", "Concept" and "Tokenomics" papers, published in PDF format. They are all considered superseded by the information on these pages - everything current is now found here. 
 
-But if you are interested in the history of our thinking, you can find the old publications in our [archive](https://docs.tagion.org/gov/intro/archive).
-:::
 
 

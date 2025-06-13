@@ -608,15 +608,15 @@ class WasmWriter {
 
         struct GlobalType {
             alias GlobalDesc = ImportType.ImportDesc.GlobalDesc;
-            GlobalDesc global;
+            GlobalDesc desc;
             @Section(Section.CODE) immutable(ubyte)[] expr;
-            this(const GlobalDesc global, immutable(ubyte)[] expr) {
-                this.global = global;
+            this(const GlobalDesc desc, immutable(ubyte)[] expr) {
+                this.desc = desc;
                 this.expr = expr;
             }
 
             this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
-                global = ImportType.ImportDesc.GlobalDesc(g.global);
+                desc = ImportType.ImportDesc.GlobalDesc(g.desc);
                 expr = g.expr;
             }
 

@@ -12,12 +12,14 @@ import tagion.crypto.Types;
 import tagion.hibon.Document;
 import tagion.script.standardnames;
 import tagion.script.methods;
+import tagion.script.common;
 import tagion.hibon.HiBONtoText : decode;
 import tagion.hibon.HiBONFile;
 import tagion.basic.Debug;
 import tagion.basic.basic : isinit;
 import tagion.communication.HiRPC;
 import std.range;
+import std.conv;
 import std.path;
 import std.stdio;
 import std.getopt;
@@ -82,7 +84,8 @@ int _main(string[] args) {
     string output_filename;
     string method_name;
     string[] dartindices;
-    string[] pkeys;
+    string[] params;
+    string send_address;
     const name = () => method_name.splitter('.').retro.front;
     const domain = () => method_name.split('.').dropBack(1).join('.');
     try {
@@ -97,7 +100,8 @@ int _main(string[] args) {
                 "r|dartindex", "dartindex inputs sep. by comma or multiple args for multiples generated differently for each cmd", &dartindices,
                 "A|response", "Analyzer a HiRPC response", &response_switch,
                 "R|result", "Dumps the result of HiRPC response", &result_switch,
-                "p|pkeys", "pkeys sep. by comma or multiple args for multiple entries", &pkeys,
+                "p|params", "Method parameters", &params,
+                "s|send", "Send the hirpc to the address", &send_address,
         );
 
         if (version_switch) {
@@ -165,22 +169,60 @@ int _main(string[] args) {
 
         Document result;
         switch (name()) {
-        case Queries.dartBullseye:
+        case RPCMethods.dartBullseye:
             result = dartBullseye(hirpc.relabel(domain())).toDoc;
             break;
-        case Queries.dartRead, Queries.dartCheckRead:
-            tools.check(!dartindices.empty || !pkeys.empty, "must supply pkeys or dartindices");
+        case RPCMethods.dartRead, RPCMethods.dartCheckRead:
+            tools.check(!dartindices.empty || !params.empty, "must supply params or dartindices");
 
-            auto res = chain(get_indices(dartindices), get_pkey_indices(pkeys));
+            auto res = (false)
+                ? get_pkey_indices(params).array
+                : get_indices(params).array;
+
             result = dartIndexCmd(name(), res, hirpc.relabel(domain())).toDoc;
             break;
-        case Queries.dartModify:
-            tools.check(args.length <= 2, format("Only one file name expected Not %s", args[1 .. $]));
+        case RPCMethods.dartModify:
+            import tagion.dart.Recorder;
+            tools.check(args.length == 2, format("Expected one hibon input Not %s", args[1 .. $]));
+            Document doc = fread(args[1]);
+            auto factory = RecordFactory(hash_net);
+            const recorder = factory.recorder(doc);
+            result = dartModify(recorder).toDoc;
+
+            break;
+        case RPCMethods.submit:
+            tools.check(args.length == 2, format("Expected one hibon input file Not %s", args[1 .. $]));
+            Document doc = fread(args[1]);
+            const s_contract = SignedContract(doc);
+            result = submit(s_contract).toDoc;
+            break;
+        case RPCMethods.readRecorder:
+            tools.check(params.length == 1, "Expected one number input param (eg. -p10)");
+            result = readRecorder(params[0].to!long).toDoc;
             break;
         default:
             tools.check(0, format("method %s not implemented use one of %s", method_name, IMPLEMENTED_METHODS));
         }
-        fout.rawWrite(result.serialize);
+
+        if(!send_address.empty) {
+            import tagion.network.socket;
+            import tagion.network.ReceiveBuffer;
+            Socket sock = Socket(send_address);
+            sock.connect;
+            const to_send = result.serialize;
+            ptrdiff_t sent;
+            while(sent < to_send.length) {
+                sent = sock.send(result.serialize);
+                socket_check(sent > 0, "Error when sending");
+            }
+            ReceiveBuffer receive_buf;
+            const result_buf = receive_buf(&sock.receive);
+            socket_check(result_buf.size > 0, "Error when receiving");
+            fout.rawWrite(result_buf.data);
+        }
+        else {
+            fout.rawWrite(result.serialize);
+        }
     }
     catch (Exception e) {
         error(e);

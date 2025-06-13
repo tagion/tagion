@@ -39,6 +39,7 @@ else {
 import tagion.services.TRTService;
 import tagion.services.nodeinterface;
 import tagion.services.mode0_nodeinterface;
+import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
 
@@ -72,10 +73,8 @@ struct Supervisor {
                 throw dart_exception;
             }
 
-            TagionHead head = TagionHead(); // getHead(db);
-            GenericEpoch epoch = getEpoch(head, db);
-            log("Booting with Epoch %J", epoch);
-            auto keys = getNodeKeys(epoch);
+            // Read the active node records or fallback to genesis epoch
+            auto keys = getNodeKeys(db);
             if (!opts.wave.address_file.empty) {
                 addressbook = (() @trusted => File(opts.wave.address_file, "r").byLine)().parseAddressFile;
             }
@@ -118,13 +117,24 @@ struct Supervisor {
             break;
         case NetworkMode.LOCAL,
             NetworkMode.MIRROR:
-            node_interface_handle = _spawn!NodeInterfaceService(
-                    tn.node_interface,
-                    opts.node_interface,
-                    shared_net,
-                    addressbook,
-                    tn.epoch_creator
-            );
+            version(nng_nodeinterface) {
+                node_interface_handle = _spawn!NodeInterfaceService(
+                        tn.node_interface,
+                        opts.node_interface,
+                        shared_net,
+                        addressbook,
+                        tn.epoch_creator
+                );
+            }
+            else {
+                node_interface_handle = _spawn!NodeInterface(
+                        tn.node_interface,
+                        opts.node_interface,
+                        shared_net,
+                        addressbook,
+                        tn,
+                );
+            }
             break;
         }
         handles ~= node_interface_handle;

@@ -1736,6 +1736,7 @@ unittest {
     import tagion.dart.Recorder;
     import std.file;
     import tagion.basic.basic;
+    import tagion.script.methods;
 
     auto wallet1 = StdSecureWallet("some words", "1234");
     // create an empty invoice
@@ -1752,10 +1753,6 @@ unittest {
         dart.close;
         dart_file.remove;
     }
-    // get the public key out of the invoice and pay it some tagions
-
-    const req = wallet1.getRequestUpdateWallet.toDoc;
-    //writefln("REQUEST=%s", req.toPretty);
 
     auto bill1 = TagionBill(1234.TGN, currentTime, invoice.pkey, Buffer.init);
     auto bill2 = TagionBill(4321.TGN, currentTime, invoice.pkey, Buffer.init);
@@ -1766,67 +1763,67 @@ unittest {
 
     HiRPC hirpc = HiRPC(wallet1.net);
 
-    const dart_receiver = hirpc.receive(req);
+    { // update wallet
+        const rpc_read_bills =  dartRead([bill1, bill2].map!(b => dartIndex(wallet1.net.hash, b)), hirpc);
+        const rpc_read_bills_recv = hirpc.receive(rpc_read_bills);
+        const rpc_read_bills_res = dart(rpc_read_bills_recv);
+        auto receiver = hirpc.receive(rpc_read_bills_res);
 
-    pragma(msg, "deprecated search hirpc method");
-    HiBON searchDB(Document owner_doc) {
-        Buffer[] owner_pkeys;
-        foreach (owner; owner_doc[]) {
-            owner_pkeys ~= owner.get!Buffer;
+        assert(wallet1.updateFromRead(receiver));
+        assert(wallet1.account.bills.length == 2, "should have two bills");
+    }
+
+    {
+        const wallet_balance_before = wallet1.total_balance;
+        const amount_to_pay = 100.TGN;
+
+        // create a payment
+        auto wallet2 = StdSecureWallet("wowo", "4321");
+        auto invoice_to_pay = wallet2.createInvoice("test", amount_to_pay);
+        wallet2.registerInvoice(invoice_to_pay);
+
+        // pay it
+        SignedContract signed_contract;
+        TagionCurrency fees;
+        auto payment_res = wallet1.payment([invoice_to_pay], signed_contract, fees);
+        assert(payment_res.value);
+
+        // add the outputs to the dart
+        auto next_recorder = factory.recorder;
+        next_recorder.insert(PayScript(signed_contract.contract.script).outputs, Archive.Type.ADD);
+        foreach (idx; signed_contract.contract.inputs) {
+            next_recorder.remove(idx);
         }
-        return dart.search(owner_pkeys, wallet1.net);
+        dart.modify(next_recorder);
+        //writefln("SIGNED CONTRACT %s", signed_contract.toPretty);
 
+        //writefln("ACCOUNT HIBON before modify=\n%s", wallet1.account.toPretty);
+
+        // create the next update request
+        auto contract_outputs = PayScript(signed_contract.contract.script).outputs
+            .filter!(b => b.owner == wallet1.net.pubkey)
+            .map!(b => dartIndex(wallet1.net.hash, b));
+
+        const rpc_checkread_bills =  dartCheckRead(chain(contract_outputs, signed_contract.contract.inputs), hirpc);
+        const rpc_checkread_bills_recv = hirpc.receive(rpc_checkread_bills);
+        const rpc_checkread_bills_res = dart(rpc_checkread_bills_recv);
+        auto receiver_checkread = hirpc.receive(rpc_checkread_bills_res);
+
+        wallet1.setResponseCheckRead(receiver_checkread);
+
+        const rpc_read_bills =  dartRead(chain(contract_outputs, signed_contract.contract.inputs), hirpc);
+        const rpc_read_bills_recv = hirpc.receive(rpc_read_bills);
+        const rpc_read_bills_res = dart(rpc_read_bills_recv);
+        auto receiver = hirpc.receive(rpc_read_bills_res);
+
+        assert(wallet1.updateFromRead(receiver));
+        //writefln("ACCOUNT HIBON=\n%s", wallet1.account.toPretty);
+        //writefln("WALLET AVAILABLE=%s", wallet2.available_balance);
+        //writefln("wallet total =%s", wallet1.total_balance);
+
+        const expected_amount = wallet_balance_before - fees - amount_to_pay;
+        assert(expected_amount == wallet1.total_balance, format("%s == %s", expected_amount, wallet1.total_balance));
+
+        assert(wallet1.account.bills.length == 2, "should have sent and received a bill");
     }
-
-    auto search_res = searchDB(dart_receiver.method.params);
-    auto res = hirpc.result(dart_receiver, Document(search_res)).toDoc;
-
-    auto receiver = hirpc.receive(res);
-    //writefln("RESULT=%s", res.toPretty);
-
-    assert(wallet1.setResponseUpdateWallet(receiver));
-    assert(wallet1.account.bills.length == 2, "should have two bills");
-    const wallet_balance_before = wallet1.total_balance;
-    const amount_to_pay = 100.TGN;
-
-    // create a payment
-    auto wallet2 = StdSecureWallet("wowo", "4321");
-    auto invoice_to_pay = wallet2.createInvoice("test", amount_to_pay);
-    wallet2.registerInvoice(invoice_to_pay);
-
-    // pay it
-    SignedContract signed_contract;
-    TagionCurrency fees;
-    auto payment_res = wallet1.payment([invoice_to_pay], signed_contract, fees);
-    assert(payment_res.value);
-
-    // add the outputs to the dart
-    auto next_recorder = factory.recorder;
-    next_recorder.insert(PayScript(signed_contract.contract.script).outputs, Archive.Type.ADD);
-    foreach (idx; signed_contract.contract.inputs) {
-        next_recorder.remove(idx);
-    }
-    dart.modify(next_recorder);
-    //writefln("SIGNED CONTRACT %s", signed_contract.toPretty);
-
-    //writefln("ACCOUNT HIBON before modify=\n%s", wallet1.account.toPretty);
-
-    // create the next update request
-    const update_req = wallet1.getRequestUpdateWallet;
-    //writefln("NEXT DART REQ %s", update_req.toPretty);
-    const next_dart_receiver = hirpc.receive(update_req);
-    auto next_search_res = searchDB(next_dart_receiver.method.params);
-    auto next_res = hirpc.result(next_dart_receiver, Document(next_search_res)).toDoc;
-    auto next_receiver = hirpc.receive(next_res);
-    //writefln("NEXT UPDATE RESULT = %s", next_receiver.toPretty);
-
-    assert(wallet1.setResponseUpdateWallet(next_receiver));
-
-    //writefln("ACCOUNT HIBON=\n%s", wallet1.account.toPretty);
-    //writefln("WALLET AVAILABLE=%s", wallet2.available_balance);
-    //writefln("wallet total =%s", wallet1.total_balance);
-
-    assert(wallet_balance_before - fees - amount_to_pay == wallet1.total_balance);
-
-    assert(wallet1.account.bills.length == 2, "should have sent and received a bill");
 }

@@ -199,7 +199,7 @@ alias check = Check!WatException;
     void global_sec(ref const(Global) _global) {
         //        auto _global=*mod[Section.GLOBAL];
         foreach (i, g; _global[].enumerate) {
-            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
+            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.desc));
             auto expr = g[];
             block(expr, indent ~ spacer);
             output.writefln("%s))", indent);
@@ -385,11 +385,9 @@ alias check = Check!WatException;
                         output.writefln("%s%s", indent, end_instr.name);
                         break;
                     case BLOCK_ELSE:
-                        const block_comment = format(";; %s innerBlock %d", elm.instr.irtype, block_count);
-                        const endif_elm = innerBlock(expr, indent ~ spacer, level);
-                        const endif_instr = instrTable[endif_elm.code];
-                        output.writefln("%s%s %s count=%d", indent,
-                                endif_instr.name, block_comment, count);
+                        const local_indent = indent[0 .. indent.length - spacer.length];
+                        output.writefln("%s%s", local_indent, elm.instr.name);
+                        innerBlock(expr, indent, level);
                         break;
                     case BRANCH:
                         if (elm.code is IR.BR_TABLE) {
@@ -410,7 +408,8 @@ alias check = Check!WatException;
                         output.writefln("%s%s %s", indent, elm.instr.name, elm.warg.get!uint);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0].get!uint);
+                        output.writefln("%s%s %d (type %d)", indent, elm.instr.name, elm.wargs[1].get!uint, elm.wargs[0]
+                                .get!uint);
                         break;
                     case LOCAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
@@ -418,10 +417,11 @@ alias check = Check!WatException;
                     case GLOBAL:
                         output.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
                         break;
-                    case MEMORY:
+                    case LOAD:
+                    case STORE:
                         output.writefln("%s%s%s", indent, elm.instr.name, offsetAlignToString(elm.wargs));
                         break;
-                    case MEMOP:
+                    case MEMORY:
                         output.writefln("%s%s", indent, elm.instr.name);
                         break;
                     case CONST:

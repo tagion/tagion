@@ -6,21 +6,24 @@ import std.traits;
 
 enum WastKeywords {
     MODULE = "module",
+
     TYPE = "type",
-    FUNC = "func",
-    ELEM = "elem",
-    TABLE = "table",
-    GLOBAL = "global",
     IMPORT = "import",
-    EXPORT = "export",
+    FUNC = "func",
+    TABLE = "table",
     MEMORY = "memory",
+    GLOBAL = "global",
+    EXPORT = "export",
+    ELEM = "elem",
     SEGMENT = "segment",
+
     OFFSET = "offset",
     PARAM = "param",
     RESULT = "result",
     DECLARE = "declare",
     ITEM = "item",
     FUNCREF = "funcref",
+    EXTERN = "extern",
 }
 
 bool isReserved(const(char[]) word) @nogc pure nothrow {

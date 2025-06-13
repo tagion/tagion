@@ -1,5 +1,5 @@
 ---
-title: transactions
+title: Transactions
 sidebar_position: 0
 ---
 

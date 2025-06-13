@@ -45,7 +45,7 @@ Assignee: cbr
 Description: docs.tagion.org/tips/6  
 Goal: May  
 - [x] add hash of executed contract to recorderchain
-- [ ] add hash of recorderblock to epochchain  
+- [x] add hash of recorderblock to epochchain  
 Assignee: lr  
 
 ### Service refactor
@@ -54,21 +54,23 @@ Assignee: lr
     `And remove responibillity from transcript and dart service  
 - [x] Fix some instability in replicator read test  
 - [x] Pass addressbook to individual services instead of using static global addressbook
-- [x] Create mode0 nodeinterface service
+- [x] Create mode0 nodeinterface service  
+Assignee: lr  
+
+### Remove DARTFile.search
+- [x] Remove the search function from dart and rewrite unittest that depend on it  
 Assignee: lr  
 
 -----------------------------------------------------------------------------------------
 
 ## Backlog
 
-### Remove DARTFile.search
-- [ ] Remove the search function from dart and rewrite unittest that depend on it
-
 ### Timezone override
 - [ ] Reimplemnt the toISOExtString from phobos without the LocalTime check the removes timezones
 - [ ] Create bug report for phobos when converting back and forth between unwhole timezones
 
 ### Active Nodes record
+- [x] Boot from the active nodes record
 - [ ] Create a record that is updated by transcript with the pubkeys of all the active nodes
 - [ ] Remove state info from NNR records
 

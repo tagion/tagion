@@ -111,14 +111,16 @@
           "f32_cmp_export.wast", "f64_cmp_export.wast",
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
-          "if_block.wast", "loop_block.wast"
+          "if_block.wast", "loop_block.wast",
+            "load.wast", "store.wast" 
       ],
       "envs": {
-        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d -I$(REPOROOT)/tvm -g -unittest -main",
-        "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error std.typecons:Tuple",
+        "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
+        "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error foundation.context std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", "call_indirect", "element", "conversions_export", "br_table"],
+      "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
+          "call_indirect", "element", "conversions", "br_table", "load",  "store", "align"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -129,9 +131,15 @@
                 "float_misc_export.wast"
             ]
         },
+        "i32" : {
+            "args" : [
+                "i32.wast"
+
+            ]
+        },
         "br_table" : {
             "args" : [
-                "br_table_block_1.wast"
+                "br_table_block.wast"
 
             ]
         },
@@ -165,9 +173,24 @@
             "call_indirect_2.wast"
           ]
         },
-        "conversions_export" : {
+        "load" : {
           "args" : [
-            "conversions_export.wast"
+            "load_1.wast"
+          ]
+        },
+        "store" : {
+          "args" : [
+            "store_1.wast"
+          ]
+        },
+        "align" : {
+          "args" : [
+            "align_1.wast"
+          ]
+        },
+        "conversions" : {
+          "args" : [
+            "conversions.wast"
           ]
         },
         "element" : {
@@ -182,6 +205,12 @@
       "args": [],
       "envs": {},
       "stages": ["commit", "epoch"],
+      "timeout": 0.0
+    },
+    "epoch_creator_mode1": {
+      "args": ["mode1"],
+      "envs": {},
+      "stages": ["acceptance"],
       "timeout": 0.0
     },
     "tvm_service": {

@@ -76,3 +76,5 @@ bdd/tagion/testbench/communication/*.d
 *.direnv
 
 src/lib-funnel/tagion/script/unitdata/
+
+mode*/

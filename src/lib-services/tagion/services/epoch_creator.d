@@ -69,7 +69,7 @@ struct EpochCreatorService {
             );
         }
 
-        StdGossipNet gossip_net = new NodeGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
+        NodeGossipNet gossip_net = new NodeGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
 
         Pubkey[] channels = addressbook.keys;
         Random!size_t random;
@@ -142,14 +142,14 @@ struct EpochCreatorService {
                 const return_wavefront = hashgraph.wavefront_response(receiver, currentTime, payload);
 
                 if (receiver.isMethod) {
-                    gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
+                    gossip_net.send(req, receiver.pubkey, return_wavefront);
                 }
             }
             catch (Exception e) {
                 log.fatal(e);
                 if (!receiver.isinit && receiver.isMethod) {
                     const err_rpc = hirpc.error(receiver, "internal");
-                    gossip_net.send(req, cast(Pubkey) receiver.pubkey, err_rpc);
+                    gossip_net.send(req, receiver.pubkey, err_rpc);
                 }
             }
         }
@@ -169,7 +169,7 @@ struct EpochCreatorService {
             const return_wavefront = hashgraph.mirror_wavefront_response(receiver, currentTime);
 
             if (receiver.isMethod) {
-                gossip_net.send(req, cast(Pubkey) receiver.pubkey, return_wavefront);
+                gossip_net.send(req, receiver.pubkey, return_wavefront);
             }
         }
 

@@ -94,7 +94,7 @@ struct WastTokenizer {
             Exception current_e;
             scope (exit) {
                 error_count++;
-                if (!e) {
+                if (e is null) {
                     e = current_e;
                 }
             }
@@ -125,7 +125,7 @@ struct WastTokenizer {
     }
 
     void error(Exception e) nothrow {
-        if (!this.e) {
+        if (this.e is null) {
             this.e = e;
         }
         valid(false, e.msg, e.file, e.line);

@@ -1,46 +1,44 @@
 module tagion.network.ReceiveBuffer;
 
 import std.typecons : Tuple;
+import std.format;
 
+import tagion.network.exceptions;
 import LEB128 = tagion.utils.LEB128;
 
 @safe:
 
 struct ReceiveBuffer {
     ubyte[] buffer; /// Allocated buffer
-    enum LEN_MAX = LEB128.calc_size(uint.max);
     enum START_SIZE = 0x400;
     static size_t max_size = 0x4000;
-    alias Receive = ptrdiff_t delegate(scope void[] buf) nothrow @safe;
+    alias Receive = ptrdiff_t delegate(scope void[] buf) @safe;
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
 
-    const(ResultBuffer) opCall(const Receive receive) nothrow {
-        if (buffer is null) {
-            buffer = new ubyte[START_SIZE];
+    const(ResultBuffer) opCall(const Receive receive) {
+        if (!buffer) {
+            buffer = new ubyte[](START_SIZE);
         }
         size_t pos;
         ptrdiff_t total_size = -1;
-        scope (exit) {
-        }
-        while (total_size < 0 || pos <= total_size) {
+        while (total_size < 0 || pos < total_size) {
+            assert(pos != buffer.length, format("pos == buffer_len %s", pos));
             const len = receive(buffer[pos .. $]);
             if (len == 0) {
                 return ResultBuffer(pos, buffer[0 .. pos]);
             }
             if (len < 0) {
-                return ResultBuffer(len, buffer[0..pos]);
+                return ResultBuffer(len, buffer[0 .. pos]);
             }
             pos += len;
 
             if (total_size < 0) {
-                if (LEB128.isCompleat(buffer[0 .. pos])) {
+                if (LEB128.isComplete(buffer[0 .. pos])) {
                     const leb128_len = LEB128.decode!size_t(buffer);
                     total_size = leb128_len.value + leb128_len.size;
-                    if (total_size > max_size) {
-                        return ResultBuffer(-2, null);
-                    }
-                    if (buffer.length <= total_size) {
-                        buffer.length = total_size;
+                    check(total_size <= max_size, format("total_size %s > max_size %s", total_size, max_size));
+                    if (buffer.length < total_size) {
+                        buffer.length = total_size; // realloc if the expected buffer doesn't fit in the initial size;
                     }
                     if (pos >= total_size) {
                         break;
@@ -51,7 +49,6 @@ struct ReceiveBuffer {
         }
         return ResultBuffer(pos, buffer[0 .. total_size]);
     }
-
 } 
 
 version (unittest) {

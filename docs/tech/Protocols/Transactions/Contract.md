@@ -1,5 +1,5 @@
 ---
-title: contract
+title: Contract
 ---
 
 # Tagion Contract definitions

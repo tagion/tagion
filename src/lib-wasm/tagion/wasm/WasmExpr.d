@@ -83,7 +83,8 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case MEMORY:
+            case LOAD:
+            case STORE:
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),
@@ -96,7 +97,7 @@ struct WasmExpr {
                     }
                 }
                 break;
-            case MEMOP:
+            case MEMORY:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
                 bout.write(cast(ubyte)(0x00));
@@ -152,7 +153,19 @@ struct WasmExpr {
                 assert(0, format("Illegal opcode %02X", ir));
                 break;
             case REF:
-                assert(0, "Ref instructions not supported yet");
+                switch (ir) {
+                case IR.REF_NULL:
+                    assert(Args.length == 1, "Type expected");
+                    static if ((Args.length == 1) && is(Args[0] : const(Types))) {
+                                import tagion.basic.Debug;
+                                __write("%s args %s", Args[0].stringof, args[0]);
+                        bout.write(cast(ubyte) args[0]);
+                    }
+                    break;
+                default:
+                    assert(ir is IR.REF_NULL, "Ref instructions not supported yet");
+                }
+                break;
             case SYMBOL:
                 assert(0, "Symbol opcode and it does not have an equivalent opcode");
             }

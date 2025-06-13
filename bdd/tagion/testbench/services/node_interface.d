@@ -12,9 +12,12 @@ import std.range;
 
 import tagion.actor;
 import tagion.services.nodeinterface;
+import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
+import tagion.services.tasknames;
 import tagion.script.namerecords;
 import tagion.script.standardnames;
+import tagion.script.methods;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
@@ -73,18 +76,24 @@ class PubkeyASendsAMessageToPubkeyB {
     @Given("i have 2 listening node interfaces")
     Document interfaces() @trusted {
         thisActor.task_name = "JumboJet";
+        TaskNames tn;
+        tn.epoch_creator = thisActor.task_name;
 
         { // A
+            tn.node_interface = "interface_a";
+            tn.event_listener = "ev_a";
             shared _net = cast(shared(StdSecureNet))(a_net.clone());
             immutable nnr = new NetworkNodeRecord(a_net.pubkey, opts_a.node_address);
             addressbook.set(nnr);
-            a_handle = _spawn!NodeInterfaceService("interface_a", opts_a, _net, addressbook, thisActor.task_name);
+            a_handle = _spawn!NodeInterface(tn.node_interface, opts_a, _net, addressbook, tn);
         }
         { // B
+            tn.node_interface = "interface_b";
+            tn.event_listener = "ev_b";
             shared _net = cast(shared(StdSecureNet))(b_net.clone());
             immutable nnr = new NetworkNodeRecord(b_net.pubkey, opts_b.node_address);
             addressbook.set(nnr);
-            b_handle = _spawn!NodeInterfaceService("interface_b", opts_b, _net, addressbook, thisActor.task_name);
+            b_handle = _spawn!NodeInterface(tn.node_interface, opts_b, _net, addressbook, tn);
         }
 
         check(waitforChildren(Ctrl.ALIVE), "No all node_interfaces became alive");
@@ -99,9 +108,10 @@ class PubkeyASendsAMessageToPubkeyB {
         { // A -> B
             Wavefront wave;
             wave.state = ExchangeState.TIDAL_WAVE;
-            const sender = HiRPC(a_net).action("froma1", wave);
-            a_handle.send(WavefrontReq(), cast(Pubkey) b_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq req, Document doc) {
+            const hirpc = HiRPC(a_net);
+            const sender = wavefront(wave, hirpc);
+            a_handle.send(WavefrontReq(), b_net.pubkey, sender.toDoc);
+            receiveOnlyTimeout(2.seconds, (WavefrontReq req, Document doc) {
                 reqa = req;
                 writeln("received ", doc.toPretty);
             });
@@ -110,9 +120,10 @@ class PubkeyASendsAMessageToPubkeyB {
         { // B -> A
             Wavefront wave;
             wave.state = ExchangeState.FIRST_WAVE;
-            const sender = HiRPC(b_net).action("fromb2", wave);
-            b_handle.send(WavefrontReq(reqa.id), cast(Pubkey) a_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq req, Document doc) {
+            const sender = wavefront(wave, HiRPC(b_net));
+            writeln("reqa: ", reqa.tid);
+            send(reqa.tid, WavefrontReq(), a_net.pubkey, sender.toDoc);
+            receiveOnlyTimeout(2.seconds, (WavefrontReq req, Document doc) {
                 reqb = req;
                 writeln("received ", doc.toPretty);
             });
@@ -123,10 +134,10 @@ class PubkeyASendsAMessageToPubkeyB {
             wave.state = ExchangeState.SECOND_WAVE;
             const hirpc = HiRPC(a_net);
             // End communication by a result
-            const tmp_receiver = hirpc.receive(hirpc.action("froma3", wave));
+            const tmp_receiver = hirpc.receive(hirpc.action("wavefront", wave));
             const sender = hirpc.result(tmp_receiver, Document());
-            a_handle.send(WavefrontReq(reqb.id), cast(Pubkey) b_net.pubkey, sender.toDoc);
-            receiveOnlyTimeout(1.seconds, (WavefrontReq _, Document doc) { writeln("received ", doc.toPretty); });
+            send(reqb.tid, WavefrontReq(), b_net.pubkey, sender.toDoc);
+            receiveOnlyTimeout(2.seconds, (WavefrontReq _, Document doc) { writeln("received ", doc.toPretty); });
         }
 
         return result_ok;

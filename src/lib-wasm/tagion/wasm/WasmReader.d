@@ -507,12 +507,12 @@ struct WasmReader {
             alias Memory = SectionT!(MemoryType);
 
             struct GlobalType {
-                immutable(ImportType.ImportDesc.GlobalDesc) global;
+                immutable(ImportType.ImportDesc.GlobalDesc) desc;
                 immutable(ubyte[]) expr;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) pure {
                     size_t index;
-                    global = ImportType.ImportDesc.GlobalDesc(data, index);
+                    desc = ImportType.ImportDesc.GlobalDesc(data, index);
                     auto range = ExprRange(data[index .. $]);
                     while (!range.empty) {
                         const elm = range.front;
