@@ -245,7 +245,7 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     return result;
 }
 
-// Serialization invalid for some objects when compilling on alpine
+// Serialization invalid for some objects when compiling on alpine
 version (CRuntime_Musl)
     version = OLD_HIBON_SERIALIZATION;
 /// version flag added because new serialization causes crash on snapdragon gen 8 1

@@ -193,7 +193,7 @@ class DARTFile {
     /**
  * Ditto
  * Params:
- *   archives = Archive data which contains an ordred list of archives 
+ *   archives = Archive data which contains an ordered list of archives 
  * Returns: 
  * recorder of the list of archives
  */

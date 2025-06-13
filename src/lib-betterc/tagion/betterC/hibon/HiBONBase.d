@@ -726,7 +726,7 @@ do {
 }
 
 /**
- * Checks if the keys in the range is ordred
+ * Checks if the keys in the range is ordered
  * @return true if all keys in the range is ordered
  */
 bool is_key_ordered(R)(R range) if (isInputRange!R) {

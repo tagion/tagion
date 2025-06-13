@@ -46,7 +46,7 @@ Each node in the graph has a node_id which is specified from 0 to N-1 and the vo
 An event has two voting masks.
 ```
     $w witness_seen_mask
-    $i intemediate_seen_mask
+    $i intermediate_seen_mask
 ```
 
 The witness_seen_mask is updated when the event connects to a father event the witness_seen_mask like

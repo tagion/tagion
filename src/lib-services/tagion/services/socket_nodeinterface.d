@@ -183,7 +183,7 @@ void connection(Tid event_listener_tid, immutable(NodeInterfaceOptions) opts, Ta
     catch(OwnerTerminated e) {
         return;
     }
-    // We catch the throwable here because it's inside a seperate thread.
+    // We catch the throwable here because it's inside a separate thread.
     catch(Throwable e) {
         log.fatal(e);
         return;

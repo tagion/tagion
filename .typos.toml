@@ -19,6 +19,8 @@ deriver = "deriver"
 Ciph = "Ciph"
 # Ignore this because we highlight N in notation
 otation = "otation"
+# Obsolete spelling of unknown
+Unknow = "Unknow"
 
 # Name
 Theis = "Theis"

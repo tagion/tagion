@@ -107,7 +107,7 @@ import tagion.hibon.HiBONException;
     // }
 
     /++
-     constructor for BigNumber in LEB128+ formant
+     constructor for BigNumber in LEB128+ format
      +/
     @trusted this(const(ubyte[]) buffer) pure nothrow {
         auto result = decodeLEB128(buffer);

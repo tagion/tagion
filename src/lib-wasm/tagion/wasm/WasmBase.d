@@ -115,7 +115,7 @@ enum Section : ubyte {
 enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
-    CODE_TYPE, /// Instrunction with return type conversion (like select)
+    CODE_TYPE, /// Instruction with return type conversion (like select)
     OP_STACK, /// Stack operations
     RETURN,
     BLOCK, /// Block instruction
