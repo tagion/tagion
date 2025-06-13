@@ -568,7 +568,23 @@ struct WastParser {
                         r.check(param_args.length == 2, "Expected align=x or offset=x");
                         switch (param_args[0]) {
                         case "align":
-                            args[0] = param_args[1].to!uint;
+                            uint get_align(const uint x) {
+                                switch (x) {
+                                case 1:
+                                    return 0;
+                                case 2:
+                                    return 1;
+                                case 4:
+                                    return 2;
+                                case 8:
+                                    return 3;
+                                default:
+                                    r.check(0, format("Invalid align %d", x));
+                                }
+                                assert(0);
+                            }
+
+                            args[0] = get_align(param_args[1].to!uint);
                             break;
                         case "offset":
                             args[1] = param_args[1].to!uint;
