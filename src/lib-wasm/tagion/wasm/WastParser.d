@@ -162,7 +162,7 @@ struct WastParser {
             catch (ConvException e) {
                 // Ignore try the label name instead 
             }
-            const stack_depth = block_stack.countUntil!(b => b.label == token);
+            const stack_depth = block_stack.retro.countUntil!(b => b.label == token);
             check(stack_depth >= 0, format("Label %s does not exists", token));
             return cast(uint)(stack_depth);
         }
@@ -469,6 +469,7 @@ struct WastParser {
                     case IR.BR:
                         r.nextToken;
                         const blk_idx = func_ctx.block_depth_index(r.token);
+                        __write("Block label=%s blk_idx=%d  %-(%s %)", r.token, blk_idx, r.save.map!(t => t.token).take(5));
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
