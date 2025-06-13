@@ -55,13 +55,14 @@ struct NNGAddress {
         }
     }
 
-    AddressFamily domain() const pure {
+    AddressFamily domain() const {
         final switch(scheme) {
             case Schemes.ipc:
             case Schemes.abstract_:
                 return AddressFamily.UNIX;
             case Schemes.tcp:
-                return AddressFamily.INET;
+                // Can be either IP4 or IP6
+                return toSockAddr.addressFamily;
             case Schemes.tcp6:
                 return AddressFamily.INET6;
             case Schemes.unknown:

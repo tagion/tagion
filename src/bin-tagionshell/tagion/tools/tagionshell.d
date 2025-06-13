@@ -456,42 +456,44 @@ void ws_on_message(WebSocket* ws, ubyte[] data, void* ctx) {
 * query REQ/REP socket once and close it 
 */
 int query_socket_once(string addr, uint timeout, uint delay, uint retries, const ubyte[] request, out immutable(ubyte)[] reply) {
-    int rc;
+    import tagion.network.socket;
+    import tagion.network.ReceiveBuffer;
+    import core.stdc.errno;
     size_t attempts = 0;
     const stime = timestamp();
-    NNGMessage msg = NNGMessage(0);
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = msecs(timeout);
-    while (!abort) {
-        rc = s.dial(addr);
-        if (rc == 0)
-            break;
-        if (++attempts < retries)
-            return cast(int) nng_http_status.NNG_HTTP_STATUS_BAD_GATEWAY;
-    }
+
+    Socket s = Socket(addr);
     scope (exit) {
         s.close();
     }
-    rc = s.send(request);
-    if (rc != 0)
+
+    try {
+        s.connect();
+    }
+    catch(Exception) {
+        return cast(int) nng_http_status.NNG_HTTP_STATUS_BAD_GATEWAY;
+    }
+
+    ptrdiff_t rc = s.send(request);
+    if (rc <= 0)
         return cast(int) nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+
+    ReceiveBuffer recv_buffer;
     while (!abort) {
-        rc = s.receivemsg(&msg, true);
-        if (rc < 0) {
-            if (s.errno == nng_errno.NNG_EAGAIN) {
+        auto result_buf = recv_buffer(&s.receive);
+        if (result_buf.size < 0) {
+            if (s.last_error == ETIMEDOUT) {
                 nng_sleep(msecs(delay));
                 auto itime = timestamp();
                 if ((itime - stime) * 1000 > timeout)
                     return cast(int) nng_http_status.NNG_HTTP_STATUS_GATEWAY_TIMEOUT;
-                msg.clear();
                 continue;
             }
-            if (s.errno != 0)
+            if (s.last_error != 0)
                 return cast(int) nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
             break;
         }
-        auto dbuf = msg.body_trim!(ubyte[])(msg.length);
-        reply ~= dbuf[0 .. dbuf.length];
+        reply ~= cast(immutable)result_buf.data;
         break;
     }
     return 0;
@@ -797,14 +799,14 @@ void bullseye_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     int attempts = 0;
 
     Socket s = Socket(opt.node_dart_addr);
-
-    s.connect();
     scope (exit) {
         s.close();
     }
 
-    s.send(crud.dartBullseye.toDoc.serialize);
-    socket_check(s.last_error == 0, "Error Send");
+    s.connect();
+
+    const rc = s.send(crud.dartBullseye.toDoc.serialize);
+    socket_check(rc > 0, "Error Send");
     ubyte[192] buf;
     ptrdiff_t len = s.receive(buf);
     if (len == size_t.max && s.last_error != 0) {

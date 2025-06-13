@@ -47,7 +47,6 @@ struct Socket {
      * Params:
      *   address = nng style address
      */
-    @trusted
     this(string address) {
         this.address = NNGAddress(address);
         int protocol = 0; // use default for domain

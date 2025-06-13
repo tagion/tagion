@@ -47,8 +47,8 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
     Socket sock = Socket(address);
     sock.connect();
 
-    const _ = sock.send(contract.toDoc.serialize);
-    socket_check(sock.last_error == 0, "Error Sending");
+    const rc = sock.send(contract.toDoc.serialize);
+    socket_check(rc > 0, "Error Sending");
 
     ReceiveBuffer receive_buffer;
     auto result_buffer = receive_buffer((scope void[] buf) => sock.receive(buf));
