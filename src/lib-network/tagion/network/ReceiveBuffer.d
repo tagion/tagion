@@ -115,7 +115,7 @@ unittest {
     ReceiveBuffer receive_buffer;
     {
         const result_len = receive_buffer(&teststream.receive);
-        assert(receive_buffer.buffer == testdata.serialize);
+        assert(receive_buffer[] == testdata.serialize);
     }
 
     testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
@@ -125,6 +125,6 @@ unittest {
             "Test data should large than START_SIZE");
     {
         const result_len = receive_buffer(&teststream.receive);
-        assert(receive_buffer.buffer == testdata.serialize);
+        assert(receive_buffer.consume == testdata.serialize);
     }
 }
