@@ -261,7 +261,7 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
             ReceiveBuffer receive_buffer;
             receive_buffer.max_size = opts.bufsize;
             // receive_buffer will keep calling the callback until the entire document has been received
-            auto result_buffer = receive_buffer(
+            auto result_len = receive_buffer(
                 (scope void[] buf) {
                     ptrdiff_t rc = sock.receive(buf);
                     if(sock.wouldHaveBlocked) {
@@ -277,14 +277,14 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 }
             );
 
-            debug(nodeinterface) log("recv %s bytes", result_buffer.size);
+            debug(nodeinterface) log("recv %s bytes", result_len);
 
-            if(result_buffer.size <= 0) {
+            if(result_len <= 0) {
                     // err
                     return;
             }
 
-            Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
+            Document doc = Document(receive_buffer.consume());
 
             if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                 check(false, "doc not in order");

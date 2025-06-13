@@ -1,6 +1,7 @@
 module tagion.network.ReceiveBuffer;
 
-import std.typecons : Tuple;
+import std.exception;
+import tagion.basic.Types;
 import std.format;
 
 import tagion.network.exceptions;
@@ -13,22 +14,23 @@ struct ReceiveBuffer {
     enum START_SIZE = 0x400;
     static size_t max_size = 0x4000;
     alias Receive = ptrdiff_t delegate(scope void[] buf) @safe;
-    alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
+    size_t length;
 
-    const(ResultBuffer) opCall(const Receive receive) {
+    ptrdiff_t opCall(const Receive receive) scope {
         if (!buffer) {
             buffer = new ubyte[](START_SIZE);
         }
         size_t pos;
+        length = 0;
         ptrdiff_t total_size = -1;
         while (total_size < 0 || pos < total_size) {
             assert(pos != buffer.length, format("pos == buffer_len %s", pos));
             const len = receive(buffer[pos .. $]);
             if (len == 0) {
-                return ResultBuffer(pos, buffer[0 .. pos]);
+                return len;
             }
             if (len < 0) {
-                return ResultBuffer(len, buffer[0 .. pos]);
+                return len;
             }
             pos += len;
 
@@ -47,7 +49,23 @@ struct ReceiveBuffer {
             }
 
         }
-        return ResultBuffer(pos, buffer[0 .. total_size]);
+        length = pos;
+        return pos;
+    }
+
+    @trusted
+    Buffer consume() {
+        if(length <= 0) {
+            return [];
+        }
+        return buffer.assumeUnique[0..length];
+    }
+
+    ubyte[] opSlice() {
+        if(length <= 0) {
+            return [];
+        }
+        return buffer[0..length];
     }
 } 
 
@@ -96,8 +114,8 @@ unittest {
     teststream.chunk = 0x100;
     ReceiveBuffer receive_buffer;
     {
-        const result_buffer = receive_buffer(&teststream.receive);
-        assert(result_buffer.data == testdata.serialize);
+        const result_len = receive_buffer(&teststream.receive);
+        assert(receive_buffer.buffer == testdata.serialize);
     }
 
     testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
@@ -106,7 +124,7 @@ unittest {
     assert(testdata.serialize.length > receive_buffer.START_SIZE,
             "Test data should large than START_SIZE");
     {
-        const result_buffer = receive_buffer(&teststream.receive);
-        assert(result_buffer.data == testdata.serialize);
+        const result_len = receive_buffer(&teststream.receive);
+        assert(receive_buffer.buffer == testdata.serialize);
     }
 }

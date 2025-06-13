@@ -216,9 +216,9 @@ int _main(string[] args) {
                 socket_check(sent > 0, "Error when sending");
             }
             ReceiveBuffer receive_buf;
-            const result_buf = receive_buf(&sock.receive);
-            socket_check(result_buf.size > 0, "Error when receiving");
-            fout.rawWrite(result_buf.data);
+            const result_len = receive_buf(&sock.receive);
+            socket_check(result_len > 0, "Error when receiving");
+            fout.rawWrite(receive_buf[]);
         }
         else {
             fout.rawWrite(result.serialize);
