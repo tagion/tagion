@@ -27,8 +27,7 @@ ___
 
 **Subsystem:** a bespoke network of _nodes_ for a particular use-case, independent of the Tagion _Mainnet_ in terms of rules and settings. It hosts its own _database_ and sends regular hashed/encrypted status updates to the _Mainnet_ (for validation and notary functions, further explained below). Because of this, _Subsystems_ are here called _"federated"_ with the Tagion _Mainnet_.
 
-**Database:** structured system to store, manage and retrieve data. Akin rather to a filing cabinet with labeled drawers - not the records in those drawers. 
-
+**Database:** structured system to store, manage and retrieve data. Akin rather to a filing cabinet with labeled drawers - not the records in those drawers.  
 _"DART"_ is the name of Tagion's custom-designed database system (further explained below) maintained in/by the Tagion _node_ software
 
 **App:** _user_-interface to make changes to the _database_, it sends info about intended changes to a _node_
