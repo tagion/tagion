@@ -77,7 +77,7 @@ The second _protocol_ then establishes _consensus_ not by comparing the _nodes'_
 Together, the two _protocols_ establish, swiftly and securely, which changes are to be introduced to the _database_ with the conclusion of the next epoch.  Beacuse the _hashgraph_ provides a network-wide communication history from which each _node_ can reconstruct by and for itself, and with mathematical certainty, what other _nodes_ in the network know. And once information about new _contracts/transactions_ has spread to enough _nodes_ in the network (namely to [2/3+1 of all _nodes_](https://docs.tagion.org/tech/protocols/consensus/EpochRules)) - and consequently _consensus_ about those _contracts_ is algorythmically established, all _nodes_ will commit the same information/changes to their respecitve copies of the _database_.
 
 
-## DART: Smarter than blockchains
+## DART: smarter than blockchains
 
 Everything up to that recent _epoch_ is thus fixed in the _distributed database_ and no competing versions can occur (or what is called "forks" in _blockchain_ systems). This certainty about the _state of the network_ is what is called "finality" in DLTs. But while traditionally blockchains rely on "probabilistic finality" (because there is always a slight chance that a fork can gain consensus), Tagion's _consensus database_ features an absolute certainty called "deterministic finality". For this, a unique and final step is introduced, made possible by Tagion's patented _database architecture_:
 
