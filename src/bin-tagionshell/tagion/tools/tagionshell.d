@@ -40,6 +40,7 @@ import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
+import tagion.script.methods;
 import tagion.utils.convert;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -536,17 +537,15 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     ulong[string] stats = ["requests": 0, "tofetch": 0, "resplen": 0];
 
     string method = receiver.method.name;
-    /* string method = opt.cache_enabled ? receiver.method.name : "unprocessed"; */
 
     writeit("HIRPC: got method: " ~ method);
 
-    string sockaddr = opt.node_dart_addr;
     uint recvtimeout = opt.sock_recvtimeout;
     uint recvdelay = opt.sock_recvdelay;
     uint connectretry = opt.sock_connectretry;
 
     switch (method) {
-    case "dartRead":
+    case RPCMethods.dartRead:
         if (!cache_enabled) {
             goto default;
         }
@@ -640,12 +639,11 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         rep.type = mime_type.BINARY;
         rep.rawdata = cast(ubyte[])(response.serialize);
         return;
-    case "submit":
-        sockaddr = opt.node_dart_addr;
+    case RPCMethods.submit:
         // Not Sure if this is needed. Submit should be a faster request, since it doesn't retrieve any data from the system.
         recvtimeout = opt.sock_recvtimeout * 6;
         break;
-    /* case "search": */
+    /* RPCMethods.search: */
     /*     auto owner_doc = receiver.method.params; */
     /*     if (owner_doc[].empty) { */
     /*         log("the owner doc was empty"); */
@@ -679,7 +677,7 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
     /**/
     /*     dart_handle.send(dart_req, indices); */
     /*     return; */
-    case "faucet":
+    case RPCMethods.faucet:
         WalletOptions options;
         auto wallet_config_file = opt.default_i2p_wallet;
         if (wallet_config_file.exists) {
@@ -750,12 +748,11 @@ void hirpc_handler_impl(WebData* req, WebData* rep, ShellOptions* opt) {
         return;
 
     default:
-        sockaddr = opt.node_dart_addr;
         break;
     } // switch method
 
     rc = query_socket_once(
-            sockaddr, // TODO: clarify if it is a common socket for all hirpc and maybe rename it
+            opt.node_dart_addr,
             recvtimeout,
             recvdelay,
             connectretry,
