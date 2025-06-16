@@ -113,7 +113,7 @@
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
           "if_block.wast", "loop_block.wast",
           "load.wast", "store.wast",
-          "align_reduced.wast"
+          "align_reduced.wast", "local_get.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -121,7 +121,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "load",  "store", "align"],
+          "call_indirect", "element", "conversions", "br_table", "align", "local"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -174,14 +174,9 @@
             "call_indirect_2.wast"
           ]
         },
-        "load" : {
+        "local" : {
           "args" : [
-            "load_1.wast"
-          ]
-        },
-        "store" : {
-          "args" : [
-            "store_1.wast"
+            "local_get.wast"
           ]
         },
         "align" : {
