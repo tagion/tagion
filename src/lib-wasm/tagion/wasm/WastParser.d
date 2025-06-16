@@ -89,6 +89,7 @@ struct WastParser {
         TABLE,
         GLOBAL,
         ELEMENT,
+        DATA,
         PARAM,
         RESULT,
         FUNC_BODY,
@@ -882,6 +883,21 @@ struct WastParser {
         return elem;
     }
 
+    DataType parseData(ref WastTokenizer r, const ParserStage stage) {
+        DataType data_type;
+        if (r.type is TokenType.BEGIN) {
+            FuncType void_func;
+            CodeType code_offset;
+            FunctionContext ctx;
+            parseInstr(r, ParserStage.TABLE, code_offset, void_func, ctx);
+            data_type.expr = code_offset.expr;
+        }
+        r.expect(TokenType.STRING);
+        data_type.base = r.token.stripQuotes;
+        r.nextToken;
+        return data_type;
+    }
+
     struct ForwardElement {
         ElementType elem; /// Element tobe forward parsed
         WastTokenizer tokenizer; /// Cached forward element declaration
@@ -1198,6 +1214,10 @@ struct WastParser {
             case WastKeywords.ELEM:
                 r.nextToken;
                 writer.section!(Section.ELEMENT).sectypes ~= parseElem(r, ParserStage.ELEMENT);
+                return stage;
+            case WastKeywords.DATA:
+                r.nextToken;
+                writer.section!(Section.DATA).sectypes ~= parseData(r, ParserStage.DATA);
                 return stage;
             case "assert_return_nan":
             case "assert_return":

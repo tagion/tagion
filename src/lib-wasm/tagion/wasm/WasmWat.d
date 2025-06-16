@@ -310,7 +310,6 @@ alias check = Check!WatException;
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
         foreach (idx, d; _data[].enumerate) {
-            output.writefln("%s", d);
             output.writef("%s(data (;%d;) ", indent, idx);
             final switch (d.mode) {
             case DataMode.ACTIVE_INDEX:

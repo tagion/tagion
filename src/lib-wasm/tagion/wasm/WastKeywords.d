@@ -16,6 +16,7 @@ enum WastKeywords {
     EXPORT = "export",
     ELEM = "elem",
     SEGMENT = "segment",
+    DATA = "data",
 
     OFFSET = "offset",
     PARAM = "param",
