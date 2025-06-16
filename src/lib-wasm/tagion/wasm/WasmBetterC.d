@@ -1060,12 +1060,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         bout.writefln("%s%s // BEGIN %d", indent, block.begin, ctx.current.id);
                         bout.write(block_bout);
                         setResults(indent, null);
-                        bout.writefln("%s%s // END", indent, block.end);
+                        bout.writefln("%s%s // END %d", indent, block.end, ctx.current.id);
                         endBlock;
                         bout.writefln("%s//ctx.stack.length=%d ctx.current.sp=%d",
                                 indent, ctx.stack.length, ctx.current.sp);
                         ctx.push(block);
-                        bout.writefln("// END stack %-(%s, %)", ctx.stack);
                         break;
                     case BLOCK_ELSE:
                         bout.writefln("// if stack %-(%s, %) : %s", ctx.stack, ctx.current.kind);

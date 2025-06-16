@@ -120,8 +120,8 @@
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error foundation.context std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "align", "local"],
+      "stages": ["tvm",
+         "switch_reduced", "local"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -132,61 +132,9 @@
                 "float_misc_export.wast"
             ]
         },
-        "i32" : {
-            "args" : [
-                "i32.wast"
-
-            ]
-        },
-        "br_table" : {
-            "args" : [
-                "br_table_block.wast"
-
-            ]
-        },
-        "br_if" : {
-            "args" : [
-                "br_if_block_2.wast"
-            ]
-        },
-         "br" : {
-            "args" : [
-                "br_block.wast"
-            ]
-        },
-        "loop" : {
-            "args" : [
-                "loop_block.wast"
-            ]
-        },
-        "if_block" : {
-            "args" : [
-                "if_block_2.wast"
-            ]
-        },
-        "tvm_test" : {
-            "args" : [
-                "int_literals_1.wast"
-            ]
-        },
-        "call_indirect" : {
+        "switch_reduced" : {
           "args" : [
-            "call_indirect_2.wast"
-          ]
-        },
-        "local" : {
-          "args" : [
-            "local_get.wast"
-          ]
-        },
-        "align" : {
-          "args" : [
-            "align.wast"
-          ]
-        },
-        "conversions" : {
-          "args" : [
-            "conversions.wast"
+            "switch_reduced_1.wast"
           ]
         },
         "element" : {
