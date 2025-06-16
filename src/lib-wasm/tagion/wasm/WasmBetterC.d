@@ -1557,7 +1557,7 @@ shared static this() {
         IR.I32_STORE: q{ctx.store!(%3$s, %4$s, int)(%2$s, %1$s)},
         IR.I64_STORE: q{ctx.store!(%3$s, %4$s, long)(%2$s, %1$s)},
         IR.F32_STORE: q{ctx.store!(%3$s, %4$s, float)(%2$s, %1$s)},
-        IR.F64_STORE: q{ctx.store!(%3$s, %4$s, double)(%3$s, %1$s)},
+        IR.F64_STORE: q{ctx.store!(%3$s, %4$s, double)(%2$s, %1$s)},
 
         IR.I32_STORE8: q{ctx.store!(%3$s, %4$s, int)(%2$s, cast(byte)%1$s)},
         IR.I32_STORE16: q{ctx.store!(%3$s, %4$s, int)(%2$s, cast(short)%1$s)},

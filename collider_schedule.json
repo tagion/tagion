@@ -112,7 +112,8 @@
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
           "if_block.wast", "loop_block.wast",
-            "load.wast", "store.wast" 
+          "load.wast", "store.wast",
+          "align_reduced.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -185,7 +186,7 @@
         },
         "align" : {
           "args" : [
-            "align_1.wast"
+            "align.wast"
           ]
         },
         "conversions" : {
