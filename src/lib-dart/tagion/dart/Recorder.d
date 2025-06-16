@@ -379,7 +379,7 @@ class Archive {
     enum Type : int {
         NONE = 0, /// NOP DART instruction
         REMOVE = -1, /// Archive marked as remove instruction
-        ADD = 1, /// Archive marked as add instrunction
+        ADD = 1, /// Archive marked as add instruction
     }
 
     @label(STUB) @optional const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding

@@ -138,7 +138,7 @@ final class HashGraph {
     }
     do {
         debug (EPOCH_LOG) {
-            log("INITTING WITNESSES %s", _owner_node.channel.encodeBase64);
+            log("INITING WITNESSES %s", _owner_node.channel.encodeBase64);
         }
         Node[Pubkey] recovered_nodes;
 

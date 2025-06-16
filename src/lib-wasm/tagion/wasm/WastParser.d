@@ -162,7 +162,7 @@ struct WastParser {
             catch (ConvException e) {
                 // Ignore try the label name instead 
             }
-            const stack_depth = block_stack.countUntil!(b => b.label == token);
+            const stack_depth = block_stack.retro.countUntil!(b => b.label == token);
             check(stack_depth >= 0, format("Label %s does not exists", token));
             return cast(uint)(stack_depth);
         }
@@ -339,7 +339,7 @@ struct WastParser {
             r.expect(TokenType.WORD);
             const instr = instrWastLookup.get(r.token, illegalInstr);
             auto next_stage = ParserStage.CODE;
-            string label;
+            //string label;
             with (IRType) {
                 final switch (instr.irtype) {
                 case CODE:
@@ -380,7 +380,7 @@ struct WastParser {
                     goto case;
                 case BLOCK:
                     r.nextToken;
-                    label = null;
+                    string label;
                     if (r.type == TokenType.WORD) {
                         label = r.token;
                         r.nextToken;
@@ -409,11 +409,9 @@ struct WastParser {
 
                     if (block_ir is IR.IF) {
                         getArguments;
-                        __write("After arguments %s %(%s %)", block_ir, r.save.map!(t => t.token).take(5));
                         addBlockIR;
                         func_ctx.block_push(wasm_results, label);
 
-                        __write("IF before expression %(%s %)", r.save.map!(t => t.token).take(5));
                         if (r.isComponent(PseudoWastInstr.then)) { // (then ... ) 
                             //r.drop(2);
                             r.nextToken;
@@ -426,7 +424,7 @@ struct WastParser {
                                 innerInstr(wasmexpr, r, wasm_results, next_stage);
                             }
                         }
-                        if (r.isComponent(instrTable[IR.ELSE].wast)) {
+                        if (r.isComponent(instrTable[IR.ELSE].name)) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
                         version (none)
@@ -467,21 +465,20 @@ struct WastParser {
                     return stage;
                 case BRANCH:
                     const branch_ir = irLookupTable[instr.name];
-                    __write("BRANCH %s", branch_ir);
                     switch (branch_ir) {
                     case IR.BR:
                         r.nextToken;
-                        const blk_idx = r.get!uint;
+                        const blk_idx = func_ctx.block_depth_index(r.token);
+                        __write("Block label=%s blk_idx=%d  %-(%s %)", r.token, blk_idx, r.save.map!(t => t.token).take(5));
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
                         }
-                        __write("Write %s blk_idx %d", IR.BR, blk_idx);
                         wasmexpr(IR.BR, blk_idx);
                         break;
                     case IR.BR_IF:
                         r.nextToken;
-                        const blk_idx = r.get!uint;
+                        const blk_idx = func_ctx.block_depth_index(r.token);
                         r.nextToken;
                         while (r.type is TokenType.BEGIN) {
                             inner_stage = innerInstr(wasmexpr, r, block_results, next_stage);
@@ -567,7 +564,34 @@ struct WastParser {
                     uint[2] args; /// Align offset
                     args[0] = instr.opcode;
                     for (uint i = 0; (i < 2) && (r.type is TokenType.WORD); i++) {
-                        args[i] = r.token.to!uint;
+                        const param_args = r.token.split("=");
+                        r.check(param_args.length == 2, "Expected align=x or offset=x");
+                        switch (param_args[0]) {
+                        case "align":
+                            uint get_align(const uint x) {
+                                switch (x) {
+                                case 1:
+                                    return 0;
+                                case 2:
+                                    return 1;
+                                case 4:
+                                    return 2;
+                                case 8:
+                                    return 3;
+                                default:
+                                    r.check(0, format("Invalid align %d", x));
+                                }
+                                assert(0);
+                            }
+
+                            args[0] = get_align(param_args[1].to!uint);
+                            break;
+                        case "offset":
+                            args[1] = param_args[1].to!uint;
+                            break;
+                        default:
+                            r.check(0, format("Illegal parameter %s expected align or offset", param_args[0]));
+                        }
                         r.nextToken;
                     }
                     foreach (i; 0 .. instr.pops.length) {

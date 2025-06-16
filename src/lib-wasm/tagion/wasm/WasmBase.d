@@ -115,7 +115,7 @@ enum Section : ubyte {
 enum IRType {
     CODE, /// Simple instruction with no argument
     CODE_EXTEND, /// Extended instruction with an opcode argument
-    CODE_TYPE, /// Instrunction with return type conversion (like select)
+    CODE_TYPE, /// Instruction with return type conversion (like select)
     OP_STACK, /// Stack operations
     RETURN,
     BLOCK, /// Block instruction
@@ -137,11 +137,10 @@ enum IRType {
     ILLEGAL, /// Illegal instructions
 }
 
-immutable illegalInstr = Instr("illegal", "illegal", 0, IRType.ILLEGAL);
+immutable illegalInstr = Instr("illegal", 0, IRType.ILLEGAL);
 
 struct Instr {
     string name; /// Instruction name
-    string wast; /// Wast name 
     uint cost;
     IRType irtype;
     Types[] pops; // Number of pops from the stack
@@ -156,204 +155,204 @@ enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
 enum ubyte[] wasm_version = [0x01, 0x00, 0x00, 0x00];
 enum IR : ubyte {
     // dfmt off
-        @Instr("unreachable", "unreachable", 1, IRType.CODE)               UNREACHABLE         = 0x00, ///  unreachable
-        @Instr("nop", "nop", 1, IRType.CODE)                       NOP                 = 0x01, ///  nop
-        @Instr("block", "block", 0, IRType.BLOCK)                    BLOCK               = 0x02, ///  block rt:blocktype (in:instr) * end
-        @Instr("loop", "loop", 0, IRType.BLOCK)                     LOOP                = 0x03, ///  loop rt:blocktype (in:instr) * end
-        @Instr("if", "if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
+        @Instr("unreachable", 1, IRType.CODE)               UNREACHABLE         = 0x00, ///  unreachable
+        @Instr("nop", 1, IRType.CODE)                       NOP                 = 0x01, ///  nop
+        @Instr("block", 0, IRType.BLOCK)                    BLOCK               = 0x02, ///  block rt:blocktype (in:instr) * end
+        @Instr("loop", 0, IRType.BLOCK)                     LOOP                = 0x03, ///  loop rt:blocktype (in:instr) * end
+        @Instr("if", 1, IRType.BLOCK_CONDITIONAL, [Types.VOID])                    IF                  = 0x04, /++     if rt:blocktype (in:instr) *rt in * else ? end
                                                                                         if rt:blocktype (in1:instr) *rt in * 1 else (in2:instr) * end
                                                                                         +/
-        @Instr("else", "else", 0, IRType.BLOCK_ELSE)                       ELSE                = 0x05, ///  else
-        @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
-        @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
-        @Instr("br_if", "br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
-        @Instr("br_table", "br_table", 1, IRType.BRANCH)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
-        @Instr("return", "return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
-        @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
-        @Instr("call_indirect", "call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect y:typeidx x:tableidx
-        @Instr("drop", "drop", 1, IRType.OP_STACK, [Types.VOID])                   DROP                = 0x1A, ///  drop
-        @Instr("select", "select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
-        @Instr("local.get", "local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
-        @Instr("local.set", "local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
-        @Instr("local.tee", "local.tee", 1, IRType.LOCAL, [Types.VOID], [Types.VOID])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
-        @Instr("global.get", "global.get", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
-        @Instr("global.set", "global.set", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
+        @Instr("else", 0, IRType.BLOCK_ELSE)                       ELSE                = 0x05, ///  else
+        @Instr("end", 0, IRType.END)                        END                 = 0x0B, ///  end
+        @Instr("br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
+        @Instr("br_if", 1, IRType.BRANCH)                BR_IF               = 0x0D, ///  br_if l:labelidx
+        @Instr("br_table", 1, IRType.BRANCH)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
+        @Instr("return", 1, IRType.RETURN)                    RETURN              = 0x0F, ///  return
+        @Instr("call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
+        @Instr("call_indirect", 1, IRType.CALL_INDIRECT, [Types.I32]) CALL_INDIRECT       = 0x11, ///  call_indirect y:typeidx x:tableidx
+        @Instr("drop", 1, IRType.OP_STACK, [Types.VOID])                   DROP                = 0x1A, ///  drop
+        @Instr("select", 1, IRType.CODE_TYPE, [Types.VOID, Types.VOID, Types.VOID], [Types.VOID])  SELECT              = 0x1B, ///  select
+        @Instr("local.get", 1, IRType.LOCAL, [], [Types.VOID])          LOCAL_GET           = 0x20, ///  local.get x:localidx
+        @Instr("local.set", 1, IRType.LOCAL, [Types.VOID])             LOCAL_SET           = 0x21, ///  local.set x:localidx
+        @Instr("local.tee", 1, IRType.LOCAL, [Types.VOID], [Types.VOID])          LOCAL_TEE           = 0x22, ///  local.tee x:localidx
+        @Instr("global.get", 1, IRType.GLOBAL, [], [Types.VOID])        GLOBAL_GET          = 0x23, ///  global.get x:globalidx
+        @Instr("global.set", 1, IRType.GLOBAL, [Types.VOID])        GLOBAL_SET          = 0x24, ///  global.set x:globalidx
 
-        @Instr("i32.load", "i32.load", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)          I32_LOAD            = 0x28, ///  i32.load     m:memarg
-        @Instr("i64.load", "i64.load", 2, IRType.LOAD, [Types.I32], [Types.I64], 3)          I64_LOAD            = 0x29, ///  i64.load     m:memarg
-        @Instr("f32.load", "f32.load", 2, IRType.LOAD, [Types.I32], [Types.F32], 2)          F32_LOAD            = 0x2A, ///  f32.load     m:memarg
-        @Instr("f64.load", "f64.load", 2, IRType.LOAD, [Types.I32], [Types.F64], 3)          F64_LOAD            = 0x2B, ///  f64.load     m:memarg
-        @Instr("i32.load8_s", "i32.load8_s", 2, IRType.LOAD, [Types.I32], [Types.I32])       I32_LOAD8_S         = 0x2C, ///  i32.load8_s  m:memarg
-        @Instr("i32.load8_u", "i32.load8_u", 2, IRType.LOAD, [Types.I32], [Types.I32])       I32_LOAD8_U         = 0x2D, ///  i32.load8_u  m:memarg
-        @Instr("i32.load16_s", "i32.load16_s", 2, IRType.LOAD, [Types.I32], [Types.I32])      I32_LOAD16_S        = 0x2E, ///  i32.load16_s m:memarg
-        @Instr("i32.load16_u", "i32.load16_u", 2, IRType.LOAD, [Types.I32], [Types.I32])      I32_LOAD16_U        = 0x2F, ///  i32.load16_u m:memarg
-        @Instr("i64.load8_s", "i64.load8_s", 2, IRType.LOAD, [Types.I32], [Types.I32])       I64_LOAD8_S         = 0x30, ///  i64.load8_s  m:memarg
-        @Instr("i64.load8_u", "i64.load8_u", 2, IRType.LOAD, [Types.I32], [Types.I64])       I64_LOAD8_U         = 0x31, ///  i64.load8_u  m:memarg
-        @Instr("i64.load16_s", "i64.load16_s", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD16_S        = 0x32, ///  i64.load16_s m:memarg
-        @Instr("i64.load16_u", "i64.load16_u", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD16_U        = 0x33, ///  i64.load16_u m:memarg
-        @Instr("i64.load32_s", "i64.load32_s", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD32_S        = 0x34, ///  i64.load32_s m:memarg
-        @Instr("i64.load32_u", "i64.load32_u", 2, IRType.LOAD, [Types.I32], [Types.I64])      I64_LOAD32_U        = 0x35, ///  i64.load32_u m:memarg
-        @Instr("i32.store", "i32.store", 2, IRType.STORE, [Types.I32, Types.I32], [], 2)            I32_STORE           = 0x36, ///  i32.store    m:memarg
-        @Instr("i64.store", "i64.store", 2, IRType.STORE, [Types.I64, Types.I32], [], 3)            I64_STORE           = 0x37, ///  i64.store    m:memarg
-        @Instr("f32.store", "f32.store", 2, IRType.STORE, [Types.F32, Types.I32], [], 2)            F32_STORE           = 0x38, ///  f32.store    m:memarg
-        @Instr("f64.store", "f64.store", 2, IRType.STORE, [Types.F64, Types.I32], [], 3)            F64_STORE           = 0x39, ///  f64.store    m:memarg
-        @Instr("i32.store8", "i32.store8", 2, IRType.STORE, [Types.I32, Types.I32])           I32_STORE8          = 0x3A, ///  i32.store8   m:memarg
-        @Instr("i32.store16", "i32.store16", 2, IRType.STORE, [Types.I32, Types.I32])          I32_STORE16         = 0x3B, ///  i32.store16  m:memarg
-        @Instr("i64.store8", "i64.store8", 2, IRType.STORE, [Types.I64, Types.I32])           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
-        @Instr("i64.store16", "i64.store16", 2, IRType.STORE, [Types.I64, Types.I32])          I64_STORE16         = 0x3D, ///  i64.store16  m:memarg
-        @Instr("i64.store32", "i64.store32", 2, IRType.STORE, [Types.I64, Types.I32])          I64_STORE32         = 0x3E, ///  i64.store32  m:memarg
-        @Instr("memory.size", "memory_size", 7, IRType.MEMORY)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
-        @Instr("memory.grow", "grow_memory", 7, IRType.MEMORY, [Types.I32])        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
+        @Instr("i32.load", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)          I32_LOAD            = 0x28, ///  i32.load     m:memarg
+        @Instr("i64.load", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)          I64_LOAD            = 0x29, ///  i64.load     m:memarg
+        @Instr("f32.load", 2, IRType.LOAD, [Types.I32], [Types.F32], 2)          F32_LOAD            = 0x2A, ///  f32.load     m:memarg
+        @Instr("f64.load", 2, IRType.LOAD, [Types.I32], [Types.F64], 4)          F64_LOAD            = 0x2B, ///  f64.load     m:memarg
+        @Instr("i32.load8_s", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)       I32_LOAD8_S         = 0x2C, ///  i32.load8_s  m:memarg
+        @Instr("i32.load8_u", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)       I32_LOAD8_U         = 0x2D, ///  i32.load8_u  m:memarg
+        @Instr("i32.load16_s", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)      I32_LOAD16_S        = 0x2E, ///  i32.load16_s m:memarg
+        @Instr("i32.load16_u", 2, IRType.LOAD, [Types.I32], [Types.I32], 2)      I32_LOAD16_U        = 0x2F, ///  i32.load16_u m:memarg
+        @Instr("i64.load8_s", 2, IRType.LOAD, [Types.I32], [Types.I32], 4)       I64_LOAD8_S         = 0x30, ///  i64.load8_s  m:memarg
+        @Instr("i64.load8_u", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)       I64_LOAD8_U         = 0x31, ///  i64.load8_u  m:memarg
+        @Instr("i64.load16_s", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)      I64_LOAD16_S        = 0x32, ///  i64.load16_s m:memarg
+        @Instr("i64.load16_u", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)      I64_LOAD16_U        = 0x33, ///  i64.load16_u m:memarg
+        @Instr("i64.load32_s", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)      I64_LOAD32_S        = 0x34, ///  i64.load32_s m:memarg
+        @Instr("i64.load32_u", 2, IRType.LOAD, [Types.I32], [Types.I64], 4)      I64_LOAD32_U        = 0x35, ///  i64.load32_u m:memarg
+        @Instr("i32.store", 2, IRType.STORE, [Types.I32, Types.I32], [], 2)            I32_STORE           = 0x36, ///  i32.store    m:memarg
+        @Instr("i64.store", 2, IRType.STORE, [Types.I64, Types.I32], [], 4)            I64_STORE           = 0x37, ///  i64.store    m:memarg
+        @Instr("f32.store", 2, IRType.STORE, [Types.F32, Types.I32], [], 2)            F32_STORE           = 0x38, ///  f32.store    m:memarg
+        @Instr("f64.store", 2, IRType.STORE, [Types.F64, Types.I32], [], 4)            F64_STORE           = 0x39, ///  f64.store    m:memarg
+        @Instr("i32.store8", 2, IRType.STORE, [Types.I32, Types.I32], [], 2)           I32_STORE8          = 0x3A, ///  i32.store8   m:memarg
+        @Instr("i32.store16", 2, IRType.STORE, [Types.I32, Types.I32], [], 2)          I32_STORE16         = 0x3B, ///  i32.store16  m:memarg
+        @Instr("i64.store8", 2, IRType.STORE, [Types.I64, Types.I32], [], 4,)           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
+        @Instr("i64.store16", 2, IRType.STORE, [Types.I64, Types.I32], [], 4)          I64_STORE16         = 0x3D, ///  i64.store16  m:memarg
+        @Instr("i64.store32", 2, IRType.STORE, [Types.I64, Types.I32], [], 4)          I64_STORE32         = 0x3E, ///  i64.store32  m:memarg
+        @Instr("memory.size", 7, IRType.MEMORY)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
+        @Instr("memory.grow", 7, IRType.MEMORY, [Types.I32])        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
 
-        @Instr("i32.const", "i32.const", 1, IRType.CONST, [], [Types.I32])          I32_CONST           = 0x41, ///  i32.const n:i32
-        @Instr("i64.const", "i64.const", 1, IRType.CONST, [], [Types.I64])          I64_CONST           = 0x42, ///  i64.const n:i64
-        @Instr("f32.const", "f32.const", 1, IRType.CONST, [], [Types.F32])          F32_CONST           = 0x43, ///  f32.const z:f32
-        @Instr("f64.const", "f64.const", 1, IRType.CONST, [], [Types.F64])          F64_CONST           = 0x44, ///  f64.const z:f64
+        @Instr("i32.const", 1, IRType.CONST, [], [Types.I32])          I32_CONST           = 0x41, ///  i32.const n:i32
+        @Instr("i64.const", 1, IRType.CONST, [], [Types.I64])          I64_CONST           = 0x42, ///  i64.const n:i64
+        @Instr("f32.const", 1, IRType.CONST, [], [Types.F32])          F32_CONST           = 0x43, ///  f32.const z:f32
+        @Instr("f64.const", 1, IRType.CONST, [], [Types.F64])          F64_CONST           = 0x44, ///  f64.const z:f64
 
-        @Instr("i32.eqz", "i32.eqz", 1, IRType.CODE, [Types.I32], [Types.I32])                I32_EQZ             = 0x45, ///  i32.eqz
-        @Instr("i32.eq", "i32.eq", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])                 I32_EQ              = 0x46, ///  i32.eq
-        @Instr("i32.ne", "i32.ne", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])                 I32_NE              = 0x47, ///  i32.ne
-        @Instr("i32.lt_s", "i32.lt_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LT_S            = 0x48, ///  i32.lt_s
-        @Instr("i32.lt_u", "i32.lt_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LT_U            = 0x49, ///  i32.lt_u
-        @Instr("i32.gt_s", "i32.gt_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GT_S            = 0x4A, ///  i32.gt_s
-        @Instr("i32.gt_u", "i32.gt_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GT_U            = 0x4B, ///  i32.gt_u
-        @Instr("i32.le_s", "i32.le_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LE_S            = 0x4C, ///  i32.le_s
-        @Instr("i32.le_u", "i32.le_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LE_U            = 0x4D, ///  i32.le_u
-        @Instr("i32.ge_s", "i32.ge_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GE_S            = 0x4E, ///  i32.ge_s
-        @Instr("i32.ge_u", "i32.ge_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GE_U            = 0x4F, ///  i32.ge_u
+        @Instr("i32.eqz", 1, IRType.CODE, [Types.I32], [Types.I32])                I32_EQZ             = 0x45, ///  i32.eqz
+        @Instr("i32.eq", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])                 I32_EQ              = 0x46, ///  i32.eq
+        @Instr("i32.ne", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])                 I32_NE              = 0x47, ///  i32.ne
+        @Instr("i32.lt_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LT_S            = 0x48, ///  i32.lt_s
+        @Instr("i32.lt_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LT_U            = 0x49, ///  i32.lt_u
+        @Instr("i32.gt_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GT_S            = 0x4A, ///  i32.gt_s
+        @Instr("i32.gt_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GT_U            = 0x4B, ///  i32.gt_u
+        @Instr("i32.le_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LE_S            = 0x4C, ///  i32.le_s
+        @Instr("i32.le_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_LE_U            = 0x4D, ///  i32.le_u
+        @Instr("i32.ge_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GE_S            = 0x4E, ///  i32.ge_s
+        @Instr("i32.ge_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_GE_U            = 0x4F, ///  i32.ge_u
 
-        @Instr("i64.eqz", "i64.eqz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_EQZ             = 0x50, ///  i64.eqz
-        @Instr("i64.eq", "i64.eq", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_EQ              = 0x51, ///  i64.eq
-        @Instr("i64.ne", "i64.ne", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_NE              = 0x52, ///  i64.ne
-        @Instr("i64.lt_s", "i64.lt_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])                  I64_LT_S            = 0x53, ///  i64.lt_s
+        @Instr("i64.eqz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_EQZ             = 0x50, ///  i64.eqz
+        @Instr("i64.eq", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_EQ              = 0x51, ///  i64.eq
+        @Instr("i64.ne", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_NE              = 0x52, ///  i64.ne
+        @Instr("i64.lt_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])                  I64_LT_S            = 0x53, ///  i64.lt_s
 
-        @Instr("i64.lt_u", "i64.lt_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LT_U            = 0x54, ///  i64.lt_u
-        @Instr("i64.gt_s", "i64.gt_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GT_S            = 0x55, ///  i64.gt_s
-        @Instr("i64.gt_u", "i64.gt_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GT_U            = 0x56, ///  i64.gt_u
-        @Instr("i64.le_s", "i64.le_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LE_S            = 0x57, ///  i64.le_s
-        @Instr("i64.le_u", "i64.le_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LE_U            = 0x58, ///  i64.le_u
-        @Instr("i64.ge_s", "i64.ge_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GE_S            = 0x59, ///  i64.ge_s
-        @Instr("i64.ge_u", "i64.ge_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GE_U            = 0x5A, ///  i64.ge_u
+        @Instr("i64.lt_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LT_U            = 0x54, ///  i64.lt_u
+        @Instr("i64.gt_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GT_S            = 0x55, ///  i64.gt_s
+        @Instr("i64.gt_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GT_U            = 0x56, ///  i64.gt_u
+        @Instr("i64.le_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LE_S            = 0x57, ///  i64.le_s
+        @Instr("i64.le_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_LE_U            = 0x58, ///  i64.le_u
+        @Instr("i64.ge_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GE_S            = 0x59, ///  i64.ge_s
+        @Instr("i64.ge_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_GE_U            = 0x5A, ///  i64.ge_u
 
-        @Instr("f32.eq", "f32.eq", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_EQ              = 0x5B, ///  f32.eq
-        @Instr("f32.ne", "f32.ne", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_NE              = 0x5C, ///  f32.ne
-        @Instr("f32.lt", "f32.lt", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_LT              = 0x5D, ///  f32.lt
-        @Instr("f32.gt", "f32.gt", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_GT              = 0x5E, ///  f32.gt
-        @Instr("f32.le", "f32.le", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_LE              = 0x5F, ///  f32.le
-        @Instr("f32.ge", "f32.ge", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_GE              = 0x60, ///  f32.ge
+        @Instr("f32.eq", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_EQ              = 0x5B, ///  f32.eq
+        @Instr("f32.ne", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_NE              = 0x5C, ///  f32.ne
+        @Instr("f32.lt", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_LT              = 0x5D, ///  f32.lt
+        @Instr("f32.gt", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_GT              = 0x5E, ///  f32.gt
+        @Instr("f32.le", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_LE              = 0x5F, ///  f32.le
+        @Instr("f32.ge", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])                 F32_GE              = 0x60, ///  f32.ge
 
-        @Instr("f64.eq", "f64.eq", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_EQ              = 0x61, ///  f64.eq
-        @Instr("f64.ne", "f64.ne", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_NE              = 0x62, ///  f64.ne
-        @Instr("f64.lt", "f64.lt", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_LT              = 0x63, ///  f64.lt
-        @Instr("f64.gt", "f64.gt", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_GT              = 0x64, ///  f64.gt
-        @Instr("f64.le", "f64.le", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_LE              = 0x65, ///  f64.le
-        @Instr("f64.ge", "f64.ge", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_GE              = 0x66, ///  f64.ge
+        @Instr("f64.eq", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_EQ              = 0x61, ///  f64.eq
+        @Instr("f64.ne", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_NE              = 0x62, ///  f64.ne
+        @Instr("f64.lt", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_LT              = 0x63, ///  f64.lt
+        @Instr("f64.gt", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_GT              = 0x64, ///  f64.gt
+        @Instr("f64.le", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_LE              = 0x65, ///  f64.le
+        @Instr("f64.ge", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])                 F64_GE              = 0x66, ///  f64.ge
 
             // instructions
-        @Instr("i32.clz", "i32.clz", 1, IRType.CODE, [Types.I32], [Types.I32])             I32_CLZ             = 0x67, ///  i32.clz
-        @Instr("i32.ctz", "i32.ctz", 1, IRType.CODE, [Types.I32], [Types.I32])             I32_CTZ             = 0x68, ///  i32.ctz
-        @Instr("i32.popcnt", "i32.popcnt", 1, IRType.CODE, [Types.I32], [Types.I32])          I32_POPCNT          = 0x69, ///  i32.popcnt
-        @Instr("i32.add", "i32.add", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_ADD             = 0x6A, ///  i32.add
-        @Instr("i32.sub", "i32.sub", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_SUB             = 0x6B, ///  i32.sub
-        @Instr("i32.mul", "i32.mul", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_MUL             = 0x6C, ///  i32.mul
-        @Instr("i32.div_s", "i32.div_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_DIV_S           = 0x6D, ///  i32.div_s
-        @Instr("i32.div_u", "i32.div_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_DIV_U           = 0x6E, ///  i32.div_u
-        @Instr("i32.rem_s", "i32.rem_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_REM_S           = 0x6F, ///  i32.rem_s
-        @Instr("i32.rem_u", "i32.rem_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_REM_U           = 0x70, ///  i32.rem_u
-        @Instr("i32.and", "i32.and", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_AND             = 0x71, ///  i32.and
-        @Instr("i32.or", "i32.or", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])              I32_OR              = 0x72, ///  i32.or
-        @Instr("i32.xor", "i32.xor", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_XOR             = 0x73, ///  i32.xor
-        @Instr("i32.shl", "i32.shl", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_SHL             = 0x74, ///  i32.shl
-        @Instr("i32.shr_s", "i32.shr_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_SHR_S           = 0x75, ///  i32.shr_s
-        @Instr("i32.shr_u", "i32.shr_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_SHR_U           = 0x76, ///  i32.shr_u
-        @Instr("i32.rotl", "i32.rotl", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_ROTL            = 0x77, ///  i32.rotl
-        @Instr("i32.rotr", "i32.rotr", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_ROTR            = 0x78, ///  i32.rotr
+        @Instr("i32.clz", 1, IRType.CODE, [Types.I32], [Types.I32])             I32_CLZ             = 0x67, ///  i32.clz
+        @Instr("i32.ctz", 1, IRType.CODE, [Types.I32], [Types.I32])             I32_CTZ             = 0x68, ///  i32.ctz
+        @Instr("i32.popcnt", 1, IRType.CODE, [Types.I32], [Types.I32])          I32_POPCNT          = 0x69, ///  i32.popcnt
+        @Instr("i32.add", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_ADD             = 0x6A, ///  i32.add
+        @Instr("i32.sub", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_SUB             = 0x6B, ///  i32.sub
+        @Instr("i32.mul", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_MUL             = 0x6C, ///  i32.mul
+        @Instr("i32.div_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_DIV_S           = 0x6D, ///  i32.div_s
+        @Instr("i32.div_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_DIV_U           = 0x6E, ///  i32.div_u
+        @Instr("i32.rem_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_REM_S           = 0x6F, ///  i32.rem_s
+        @Instr("i32.rem_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_REM_U           = 0x70, ///  i32.rem_u
+        @Instr("i32.and", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_AND             = 0x71, ///  i32.and
+        @Instr("i32.or", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])              I32_OR              = 0x72, ///  i32.or
+        @Instr("i32.xor", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_XOR             = 0x73, ///  i32.xor
+        @Instr("i32.shl", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])             I32_SHL             = 0x74, ///  i32.shl
+        @Instr("i32.shr_s", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_SHR_S           = 0x75, ///  i32.shr_s
+        @Instr("i32.shr_u", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])           I32_SHR_U           = 0x76, ///  i32.shr_u
+        @Instr("i32.rotl", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_ROTL            = 0x77, ///  i32.rotl
+        @Instr("i32.rotr", 1, IRType.CODE, [Types.I32, Types.I32], [Types.I32])            I32_ROTR            = 0x78, ///  i32.rotr
 
-        @Instr("i64.clz", "i64.clz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_CLZ             = 0x79, ///  i64.clz
-        @Instr("i64.ctz", "i64.ctz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_CTZ             = 0x7A, ///  i64.ctz
-        @Instr("i64.popcnt", "i64.popcnt", 1, IRType.CODE, [Types.I64], [Types.I64])          I64_POPCNT          = 0x7B, ///  i64.popcnt
-        @Instr("i64.add", "i64.add", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_ADD             = 0x7C, ///  i64.add
-        @Instr("i64.sub", "i64.sub", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_SUB             = 0x7D, ///  i64.sub
-        @Instr("i64.mul", "i64.mul", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_MUL             = 0x7E, ///  i64.mul
-        @Instr("i64.div_s", "i64.div_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_DIV_S           = 0x7F, ///  i64.div_s
-        @Instr("i64.div_u", "i64.div_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_DIV_U           = 0x80, ///  i64.div_u
-        @Instr("i64.rem_s", "i64.rem_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_REM_S           = 0x81, ///  i64.rem_s
-        @Instr("i64.rem_u", "i64.rem_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_REM_U           = 0x82, ///  i64.rem_u
-        @Instr("i64.and", "i64.and", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_AND             = 0x83, ///  i64.and
-        @Instr("i64.or", "i64.or", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_OR              = 0x84, ///  i64.or
-        @Instr("i64.xor", "i64.xor", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_XOR             = 0x85, ///  i64.xor
-        @Instr("i64.shl", "i64.shl", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_SHL             = 0x86, ///  i64.shl
-        @Instr("i64.shr_s", "i64.shr_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_SHR_S           = 0x87, ///  i64.shr_s
-        @Instr("i64.shr_u", "i64.shr_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_SHR_U           = 0x88, ///  i64.shr_u
-        @Instr("i64.rotl", "i64.rotl", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_ROTL            = 0x89, ///  i64.rotl
-        @Instr("i64.rotr", "i64.rotr", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_ROTR            = 0x8A, ///  i64.rotr
+        @Instr("i64.clz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_CLZ             = 0x79, ///  i64.clz
+        @Instr("i64.ctz", 1, IRType.CODE, [Types.I64], [Types.I64])             I64_CTZ             = 0x7A, ///  i64.ctz
+        @Instr("i64.popcnt", 1, IRType.CODE, [Types.I64], [Types.I64])          I64_POPCNT          = 0x7B, ///  i64.popcnt
+        @Instr("i64.add", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_ADD             = 0x7C, ///  i64.add
+        @Instr("i64.sub", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_SUB             = 0x7D, ///  i64.sub
+        @Instr("i64.mul", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_MUL             = 0x7E, ///  i64.mul
+        @Instr("i64.div_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_DIV_S           = 0x7F, ///  i64.div_s
+        @Instr("i64.div_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_DIV_U           = 0x80, ///  i64.div_u
+        @Instr("i64.rem_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_REM_S           = 0x81, ///  i64.rem_s
+        @Instr("i64.rem_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_REM_U           = 0x82, ///  i64.rem_u
+        @Instr("i64.and", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_AND             = 0x83, ///  i64.and
+        @Instr("i64.or", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])              I64_OR              = 0x84, ///  i64.or
+        @Instr("i64.xor", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_XOR             = 0x85, ///  i64.xor
+        @Instr("i64.shl", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])             I64_SHL             = 0x86, ///  i64.shl
+        @Instr("i64.shr_s", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_SHR_S           = 0x87, ///  i64.shr_s
+        @Instr("i64.shr_u", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])           I64_SHR_U           = 0x88, ///  i64.shr_u
+        @Instr("i64.rotl", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_ROTL            = 0x89, ///  i64.rotl
+        @Instr("i64.rotr", 1, IRType.CODE, [Types.I64, Types.I64], [Types.I64])            I64_ROTR            = 0x8A, ///  i64.rotr
 
-        @Instr("f32.abs", "f32.abs", 1, IRType.CODE, [Types.F32], [Types.F32])             F32_ABS             = 0x8B, ///  f32.abs
-        @Instr("f32.neg", "f32.neg", 1, IRType.CODE, [Types.F32], [Types.F32])             F32_NEG             = 0x8C, ///  f32.neg
-        @Instr("f32.ceil", "f32.ceil", 1, IRType.CODE, [Types.F32], [Types.F32])            F32_CEIL            = 0x8D, ///  f32.ceil
-        @Instr("f32.floor", "f32.floor", 1, IRType.CODE, [Types.F32], [Types.F32])           F32_FLOOR           = 0x8E, ///  f32.floor
-        @Instr("f32.trunc", "f32.trunc", 1, IRType.CODE, [Types.F32], [Types.F32])           F32_TRUNC           = 0x8F, ///  f32.trunc
-        @Instr("f32.nearest", "f32.nearest", 1, IRType.CODE, [Types.F32], [Types.F32])         F32_NEAREST         = 0x90, ///  f32.nearest
-        @Instr("f32.sqrt", "f32.sqrt", 3, IRType.CODE, [Types.F32], [Types.F32])            F32_SQRT            = 0x91, ///  f32.sqrt
-        @Instr("f32.add", "f32.add", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_ADD             = 0x92, ///  f32.add
-        @Instr("f32.sub", "f32.sub", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_SUB             = 0x93, ///  f32.sub
-        @Instr("f32.mul", "f32.mul", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MUL             = 0x94, ///  f32.mul
-        @Instr("f32.div", "f32.div", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_DIV             = 0x95, ///  f32.div
-        @Instr("f32.min", "f32.min", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MIN             = 0x96, ///  f32.min
-        @Instr("f32.max", "f32.max", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MAX             = 0x97, ///  f32.max
-        @Instr("f32.copysign", "f32.copysign", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])        F32_COPYSIGN        = 0x98, ///  f32.copysign
+        @Instr("f32.abs", 1, IRType.CODE, [Types.F32], [Types.F32])             F32_ABS             = 0x8B, ///  f32.abs
+        @Instr("f32.neg", 1, IRType.CODE, [Types.F32], [Types.F32])             F32_NEG             = 0x8C, ///  f32.neg
+        @Instr("f32.ceil", 1, IRType.CODE, [Types.F32], [Types.F32])            F32_CEIL            = 0x8D, ///  f32.ceil
+        @Instr("f32.floor", 1, IRType.CODE, [Types.F32], [Types.F32])           F32_FLOOR           = 0x8E, ///  f32.floor
+        @Instr("f32.trunc", 1, IRType.CODE, [Types.F32], [Types.F32])           F32_TRUNC           = 0x8F, ///  f32.trunc
+        @Instr("f32.nearest", 1, IRType.CODE, [Types.F32], [Types.F32])         F32_NEAREST         = 0x90, ///  f32.nearest
+        @Instr("f32.sqrt", 3, IRType.CODE, [Types.F32], [Types.F32])            F32_SQRT            = 0x91, ///  f32.sqrt
+        @Instr("f32.add", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_ADD             = 0x92, ///  f32.add
+        @Instr("f32.sub", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_SUB             = 0x93, ///  f32.sub
+        @Instr("f32.mul", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MUL             = 0x94, ///  f32.mul
+        @Instr("f32.div", 3, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_DIV             = 0x95, ///  f32.div
+        @Instr("f32.min", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MIN             = 0x96, ///  f32.min
+        @Instr("f32.max", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])             F32_MAX             = 0x97, ///  f32.max
+        @Instr("f32.copysign", 1, IRType.CODE, [Types.F32, Types.F32], [Types.F32])        F32_COPYSIGN        = 0x98, ///  f32.copysign
 
-        @Instr("f64.abs", "f64.abs", 1, IRType.CODE, [Types.F64], [Types.F64])             F64_ABS             = 0x99, ///  f64.abs
-        @Instr("f64.neg", "f64.neg", 1, IRType.CODE, [Types.F64], [Types.F64])             F64_NEG             = 0x9A, ///  f64.neg
-        @Instr("f64.ceil", "f64.ceil", 1, IRType.CODE, [Types.F64], [Types.F64])            F64_CEIL            = 0x9B, ///  f64.ceil
-        @Instr("f64.floor", "f64.floor", 1, IRType.CODE, [Types.F64], [Types.F64])           F64_FLOOR           = 0x9C, ///  f64.floor
-        @Instr("f64.trunc", "f64.trunc", 1, IRType.CODE, [Types.F64], [Types.F64])           F64_TRUNC           = 0x9D, ///  f64.trunc
-        @Instr("f64.nearest", "f64.nearest", 1, IRType.CODE, [Types.F64], [Types.F64])         F64_NEAREST         = 0x9E, ///  f64.nearest
-        @Instr("f64.sqrt", "f64.sqrt", 3, IRType.CODE, [Types.F64], [Types.F64])            F64_SQRT            = 0x9F, ///  f64.sqrt
-        @Instr("f64.add", "f64.add", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_ADD             = 0xA0, ///  f64.add
-        @Instr("f64.sub", "f64.sub", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_SUB             = 0xA1, ///  f64.sub
-        @Instr("f64.mul", "f64.mul", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MUL             = 0xA2, ///  f64.mul
-        @Instr("f64.div", "f64.div", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_DIV             = 0xA3, ///  f64.div
-        @Instr("f64.min", "f64.min", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MIN             = 0xA4, ///  f64.min
-        @Instr("f64.max", "f64.max", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MAX             = 0xA5, ///  f64.max
-        @Instr("f64.copysign", "f64.copysign", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])        F64_COPYSIGN        = 0xA6, ///  f64.copysign
+        @Instr("f64.abs", 1, IRType.CODE, [Types.F64], [Types.F64])             F64_ABS             = 0x99, ///  f64.abs
+        @Instr("f64.neg", 1, IRType.CODE, [Types.F64], [Types.F64])             F64_NEG             = 0x9A, ///  f64.neg
+        @Instr("f64.ceil", 1, IRType.CODE, [Types.F64], [Types.F64])            F64_CEIL            = 0x9B, ///  f64.ceil
+        @Instr("f64.floor", 1, IRType.CODE, [Types.F64], [Types.F64])           F64_FLOOR           = 0x9C, ///  f64.floor
+        @Instr("f64.trunc", 1, IRType.CODE, [Types.F64], [Types.F64])           F64_TRUNC           = 0x9D, ///  f64.trunc
+        @Instr("f64.nearest", 1, IRType.CODE, [Types.F64], [Types.F64])         F64_NEAREST         = 0x9E, ///  f64.nearest
+        @Instr("f64.sqrt", 3, IRType.CODE, [Types.F64], [Types.F64])            F64_SQRT            = 0x9F, ///  f64.sqrt
+        @Instr("f64.add", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_ADD             = 0xA0, ///  f64.add
+        @Instr("f64.sub", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_SUB             = 0xA1, ///  f64.sub
+        @Instr("f64.mul", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MUL             = 0xA2, ///  f64.mul
+        @Instr("f64.div", 3, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_DIV             = 0xA3, ///  f64.div
+        @Instr("f64.min", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MIN             = 0xA4, ///  f64.min
+        @Instr("f64.max", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])             F64_MAX             = 0xA5, ///  f64.max
+        @Instr("f64.copysign", 1, IRType.CODE, [Types.F64, Types.F64], [Types.F64])        F64_COPYSIGN        = 0xA6, ///  f64.copysign
 
-        @Instr("i32.wrap_i64", "i32.wrap_i64", 1, IRType.CODE, [Types.I64], [Types.I32])        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
-        @Instr("i32.trunc_f32_s", "i32.trunc_f32_s", 1, IRType.CODE, [Types.F32], [Types.I32])     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
-        @Instr("i32.trunc_f32_u", "i32.trunc_f32_u", 1, IRType.CODE, [Types.F32], [Types.I32])     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
-        @Instr("i32.trunc_f64_s", "i32.trunc_f64_s", 1, IRType.CODE, [Types.F64], [Types.I32])     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
-        @Instr("i32.trunc_f64_u", "i32.trunc_f64_u", 1, IRType.CODE, [Types.F64], [Types.I32])     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
-        @Instr("i64.extend_i32_s", "i64.extend_i32_s", 1, IRType.CODE, [Types.I32], [Types.I64])    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
-        @Instr("i64.extend_i32_u", "i64.extend_i32_u", 1, IRType.CODE, [Types.I32], [Types.I64])    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
-        @Instr("i32.extend8_s", "i32.extend8_s", 1, IRType.CODE, [Types.I32], [Types.I32])       I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
-        @Instr("i32.extend16_s", "i32.extend16_s", 1, IRType.CODE, [Types.I32], [Types.I32])      I32_EXTEND16_S      = 0xC1, ///  i32.extend16_s
-        @Instr("i64.extend8_s", "i64.extend8_s", 1, IRType.CODE, [Types.I32], [Types.I64])       I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
-        @Instr("i64.extend16_s", "i64.extend16_s", 1, IRType.CODE, [Types.I32], [Types.I64])      I64_EXTEND16_S      = 0xC3, ///  i64.extend16_s
-        @Instr("i64.extend32_s", "i64.extend32_s", 1, IRType.CODE, [Types.I32], [Types.I64])      I64_EXTEND32_S     = 0xC4, ///  i64.extend32_s
-        @Instr("i64.trunc_f32_s", "i64.trunc_f32_s", 1, IRType.CODE, [Types.F32], [Types.I64])     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
-        @Instr("i64.trunc_f32_u", "i64.trunc_f32_u", 1, IRType.CODE, [Types.F32], [Types.I64])     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
-        @Instr("i64.trunc_f64_s", "i64.trunc_f64_s", 1, IRType.CODE, [Types.F64], [Types.I64])     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
-        @Instr("i64.trunc_f64_u", "i64.trunc_f64_u", 1, IRType.CODE, [Types.F64], [Types.I64])     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
-        @Instr("f32.convert_i32_s", "f32.convert_i32_s", 1, IRType.CODE, [Types.I32], [Types.F32])   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
-        @Instr("f32.convert_i32_u", "f32.convert_i32_u", 1, IRType.CODE, [Types.I32], [Types.F32])   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
-        @Instr("f32.convert_i64_s", "f32.convert_i64_s", 1, IRType.CODE, [Types.I64], [Types.F32])   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
-        @Instr("f32.convert_i64_u", "f32.convert_i64_u", 1, IRType.CODE, [Types.I64], [Types.F32])   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
-        @Instr("f32.demote_f64", "f32.demote_f64", 1, IRType.CODE, [Types.F64], [Types.F32])      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
-        @Instr("f64.convert_i32_s", "f64.convert_i32_s", 1, IRType.CODE, [Types.I32], [Types.F64])   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
-        @Instr("f64.convert_i32_u", "f64.convert_i32_u", 1, IRType.CODE, [Types.I32], [Types.F64])   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
-        @Instr("f64.convert_i64_s", "f64.convert_i64_s", 1, IRType.CODE, [Types.I64], [Types.F64])   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
-        @Instr("f64.convert_i64_u", "f64.convert_i64_u", 1, IRType.CODE, [Types.I64], [Types.F64])   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
-        @Instr("f64.promote_f32", "f64.promote_f32", 1, IRType.CODE, [Types.F32], [Types.F64])     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
-        @Instr("i32.reinterpret_f32", "i32.reinterpret_f32", 1, IRType.CODE, [Types.F32], [Types.I32]) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
-        @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, [Types.F64], [Types.I64]) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
-        @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, [Types.I32], [Types.F32]) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
-        @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, [Types.I64], [Types.F64]) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
+        @Instr("i32.wrap_i64", 1, IRType.CODE, [Types.I64], [Types.I32])        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
+        @Instr("i32.trunc_f32_s", 1, IRType.CODE, [Types.F32], [Types.I32])     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
+        @Instr("i32.trunc_f32_u", 1, IRType.CODE, [Types.F32], [Types.I32])     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
+        @Instr("i32.trunc_f64_s", 1, IRType.CODE, [Types.F64], [Types.I32])     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
+        @Instr("i32.trunc_f64_u", 1, IRType.CODE, [Types.F64], [Types.I32])     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
+        @Instr("i64.extend_i32_s", 1, IRType.CODE, [Types.I32], [Types.I64])    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
+        @Instr("i64.extend_i32_u", 1, IRType.CODE, [Types.I32], [Types.I64])    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
+        @Instr("i32.extend8_s", 1, IRType.CODE, [Types.I32], [Types.I32])       I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
+        @Instr("i32.extend16_s", 1, IRType.CODE, [Types.I32], [Types.I32])      I32_EXTEND16_S      = 0xC1, ///  i32.extend16_s
+        @Instr("i64.extend8_s", 1, IRType.CODE, [Types.I32], [Types.I64])       I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
+        @Instr("i64.extend16_s", 1, IRType.CODE, [Types.I32], [Types.I64])      I64_EXTEND16_S      = 0xC3, ///  i64.extend16_s
+        @Instr("i64.extend32_s", 1, IRType.CODE, [Types.I32], [Types.I64])      I64_EXTEND32_S     = 0xC4, ///  i64.extend32_s
+        @Instr("i64.trunc_f32_s", 1, IRType.CODE, [Types.F32], [Types.I64])     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
+        @Instr("i64.trunc_f32_u", 1, IRType.CODE, [Types.F32], [Types.I64])     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
+        @Instr("i64.trunc_f64_s", 1, IRType.CODE, [Types.F64], [Types.I64])     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
+        @Instr("i64.trunc_f64_u", 1, IRType.CODE, [Types.F64], [Types.I64])     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
+        @Instr("f32.convert_i32_s", 1, IRType.CODE, [Types.I32], [Types.F32])   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
+        @Instr("f32.convert_i32_u", 1, IRType.CODE, [Types.I32], [Types.F32])   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
+        @Instr("f32.convert_i64_s", 1, IRType.CODE, [Types.I64], [Types.F32])   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
+        @Instr("f32.convert_i64_u", 1, IRType.CODE, [Types.I64], [Types.F32])   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
+        @Instr("f32.demote_f64", 1, IRType.CODE, [Types.F64], [Types.F32])      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
+        @Instr("f64.convert_i32_s", 1, IRType.CODE, [Types.I32], [Types.F64])   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
+        @Instr("f64.convert_i32_u", 1, IRType.CODE, [Types.I32], [Types.F64])   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
+        @Instr("f64.convert_i64_s", 1, IRType.CODE, [Types.I64], [Types.F64])   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
+        @Instr("f64.convert_i64_u", 1, IRType.CODE, [Types.I64], [Types.F64])   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
+        @Instr("f64.promote_f32", 1, IRType.CODE, [Types.F32], [Types.F64])     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
+        @Instr("i32.reinterpret_f32", 1, IRType.CODE, [Types.F32], [Types.I32]) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
+        @Instr("i64.reinterpret_f64", 1, IRType.CODE, [Types.F64], [Types.I64]) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
+        @Instr("f32.reinterpret_i32", 1, IRType.CODE, [Types.I32], [Types.F32]) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
+        @Instr("f64.reinterpret_i64", 1, IRType.CODE, [Types.I64], [Types.F64]) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
         // Reference Instructions
-        @Instr("ref.null", "ref.null", 1, IRType.REF, [], [Types.FUNCREF]) REF_NULL = 0xD0, /// ref.null
-        @Instr("ref.is_null", "ref.is_null", 1, IRType.REF, [Types.FUNCREF], [Types.I32]) REF_IS_NULL = 0xD1, /// ref.is_null 
-        @Instr("ref.func", "ref.func", 1, IRType.REF) REF_FUNC = 0xD2, /// ref.func
+        @Instr("ref.null", 1, IRType.REF, [], [Types.FUNCREF]) REF_NULL = 0xD0, /// ref.null
+        @Instr("ref.is_null", 1, IRType.REF, [Types.FUNCREF], [Types.I32]) REF_IS_NULL = 0xD1, /// ref.is_null 
+        @Instr("ref.func", 1, IRType.REF) REF_FUNC = 0xD2, /// ref.func
         // Extended
-        @Instr("(;extended;)", "(;extended;)", 1, IRType.CODE_EXTEND, [], [], true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
+        @Instr("(;extended;)",  1, IRType.CODE_EXTEND, [], [], true)     EXNEND           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
 }
@@ -363,7 +362,7 @@ Instr getInstr(alias E)() {
 }
 
 static unittest {
-    enum InstrUnreachable = Instr("unreachable", "unreachable", 1, IRType.CODE);
+    enum InstrUnreachable = Instr("unreachable", 1, IRType.CODE);
     static assert(getInstr!(IR.UNREACHABLE) == InstrUnreachable);
     enum ir = IR.UNREACHABLE;
     static assert(getInstr!(ir) == InstrUnreachable);
@@ -438,17 +437,17 @@ shared static this() {
         static foreach (ir; EnumMembers!IR) {
             {
                 enum instr = getInstr!ir;
-                result[instr.wast] = instr;
+                result[instr.name] = instr;
             }
         }
         static foreach (ir; EnumMembers!IR_EXTEND) {
             {
                 enum instr = getInstr!ir;
-                result[instr.wast] = instr;
+                result[instr.name] = instr;
             }
         }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, Types[] pops = null, Types[] pushs = null) {
-            result[pseudo] = Instr("(;" ~ pseudo ~ ";)", pseudo, uint.max, ir_type, pops, pushs);
+            result[pseudo] = Instr(pseudo, uint.max, ir_type, pops, pushs);
         }
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL, [], [Types.VOID]);
@@ -475,14 +474,14 @@ shared static this() {
 }
 
 enum IR_EXTEND : ubyte {
-    @Instr("i32.trunc_sat_f32_s", "i32.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I32], 0x00) I32_TRUNC_SAT_F32_S,
-    @Instr("i32.trunc_sat_f32_u", "i32.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I32], 0x01) I32_TRUNC_SAT_F32_U,
-    @Instr("i32.trunc_sat_f64_s", "i32.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I32], 0x02) I32_TRUNC_SAT_F64_S,
-    @Instr("i32.trunc_sat_f64_u", "i32.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I32], 0x03) I32_TRUNC_SAT_F64_U,
-    @Instr("i64.trunc_sat_f32_s", "i64.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I64], 0x04) I64_TRUNC_SAT_F32_S,
-    @Instr("i64.trunc_sat_f32_u", "i64.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I64], 0x05) I64_TRUNC_SAT_F32_U,
-    @Instr("i64.trunc_sat_f64_s", "i64.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I64], 0x06) I64_TRUNC_SAT_F64_S,
-    @Instr("i64.trunc_sat_f64_u", "i64.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I64], 0x07) I64_TRUNC_SAT_F64_U,
+    @Instr("i32.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I32], 0x00) I32_TRUNC_SAT_F32_S,
+    @Instr("i32.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I32], 0x01) I32_TRUNC_SAT_F32_U,
+    @Instr("i32.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I32], 0x02) I32_TRUNC_SAT_F64_S,
+    @Instr("i32.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I32], 0x03) I32_TRUNC_SAT_F64_U,
+    @Instr("i64.trunc_sat_f32_s", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I64], 0x04) I64_TRUNC_SAT_F32_S,
+    @Instr("i64.trunc_sat_f32_u", 3, IRType.CODE_EXTEND, [Types.F32], [Types.I64], 0x05) I64_TRUNC_SAT_F32_U,
+    @Instr("i64.trunc_sat_f64_s", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I64], 0x06) I64_TRUNC_SAT_F64_S,
+    @Instr("i64.trunc_sat_f64_u", 3, IRType.CODE_EXTEND, [Types.F64], [Types.I64], 0x07) I64_TRUNC_SAT_F64_U,
 }
 
 unittest {

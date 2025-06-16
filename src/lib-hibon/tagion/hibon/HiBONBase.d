@@ -807,7 +807,7 @@ do {
     return a < b;
 }
 /++
- Checks if the keys in the range is ordred
+ Checks if the keys in the range is ordered
  Returns:
  true if all keys in the range is ordered
 +/
