@@ -51,10 +51,10 @@ HiRPC.Receiver sendKernelHiRPC(string address, HiRPC.Sender contract, HiRPC hirp
     socket_check(rc > 0, "Error Sending");
 
     ReceiveBuffer receive_buffer;
-    auto result_buffer = receive_buffer((scope void[] buf) => sock.receive(buf));
-    socket_check(result_buffer.size > 0 , "Error receiving");
+    const result_len = receive_buffer((scope void[] buf) => sock.receive(buf));
+    socket_check(result_len > 0 , "Error receiving");
 
-    Document response_doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
+    Document response_doc = receive_buffer.consume();
     check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
     return hirpc.receive(response_doc);

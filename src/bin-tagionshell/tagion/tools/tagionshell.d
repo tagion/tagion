@@ -480,8 +480,8 @@ int query_socket_once(string addr, uint timeout, uint delay, uint retries, const
 
     ReceiveBuffer recv_buffer;
     while (!abort) {
-        auto result_buf = recv_buffer(&s.receive);
-        if (result_buf.size < 0) {
+        const result_len = recv_buffer(&s.receive);
+        if (result_len < 0) {
             if (s.last_error == ETIMEDOUT) {
                 nng_sleep(msecs(delay));
                 auto itime = timestamp();
@@ -493,7 +493,7 @@ int query_socket_once(string addr, uint timeout, uint delay, uint retries, const
                 return cast(int) nng_http_status.NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
             break;
         }
-        reply ~= cast(immutable)result_buf.data;
+        reply ~= recv_buffer.consume;
         break;
     }
     return 0;
