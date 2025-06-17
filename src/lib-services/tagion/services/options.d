@@ -64,6 +64,7 @@ public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.TRTService : TRTOptions;
 public import tagion.services.nodeinterface : NodeInterfaceOptions;
 public import tagion.services.DARTSynchronization : DARTSyncOptions;
+public import tagion.services.DARTSyncService : JournalOptions;
 
 /// All options for neuewelle
 @safe
@@ -82,6 +83,7 @@ struct Options {
     TRTOptions trt;
     NodeInterfaceOptions node_interface;
     DARTSyncOptions sync;
+    JournalOptions journal;
 
     TaskNames task_names;
     mixin JSONRecord;

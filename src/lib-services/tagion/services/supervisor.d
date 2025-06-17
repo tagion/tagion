@@ -42,6 +42,7 @@ import tagion.services.mode0_nodeinterface;
 import tagion.services.socket_nodeinterface;
 import tagion.services.messages;
 import tagion.services.exception;
+import tagion.services.DARTSyncService;
 
 @safe
 struct Supervisor {
@@ -68,7 +69,8 @@ struct Supervisor {
         { // Set addressbook
             Exception dart_exception;
             DART db = new DART(local_net.hash, opts.dart.dart_path, dart_exception, Yes.read_only);
-            scope(exit) db.close();
+            scope (exit)
+                db.close();
             if (dart_exception !is null) {
                 throw dart_exception;
             }
@@ -76,14 +78,16 @@ struct Supervisor {
             // Read the active node records or fallback to genesis epoch
             auto keys = getNodeKeys(db);
             if (!opts.wave.address_file.empty) {
-                addressbook = (() @trusted => File(opts.wave.address_file, "r").byLine)().parseAddressFile;
+                addressbook = (() @trusted => File(opts.wave.address_file, "r").byLine)()
+                    .parseAddressFile;
             }
             else {
                 addressbook = readNNRFromDart(db, keys, local_net.hash);
             }
 
             foreach (key; keys) {
-                check(addressbook.exists(key), format("No address for node with pubkey %s", key.encodeBase64));
+                check(addressbook.exists(key), format("No address for node with pubkey %s", key
+                        .encodeBase64));
             }
         }
 
@@ -109,10 +113,10 @@ struct Supervisor {
             // Make sure that none of the services above use the nodeinterface, because they'll use the old name in mode0.
             tn.node_interface = addressbook[local_net.pubkey].get.address;
             node_interface_handle = _spawn!Mode0NodeInterfaceService(
-                    tn.node_interface,
-                    shared_net,
-                    addressbook,
-                    tn,
+                tn.node_interface,
+                shared_net,
+                addressbook,
+                tn,
             );
             break;
         case NetworkMode.LOCAL,
@@ -139,6 +143,10 @@ struct Supervisor {
         }
         handles ~= node_interface_handle;
 
+        version (USE_DART_SYNC) {
+            spawnDARTSynchronize(opts, shared_net, addressbook, tn, handles);
+        }
+
         // signs data
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, shared_net, addressbook, tn);
@@ -151,35 +159,41 @@ struct Supervisor {
 
         // signs data
         auto transcript_handle = _spawn!TranscriptService(
-                tn.transcript,
-                opts.wave.number_of_nodes,
-                shared_net,
-                tn,
+            tn.transcript,
+            opts.wave.number_of_nodes,
+            shared_net,
+            tn,
         );
 
         handles ~= transcript_handle;
 
         handles ~= spawn(immutable(RPCServer)(opts.rpcserver, opts.trt, tn), tn.rpcserver);
 
-        version(none)
-        foreach(channel; addressbook.keys) {
-            try {
-                import tagion.dart.DARTcrud;
-                import tagion.hibon.Document;
-                import tagion.utils.pretend_safe_concurrency;
-                node_interface_handle.send(NodeReq(), channel, dartBullseye().toDoc);
-                receive(
-                        (NodeReq.Response _, Document doc) { log("%s", doc.toPretty); },
+        version (none)
+            foreach (channel; addressbook.keys) {
+                try {
+                    import tagion.dart.DARTcrud;
+                    import tagion.hibon.Document;
+                    import tagion.utils.pretend_safe_concurrency;
+
+                    node_interface_handle.send(NodeReq(), channel, dartBullseye().toDoc);
+                    receive(
+                        (NodeReq.Response _, Document doc) {
+                        log("%s", doc.toPretty);
+                    },
                         (NodeReq.Error _, string msg) { log(msg); },
-                );
-            } catch(Exception e) { log.fatal(e); }
-        }
+                    );
+                }
+                catch (Exception e) {
+                    log.fatal(e);
+                }
+            }
 
         run(
-                (EpochShutdown m, long shutdown_) { //
+            (EpochShutdown m, long shutdown_) { //
             transcript_handle.send(m, shutdown_);
         },
-                failHandler_,
+            failHandler_,
         );
 
         log("Supervisor stopping services");
@@ -190,4 +204,36 @@ struct Supervisor {
         waitforChildren(Ctrl.END, 10.seconds);
         log("All services stopped");
     }
+
+    private void spawnDARTSynchronize(immutable(Options) opts,
+        shared(SecureNet) shared_net, shared(AddressBook) addressbook,
+        TaskNames tn, ActorHandle[] handles) {
+
+        ActorHandle dart_sync_handle = spawn!DARTSyncService(
+            opts.task_names.dart_synchronization,
+            opts.journal.journal_path,
+            shared_net,
+            opts.dart.dart_path,
+            addressbook,
+            tn);
+        handles ~= dart_sync_handle;
+
+        waitforChildren(Ctrl.ALIVE, 3.seconds);
+
+        dart_sync_handle.send(dartCompareRR());
+        import tagion.utils.pretend_safe_concurrency;
+
+        immutable isUpToDate = receiveOnly!(dartCompareRR.Response, immutable(bool))[1];
+
+        if (!isUpToDate) {
+            dart_sync_handle.send(dartSyncRR());
+            immutable journal_filenames = immutable(DARTSyncService.ReplayFiles)(
+                receiveOnly!(dartSyncRR.Response, immutable(char[])[])[1]);
+
+            dart_sync_handle.send(dartReplayRR(), journal_filenames);
+            auto dart_replay_result = receiveOnly!(dartReplayRR.Response, bool)[1];
+            writefln("dart_replay_result %s", dart_replay_result);
+        }
+    }
+
 }

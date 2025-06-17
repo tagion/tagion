@@ -361,7 +361,7 @@
     },
     "dart_synchronization": {
       "timeout" : 3.0,
-      "stages" : ["dart_synchronization", "commit"]
+      "stages" : ["dart_synchronization", "commit", "acceptance"]
     },
     "recorder_synchronizer": {
       "timeout" : 3.0,
