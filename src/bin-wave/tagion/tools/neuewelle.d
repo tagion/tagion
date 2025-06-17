@@ -48,7 +48,7 @@ static abort = false;
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
-        if (signal !is SIGINT) {
+        if (signal !is SIGINT && signal !is SIGTERM) {
             return;
         }
 
@@ -101,6 +101,8 @@ int _neuewelle(string[] args) {
         sa.sa_flags = 0;
         // Register the signal handler for SIGINT
         int rc = sigaction(SIGINT, &sa, null);
+        assert(rc == 0, "sigaction error");
+        rc = sigaction(SIGTERM, &sa, null);
         assert(rc == 0, "sigaction error");
     }
     { // Handle sigv
