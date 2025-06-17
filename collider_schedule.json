@@ -122,7 +122,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm",
-         "switch_reduced", "local", "br_if"],
+         "switch_reduced", "local", "br_if", "address"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -146,6 +146,11 @@
         "br_if" : {
           "args" : [
             "br_if_block.wast"
+          ]
+        },
+        "address" : {
+          "args" : [
+            "address_reduced_a.wast"
           ]
         }
       },

@@ -396,8 +396,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
     string function_name(const int index) {
         import std.string;
+        import std.ascii : isDigit;
 
-        const exp = getExport(index);
+        auto exp = getExport(index);
         if (exp == ExportType.init) {
             return format("func_%d", index);
         }
@@ -406,7 +407,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         if (isDKeyword(exp.name)) {
             return "Dword_" ~ exp.name;
         }
-        return exp.name.replace(".", "_").replace("-", "_");
+        const result = exp.name.replace(".", "_").replace("-", "_");
+        if (result[0].isDigit) {
+            return "_" ~ result;
+        }
+        return result;
     }
 
     static string param_name(const size_t index) nothrow {
@@ -1022,7 +1027,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 if (ctx.current.returned) {
                     return;
                 }
-                auto blk = (target_blk) ?  target_blk : ctx.current;
+                auto blk = (target_blk) ? target_blk : ctx.current;
                 if (!blk.isVoidType) {
                     const blk_types = types(blk.elm);
                     //const target_blk_types = (target_blk) ? types(target_blk.elm) : blk_types;
