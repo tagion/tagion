@@ -969,8 +969,15 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                 }
             }
 
-            void setResults(const string local_indent, Block* target_blk) {
-                bout.writefln("%s// setResults %d", local_indent, ctx.current.id);
+            void _setResults(const string local_indent, Block* target_blk) {
+                if (target_blk) {
+                    bout.writefln("%s// setResults %d %s target %d %s", local_indent, ctx.current.id, types(ctx.current
+                            .elm), target_blk.id, types(target_blk.elm));
+
+                }
+                else {
+                    bout.writefln("%s// setResults %d %s", local_indent, ctx.current.id, types(ctx.current.elm));
+                }
                 auto blk = ctx.current;
                 if (blk.returned) {
                     return;
@@ -992,6 +999,48 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     }
                     else {
                         const target_locals = ctx.peek(target_blk_types.length);
+                        foreach (i; 0 .. blk_types.length) {
+                            const result_local = format("%s[%d]", blk_result, i);
+                            bout.writefln("%s%s = %s; // setResults count = %d",
+                                    local_indent, result_local, target_locals[i], local_count);
+                        }
+                    }
+                    local_count++;
+                }
+            }
+
+            void setResults(const string local_indent, Block* target_blk) {
+                if (target_blk) {
+                    bout.writefln("%s// setResults %d %s target %d %s", local_indent, ctx.current.id, types(ctx.current
+                            .elm), target_blk.id, types(target_blk.elm));
+
+                }
+                else {
+                    bout.writefln("%s// setResults %d %s", local_indent, ctx.current.id, types(ctx.current.elm));
+                }
+
+                if (ctx.current.returned) {
+                    return;
+                }
+                auto blk = (target_blk) ?  target_blk : ctx.current;
+                if (!blk.isVoidType) {
+                    const blk_types = types(blk.elm);
+                    //const target_blk_types = (target_blk) ? types(target_blk.elm) : blk_types;
+                    const blk_result = blk.result;
+                    version (none)
+                        if (target_blk) {
+                            check(blk_types.length <= target_blk_types.length,
+                                    format("The type of the exit block does not match %s -> %s",
+                                    target_blk_types, blk_types));
+                            check(equal(target_blk_types, blk_types[0 .. target_blk_types.length]),
+                                    format("Block types does not match %s -> %s",
+                                    target_blk_types, blk_types[0 .. target_blk_types.length]));
+                        }
+                    if (blk_types.length == 1) {
+                        bout.writefln("%s%s = %s; // setResults count = %d", local_indent, blk_result, ctx.peek, local_count);
+                    }
+                    else {
+                        const target_locals = ctx.peek(blk_types.length);
                         foreach (i; 0 .. blk_types.length) {
                             const result_local = format("%s[%d]", blk_result, i);
                             bout.writefln("%s%s = %s; // setResults count = %d",
@@ -1085,7 +1134,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const target_index = ctx.index(lth);
                             auto target_block = ctx[target_index];
 
-                            //setLocal;
                             setResults(indent, target_block);
                             ctx.current.returned = true;
                             version (none)
@@ -1124,14 +1172,11 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                             const block_index = ctx.index(lth);
                             auto target_block = ctx[block_index];
                             const conditional_flag = ctx.pop;
+                            bout.writefln("//%-(%s, %)", ctx.stack);
                             setResults(indent, target_block);
-                            bout.writefln("%s// After setBreakLocals %-(%s %)",
-                                    indent, ctx.stack);
-                            bout.writefln("%s// BR_IF %d", indent, lth);
                             if ((lth == 0) && (ctx.current.kind is BlockKind.LOOP)) {
                                 ctx.current.condition = conditional_flag;
                                 ctx.current.kind = BlockKind.WHILE;
-                                /// break !!!!
                             }
                             bout.writefln("%sif (%s) {",
                                     indent, conditional_flag);

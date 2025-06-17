@@ -113,7 +113,8 @@
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
           "if_block.wast", "loop_block.wast",
           "load.wast", "store.wast",
-          "align_reduced.wast", "local_get.wast"
+          "align_reduced.wast", "local_get.wast",
+          "switch_reduced.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -121,7 +122,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm",
-         "switch_reduced", "local"],
+         "switch_reduced", "local", "br_if"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -134,12 +135,17 @@
         },
         "switch_reduced" : {
           "args" : [
-            "switch_reduced_1.wast"
+            "switch_reduced.wast"
           ]
         },
         "element" : {
           "args" : [
             "elem.wast"
+          ]
+        },
+        "br_if" : {
+          "args" : [
+            "br_if_block.wast"
           ]
         }
       },
