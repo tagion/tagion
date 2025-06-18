@@ -914,7 +914,7 @@ struct WastParser {
         scope (exit) {
             writer.section!(Section.TABLE).sectypes ~= table;
         }
-        ParserStage tableArgument() {
+        void tableArgument() {
             if (r.type is TokenType.BEGIN) {
                 scope (exit) {
                     r.expect(TokenType.END);
@@ -963,20 +963,21 @@ struct WastParser {
                         }
                         forward_elements ~= forward;
                     }
-
-                    return ParserStage.ELEMENT;
+                    break;
+                    //return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
-                    r.nextToken;
-                    return ParserStage.IMPORT;
                 case WastKeywords.EXPORT: // ( export
                     r.nextToken;
-                    return ParserStage.EXPORT;
+                        break;
+                    //return ParserStage.IMPORT;
+                    //r.nextToken;
+                    //return ParserStage.EXPORT;
                 default:
                     r.check(0, "Syntax error");
 
                 }
             }
-            return ParserStage.BASE;
+            //return ParserStage.BASE;
         }
 
         table.type = toType(r.token);

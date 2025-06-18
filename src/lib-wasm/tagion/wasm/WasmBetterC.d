@@ -521,7 +521,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
 
         Block* create(const ref ExprRange.IRElement elm) nothrow {
-            auto blk = new Block(this, elm, stack.length - elm.instr.pops.length, cast(uint) _blocks.length, block_count);
+            auto blk = new Block(this, elm, stack.length - elm.instr.pops.length,
+            cast(uint) _blocks.length, block_count);
             _blocks ~= blk;
             block_count++;
             return blk;
@@ -636,10 +637,8 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         string generate(Args...)(const ref ExprRange.IRElement elm, const Args args) {
             switch (elm.instr.pops.length) {
             case 1:
-                //assert(ir in instr_fmt, format("Undefined %s pop %s", ir, pop));
                 return format(instrFmt(elm), pop, args);
             case 2:
-                //assert(ir in instr_extend_fmt, format("Undefined %s pops %s %s", ir, pop, pop));
                 return format(instrFmt(elm), pop, pop, args);
             default:
                 // empty
@@ -720,7 +719,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                     return "break";
                 }
             }
-            //string jump_command = (target_blk.elm.code is IR.LOOP) ? "continue" : "break";
             if (!with_flag && (target_blk is current)) {
                 return jump_command;
             }
@@ -736,12 +734,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             }
             return format("%s %s", block_type(blk), blk.result);
         }
-
-        version (none) invariant {
-
-            assert(stack.all!(s => s.length > 0), assumeWontThrow(format("%s", stack)));
-        }
-
     }
 
     enum BlockKind {
@@ -1087,12 +1079,6 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
 
                             setResults(indent, target_block);
                             ctx.current.returned = true;
-                            version (none)
-                                if ((lth > 0) && !ctx.current.isVoidType) {
-                                    bout.writefln("%s%s = %s;", indent, target_block.result,
-                                            ctx.current.result);
-                                }
-
                             scope (exit) {
                                 uint count;
                                 while (!expr.empty && expr.front.code != IR.END) {
