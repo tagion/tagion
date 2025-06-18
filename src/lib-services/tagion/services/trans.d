@@ -207,7 +207,7 @@ struct TranscriptService {
             }
         }
 
-        WitnesHead withead;
+        WitnessHead withead;
         withead.witnesses = epoch_contract.witnesses;
         recorder.add(withead);
 
