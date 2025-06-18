@@ -963,20 +963,15 @@ struct WastParser {
                         forward_elements ~= forward;
                     }
                     break;
-                    //return ParserStage.ELEMENT;
                 case WastKeywords.IMPORT: // ( import
                 case WastKeywords.EXPORT: // ( export
                     r.nextToken;
                     break;
-                    //return ParserStage.IMPORT;
-                    //r.nextToken;
-                    //return ParserStage.EXPORT;
                 default:
                     r.check(0, "Syntax error");
 
                 }
             }
-            //return ParserStage.BASE;
         }
 
         table.type = toType(r.token);
@@ -1005,6 +1000,7 @@ struct WastParser {
         r.nextToken;
     }
 
+        version(none)
     private ParserStage parseGlobal(ref WastTokenizer r) {
         if (r.isComponent(WastKeywords.IMPORT)) {
             parseModule(r, ParserStage.GLOBAL);
@@ -1157,13 +1153,13 @@ struct WastParser {
                 scope (exit) {
                     writer.section!(Section.EXPORT).sectypes ~= export_type;
                 }
-                r.valid(stage == ParserStage.MODULE || stage == ParserStage.FUNC,
+                r.valid(only(ParserStage.MODULE, ParserStage.FUNC).canFind(stage),
                         "Function or module stage expected");
 
                 r.nextToken;
                 r.expect(TokenType.STRING);
                 export_type.name = r.token.stripQuotes;
-                if (stage != ParserStage.FUNC) {
+                if (stage !is ParserStage.FUNC) {
                     r.nextToken;
                     r.expect(TokenType.WORD);
                     export_type.idx = func_lookup.get(r.token, -1);
@@ -1192,7 +1188,7 @@ struct WastParser {
                 return stage;
             case WastKeywords.ASSERT_RETURN_NAN:
             case WastKeywords.ASSERT_RETURN:
-                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage is ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 if (r.token == "assert_return_nan") {
                     assert_type.method = Assert.Method.Return_nan;
@@ -1216,7 +1212,7 @@ struct WastParser {
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case WastKeywords.ASSERT_TRAP:
-                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage is ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 assert_type.method = Assert.Method.Trap;
                 assert_type.name = r.token;
@@ -1234,7 +1230,7 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.ASSERT;
             case WastKeywords.ASSERT_INVALID:
-                r.valid(stage == ParserStage.BASE, "Assert not allowed here");
+                r.valid(stage is ParserStage.BASE, "Assert not allowed here");
                 r.nextToken;
                 parseModule(r, ParserStage.ASSERT);
                 r.expect(TokenType.STRING);
@@ -1261,7 +1257,7 @@ struct WastParser {
             r.nextToken;
             bool not_ended;
             scope (success) {
-                r.valid(r.type == TokenType.END || not_ended,
+                r.valid(r.type is TokenType.END || not_ended,
                         format("Expected ended on %s", r.token));
                 if (!not_ended) {
                     r.nextToken;
@@ -1303,7 +1299,6 @@ struct WastParser {
                     }
                     while (r.type is TokenType.WORD && r.token.getType !is Types.VOID) {
                         func_type.params ~= r.token.getType;
-                        //arg = r.token;
                         r.nextToken;
                     }
                 }
