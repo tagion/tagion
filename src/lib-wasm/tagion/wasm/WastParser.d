@@ -80,18 +80,17 @@ struct WastParser {
     alias Limit = WasmSection.Limit;
     enum ParserStage {
         BASE,
-        //COMMENT,
         ASSERT,
-        CONDITIONAL,
         MODULE,
         TYPE,
         FUNC,
         TABLE,
         GLOBAL,
         ELEMENT,
-        DATA,
+        //DATA,
         PARAM,
         RESULT,
+        CONDITIONAL,
         FUNC_BODY,
         CODE,
         // END_FUNC,
@@ -1243,12 +1242,6 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.ASSERT;
             default:
-                version(none)
-                if (r.type is TokenType.COMMENT) {
-                    r.nextToken;
-                    return ParserStage.COMMENT;
-                }
-                not_ended = true;
                 r.nextToken;
                 return ParserStage.UNDEFINED;
             }
