@@ -87,7 +87,7 @@ struct WastParser {
         TABLE,
         GLOBAL,
         ELEMENT,
-        //DATA,
+        DATA,
         PARAM,
         RESULT,
         CONDITIONAL,
@@ -98,7 +98,7 @@ struct WastParser {
         EXPORT,
         IMPORT,
         MEMORY,
-        EXPECTED,
+        //EXPECTED,
         ITEM,
         END,
         UNDEFINED,
@@ -1208,7 +1208,7 @@ struct WastParser {
                 FunctionContext func_ctx;
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, func_ctx);
                 while (r.type is TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, func_ctx);
+                    parseInstr(r, ParserStage.ASSERT, code_result, func_type, func_ctx);
                 }
                 //assert_type.results = func_ctx.stack;
                 assert_type.invoke = code_invoke.serialize;
@@ -1341,7 +1341,7 @@ struct WastParser {
         FunctionContext func_ctx;
         func_ctx.locals = func_type.params;
         func_ctx.local_names = func_type.param_names;
-        parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, func_ctx);
+        parseInstr(r, stage, code_type, func_type, func_ctx);
     }
 
     private void parseTypeSection(ref WastTokenizer r, const ParserStage stage, ref FuncType func_type) {
