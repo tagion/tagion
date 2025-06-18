@@ -114,7 +114,8 @@
           "if_block.wast", "loop_block.wast",
           "load.wast", "store.wast",
           "align_reduced.wast", "local_get.wast",
-          "switch_reduced.wast", "address_reduced_a.wast"
+          "switch_reduced.wast", "address_reduced_a.wast",
+          "address_reduced_b.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -150,7 +151,7 @@
         },
         "address" : {
           "args" : [
-            "address_reduced_a.wast"
+            "address_reduced_c.wast"
           ]
         }
       },
