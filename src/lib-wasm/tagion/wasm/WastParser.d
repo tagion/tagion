@@ -428,23 +428,6 @@ struct WastParser {
                         if (r.isComponent(instrTable[IR.ELSE].name)) {
                             innerInstr(wasmexpr, r, wasm_results, next_stage);
                         }
-                        version (none)
-                            if (r.type is TokenType.BEGIN) {
-                                auto r_else = r.save;
-                                r_else.nextToken;
-                                const else_ir = irLookupTable.get(r_else.token, IR.UNREACHABLE);
-                                check(else_ir is IR.ELSE,
-                                        format("'else' statement expected not '%s' %s",
-                                        r_else.token, else_ir));
-                                r_else.nextToken;
-                                if (r_else.type is TokenType.END) {
-                                    r = r_else; /// Empty else '(else)' skip the else IR 
-                                }
-                                else {
-                                    innerInstr(wasmexpr, r, wasm_results, next_stage);
-                                }
-                            }
-
                     }
                     else {
                         getArguments;
@@ -1023,9 +1006,7 @@ struct WastParser {
     }
 
     private ParserStage parseGlobal(ref WastTokenizer r) {
-        __write("GLOBAL %(%s %)", r.save.map!(t => t.token).take(5));
         if (r.isComponent(WastKeywords.IMPORT)) {
-            __write("--- %(%s %)", r.save.map!(t => t.token).take(5));
             parseModule(r, ParserStage.GLOBAL);
             return ParserStage.IMPORT;
         }
@@ -1072,8 +1053,6 @@ struct WastParser {
             r.nextToken;
         }
         if (r.type is TokenType.BEGIN) {
-            //string label;
-            //string arg;
             auto component = r;
             r.nextToken;
             bool not_ended;
@@ -1121,7 +1100,6 @@ struct WastParser {
                 }
                 return ParserStage.MEMORY;
             case WastKeywords.GLOBAL: /// (global label? type|(mut type) expr)
-                __write("--> %(%s %)", r.save.map!(t => t.token).take(5));
                 r.nextToken;
                 GlobalType global_type;
                 string label;
@@ -1145,9 +1123,6 @@ struct WastParser {
                         r.nextToken;
                     }
                 }
-                __write("global_type.desc.type %s", global_type.desc.type);
-                __write("Mid %(%s %)", r.save.map!(t => t.token).take(5));
-                __write("Mid global_type.desc %s", global_type.desc);
                 if ((global_type.desc.type is Types.VOID) && r.isComponent("mut")) {
                     global_type.desc.mut = Mutable.VAR;
                     r.nextToken;
@@ -1156,16 +1131,12 @@ struct WastParser {
                     r.nextToken;
                     r.expect(TokenType.END);
                     r.nextToken;
-                    __write("MUT After %(%s %)", r.save.map!(t => t.token).take(5));
                 }
-                __write("global_type.desc %s", global_type.desc);
-                __write("After %(%s %)", r.save.map!(t => t.token).take(5));
                 FuncType func_type;
                 CodeType code_global;
                 FunctionContext func_ctx;
                 parseInstr(r, ParserStage.GLOBAL, code_global, func_type, func_ctx);
                 global_type.expr = code_global.expr ~ IR.END;
-                __write("global_type %s", global_type);
                 return ParserStage.GLOBAL;
             case WastKeywords.SEGMENT:
                 DataType data_type;
@@ -1290,7 +1261,6 @@ struct WastParser {
             ref WastTokenizer r,
             const ParserStage stage,
             ref FuncType func_type) {
-        // ( type|param|result... )
         if (r.type is TokenType.BEGIN) {
             auto rewind = r;
             r.nextToken;
@@ -1392,7 +1362,6 @@ struct WastParser {
         case WastKeywords.FUNC:
             r.nextToken;
             ParserStage func_stage = parseFuncArgs(r, stage, func_type); // ( param ... )
-            //r.check(only(ParserStage.PARAM, ParserStage.RESULT, ParserStage.UNDEFINED).canFind(func_stage), format("Param or result expected but got %s", func_stage));
             if (func_stage is ParserStage.PARAM) {
                 parseFuncArgs(r, stage, func_type); // ( result ... )
             }
@@ -1476,7 +1445,6 @@ struct WastParser {
         }
         r.nextToken;
         if (r.isComponent(WastKeywords.EXPORT)) {
-            //if (r.type is TokenType.BEGIN) {
             export_tokenizer = r.save;
             r.nextBlock;
         }
