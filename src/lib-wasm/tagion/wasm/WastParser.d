@@ -80,7 +80,7 @@ struct WastParser {
     alias Limit = WasmSection.Limit;
     enum ParserStage {
         BASE,
-        COMMENT,
+        //COMMENT,
         ASSERT,
         CONDITIONAL,
         MODULE,
@@ -1192,7 +1192,7 @@ struct WastParser {
                 writer.section!(Section.DATA).sectypes ~= parseData(r, ParserStage.DATA);
                 return stage;
             case WastKeywords.ASSERT_RETURN_NAN:
-            case "ASSERT_RETURN":
+            case WastKeywords.ASSERT_RETURN:
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 if (r.token == "assert_return_nan") {
@@ -1243,6 +1243,7 @@ struct WastParser {
                 r.nextToken;
                 return ParserStage.ASSERT;
             default:
+                version(none)
                 if (r.type is TokenType.COMMENT) {
                     r.nextToken;
                     return ParserStage.COMMENT;
