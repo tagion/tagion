@@ -25,6 +25,11 @@ enum WastKeywords {
     ITEM = "item",
     FUNCREF = "funcref",
     EXTERN = "extern",
+    // Assert keywords
+    ASSERT_RETURN_NAN = "assert_return_nan",
+    ASSERT_RETURN = "assert_return",
+    ASSERT_TRAP = "assert_trap",
+    ASSERT_INVALID = "assert_invalid",
 }
 
 bool isReserved(const(char[]) word) @nogc pure nothrow {

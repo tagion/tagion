@@ -968,7 +968,7 @@ struct WastParser {
                 case WastKeywords.IMPORT: // ( import
                 case WastKeywords.EXPORT: // ( export
                     r.nextToken;
-                        break;
+                    break;
                     //return ParserStage.IMPORT;
                     //r.nextToken;
                     //return ParserStage.EXPORT;
@@ -1191,8 +1191,8 @@ struct WastParser {
                 r.nextToken;
                 writer.section!(Section.DATA).sectypes ~= parseData(r, ParserStage.DATA);
                 return stage;
-            case "assert_return_nan":
-            case "assert_return":
+            case WastKeywords.ASSERT_RETURN_NAN:
+            case "ASSERT_RETURN":
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 if (r.token == "assert_return_nan") {
@@ -1216,7 +1216,7 @@ struct WastParser {
                 assert_type.result = code_result.serialize;
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
-            case "assert_trap":
+            case WastKeywords.ASSERT_TRAP:
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 Assert assert_type;
                 assert_type.method = Assert.Method.Trap;
@@ -1234,7 +1234,7 @@ struct WastParser {
                 wast_assert.asserts ~= assert_type;
                 r.nextToken;
                 return ParserStage.ASSERT;
-            case "assert_invalid":
+            case WastKeywords.ASSERT_INVALID:
                 r.valid(stage == ParserStage.BASE, "Assert not allowed here");
                 r.nextToken;
                 parseModule(r, ParserStage.ASSERT);
