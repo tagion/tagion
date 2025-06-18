@@ -294,12 +294,16 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Global = Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
         auto ctx = new Context;
-        const(FuncType) func_void;
         foreach (i, g; _global[].enumerate) {
-            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.desc));
+            const func_global = FuncType([], [g.desc.type]);  
+            output.writefln("%s//(global (;%d;) %s (", indent, i, globalToString(g.desc));
+            const declation=(g.desc.mut is Mutable.VAR)?"static":"static const";
+            //const global_name = format("global_%d", i);
+            output.writefln("%s%s %s %s = (() {", indent, declation, dType(g.desc.type), global_name(i));
             auto expr = g[];
-            block(output, expr, func_void, ctx, indent ~ spacer);
-            output.writefln("%s))", indent);
+            block(output, expr, func_global, ctx, indent ~ spacer);
+            output.writefln("%s})();", indent);
+            output.writefln("%s//))", indent);
         }
     }
 
@@ -339,7 +343,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    static string dType(const Types type) {
+    static string dType(const Types type) pure nothrow {
         with (Types) {
             final switch (type) {
 
@@ -366,21 +370,21 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         assert(0);
     }
 
-    static string dType(const(Types[]) types) {
+    static string dType(const(Types[]) types) pure nothrow {
         if (types.empty) {
             return dType(Types.VOID);
         }
         if (types.length == 1) {
             return dType(types[0]);
         }
-        return format("Tuple!(%-(%s, %))", types.map!(t => dType(t)));
+        return assumeWontThrow(format("Tuple!(%-(%s, %))", types.map!(t => dType(t))));
     }
 
-    static string return_type(const(Types[]) types) {
+    static string return_type(const(Types[]) types) pure nothrow {
         return dType(types);
     }
 
-    string dType(ref const ExprRange.IRElement elm) {
+    string dType(ref const ExprRange.IRElement elm) pure {
         if (elm.argtype == ExprRange.IRElement.IRArgType.TYPES) {
             return dType(elm.types);
         }
@@ -412,6 +416,10 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
             return "_" ~ result;
         }
         return result;
+    }
+
+    string global_name(const size_t idx) pure {
+        return format("global_%d", idx);
     }
 
     static string param_name(const size_t index) nothrow {
@@ -472,7 +480,7 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Data = Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
         auto ctx = new Context;
-        const  func_data = FuncType([], [Types.I32]); // Function returns i32
+        const func_data = FuncType([], [Types.I32]); // Function returns i32
         foreach (i, d; _data[].enumerate) {
             auto expr = d[];
             const data_pos=format("data_pos_%d", i);
@@ -1212,17 +1220,18 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         break;
                     case LOCAL:
                         bout.writefln("%s// %s %d", indent, elm.instr.name, elm.warg.get!uint);
+                            const local_idx = elm.warg.get!uint;
                         switch (elm.code) {
                         case IR.LOCAL_TEE:
+                            bout.writefln("%s%s = %s;", indent, ctx.local_names[local_idx], ctx.peek);
+                            ctx.push(ctx.peek);
+                            ctx.set(local_idx);
                             break;
                         case IR.LOCAL_GET:
-                            const local_idx = elm.warg.get!uint;
-
                             ctx.get(local_idx);
                             break;
                         case IR.LOCAL_SET:
-                            const local_idx = elm.warg.get!uint;
-                            bout.writefln("%s%s=%s;", indent, ctx.local_names[local_idx], ctx.peek);
+                            bout.writefln("%s%s = %s;", indent, ctx.local_names[local_idx], ctx.peek);
                             ctx.set(local_idx);
                             // 
                             break;
@@ -1231,7 +1240,19 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
                         }
                         break;
                     case GLOBAL:
-                        bout.writefln("%s%s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        bout.writefln("%s//%s %d", indent, elm.instr.name, elm.warg.get!uint);
+                        const global_idx = elm.warg.get!uint;
+                        switch(elm.code) {
+                            case IR.GLOBAL_GET:
+                                ctx.push(global_name(global_idx));
+                                    break;
+                            case IR.GLOBAL_SET:
+                                bout.writefln("%s%s = %s;", indent, global_name(global_idx), ctx.pop);
+                               break; 
+                            default:
+                            assert(0, "Illegal local instruction");
+                            
+                            }
                         break;
                     case LOAD:
                         bout.writefln("%s// %s", indent, elm.instr.name);

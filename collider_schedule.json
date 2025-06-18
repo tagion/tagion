@@ -115,7 +115,7 @@
           "load.wast", "store.wast",
           "align_reduced.wast", "local_get.wast",
           "switch_reduced.wast", "address_reduced_a.wast",
-          "address_reduced_b.wast"
+          "address_reduced_b.wast", "global_reduced.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
@@ -123,7 +123,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm",
-         "switch_reduced", "local", "br_if", "address"],
+         "switch_reduced", "local", "br_if", "address", "global"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -142,6 +142,11 @@
         "element" : {
           "args" : [
             "elem.wast"
+          ]
+        },
+        "global" : {
+          "args" : [
+            "global_2.wast"
           ]
         },
         "br_if" : {
