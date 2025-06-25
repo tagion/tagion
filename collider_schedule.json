@@ -123,7 +123,7 @@
         "attributes": "@safe"
       },
       "stages": ["tvm",
-         "switch_reduced", "local", "br_if", "address", "global"],
+         "switch_reduced", "local", "br_if", "address", "global", "call_indirect"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -147,6 +147,11 @@
         "global" : {
           "args" : [
             "global_2.wast"
+          ]
+        },
+        "call_indirect" : {
+          "args" : [
+            "call_indirect_2.wast"
           ]
         },
         "br_if" : {
