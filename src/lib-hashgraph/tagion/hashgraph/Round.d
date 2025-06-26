@@ -617,6 +617,7 @@ class Round {
                 return;
             }
             Event.view(_round_to_be_decided._events.filter!(e => e !is null));
+            log.trace("Set last decided round");
             _last_decided_round = round_to_be_decided = _round_to_be_decided;
         }
 
