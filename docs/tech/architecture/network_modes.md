@@ -4,9 +4,13 @@ sidebar_position: 2
 
 # Network Modes
 
-This document describes the different modes for the Tagion-network.
+This document describes the different operating modes for the Tagion-network.
+We use the different modes in development and testing, such that different cappabilities can be tested independently,
+Not all cappabilities are supported yet and the modes are directly tied to the [phased release](/gov/phased_release).
+When deploying a node to the mainnet it will be using the greatest available mode. 
 
-![overview of network modes](/img/network_modes_light.excalidraw.svg#gh-light-mode-only)![overview of network modes](/img/network_modes_dark.excalidraw.svg#gh-dark-mode-only)
+![overview of network modes](/img/network_modes_light.excalidraw.svg#gh-light-mode-only)
+![overview of network modes](/img/network_modes_dark.excalidraw.svg#gh-dark-mode-only)
 
 ## Mode 0
 This mode emulates the network via *inter-process communication* and runs as a single program where each node is spawned as different threads.
