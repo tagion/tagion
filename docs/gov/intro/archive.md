@@ -10,9 +10,9 @@ As of May 2025, everything current is published on the different pages of the te
 
 ## Pantent Documents
 
-[EP 3851974: Wavefront Communication Protocol](https://github.com/tagion/tagion/blob/12dfa8c81e9cbbb839662a75cb4bbabf2e36707f/assets/Wavefront_Patent_EP_3851974.pdf)
+[EP 3851974: Wavefront Communication Protocol](/assets/Wavefront_Patent_EP_3851974.pdf)
 
-[EP 3790224: DART - Database](https://github.com/tagion/tagion/blob/12dfa8c81e9cbbb839662a75cb4bbabf2e36707f/assets/DART_Patent_EP_3790224.pdf)
+[EP 3790224: DART - Database](/assets/DART_Patent_EP_3790224.pdf)
 
 ## Outdated Technical Papers
 
