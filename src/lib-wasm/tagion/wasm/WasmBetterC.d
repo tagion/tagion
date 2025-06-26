@@ -297,9 +297,9 @@ class WasmBetterC(Output) : WasmReader.InterfaceModule {
         foreach (i, g; _global[].enumerate) {
             const func_global = FuncType([], [g.desc.type]);  
             output.writefln("%s//(global (;%d;) %s (", indent, i, globalToString(g.desc));
-            const declation=(g.desc.mut is Mutable.VAR)?"static":"static const";
+            const declaration=(g.desc.mut is Mutable.VAR)?"static":"static const";
             //const global_name = format("global_%d", i);
-            output.writefln("%s%s %s %s = (() {", indent, declation, dType(g.desc.type), global_name(i));
+            output.writefln("%s%s %s %s = (() {", indent, declaration, dType(g.desc.type), global_name(i));
             auto expr = g[];
             block(output, expr, func_global, ctx, indent ~ spacer);
             output.writefln("%s})();", indent);

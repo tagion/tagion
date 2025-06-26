@@ -119,8 +119,8 @@ struct Supervisor {
                 tn,
             );
             break;
-        case NetworkMode.LOCAL,
-            NetworkMode.MIRROR:
+        case NetworkMode.LOCAL:
+        case NetworkMode.MIRROR:
             version(nng_nodeinterface) {
                 node_interface_handle = _spawn!NodeInterfaceService(
                         tn.node_interface,
@@ -147,17 +147,20 @@ struct Supervisor {
             spawnDARTSynchronize(opts, shared_net, addressbook, tn, handles);
         }
 
-        // signs data
+        // Drives the hashgraph
         handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, shared_net, addressbook, tn);
 
-        // verifies signature
+        // verifies contract signature
         handles ~= _spawn!CollectorService(tn.collector, tn);
 
+        // Executes contracts
         handles ~= _spawn!TVMService(tn.tvm, tn);
+
+        // Coordinates epoch data
         handles ~= _spawn!EpochCommit(tn.epoch_commit, dart_handle, replicator_handle, trt_handle);
 
-        // signs data
+        // signs consensus data
         auto transcript_handle = _spawn!TranscriptService(
             tn.transcript,
             opts.wave.number_of_nodes,
@@ -176,12 +179,12 @@ struct Supervisor {
                     import tagion.hibon.Document;
                     import tagion.utils.pretend_safe_concurrency;
 
-                    node_interface_handle.send(NodeReq(), channel, dartBullseye().toDoc);
+                    node_interface_handle.send(NodeSend(), channel, dartBullseye().toDoc);
                     receive(
-                        (NodeReq.Response _, Document doc) {
+                        (NodeSend.Response _, Document doc) {
                         log("%s", doc.toPretty);
                     },
-                        (NodeReq.Error _, string msg) { log(msg); },
+                        (NodeSend.Error _, string msg) { log(msg); },
                     );
                 }
                 catch (Exception e) {
@@ -235,5 +238,4 @@ struct Supervisor {
             writefln("dart_replay_result %s", dart_replay_result);
         }
     }
-
 }
