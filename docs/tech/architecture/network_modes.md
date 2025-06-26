@@ -6,7 +6,7 @@ sidebar_position: 2
 
 This document describes the different operating modes for the Tagion-network.
 We use the different modes in development and testing, such that different cappabilities can be tested independently,
-Not all cappabilities are supported yet and the modes are directly tied to the [phased release](/gov/phased_release).
+Not all cappabilities are supported yet and the modes are directly tied to the [phased release](/gov/intro/phased_release).
 When deploying a node to the mainnet it will be using the greatest available mode. 
 
 ![overview of network modes](/img/network_modes_light.excalidraw.svg#gh-light-mode-only)
