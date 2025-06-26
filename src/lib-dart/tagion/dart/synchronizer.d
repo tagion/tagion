@@ -47,7 +47,9 @@ interface Synchronizer {
         *     owner = is the dart to be modified
         *     fiber = is the synchronizer fiber object
         */
-    void set(DART owner, DARTSynchronizationFiber fiber, HiRPC hirpc);
+    version (DEDICATED_DART_SYNC_FIBER) {
+        void set(DART owner, DARTSynchronizationFiber fiber, HiRPC hirpc);
+    }
     void set(DART owner, DART.SynchronizationFiber fiber, HiRPC hirpc);
     // version (DEDICATED_DART_SYNC_FIBER) {
     // }
