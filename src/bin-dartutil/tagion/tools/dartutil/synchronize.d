@@ -86,8 +86,18 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
             journalfile.close;
         }
         auto synch = new DARTUtilSynchronizer(journalfile, destination, source);
+        version (DEDICATED_DART_SYNC_FIBER) {
+            import tagion.dart.DARTSynchronizationFiber;
 
-        auto destination_synchronizer = destination.synchronizer(synch, Rims([cast(ubyte) _rim]));
+            auto destination_synchronizer = synchronizer(synch, destination, Rims([
+                    cast(ubyte) _rim
+                ]));
+        }
+        else {
+            auto destination_synchronizer = destination.synchronizer(synch, Rims([
+                    cast(ubyte) _rim
+                ]));
+        }
         while (!destination_synchronizer.empty) {
             (() @trusted { destination_synchronizer.call; })();
         }
@@ -97,7 +107,14 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
     verbose("Replay journal filenames");
     count = 0;
     foreach (journal_filename; journal_filenames) {
-        destination.replay(journal_filename);
+        version (DEDICATED_DART_SYNC_FIBER) {
+            import tagion.dart.DARTSynchronizationFiber;
+
+            replay(destination, journal_filename);
+        }
+        else {
+            destination.replay(journal_filename);
+        }
         verbose("Replay %s", journal_filename);
         nobose("%s*%s", GREEN, RESET);
         count++;

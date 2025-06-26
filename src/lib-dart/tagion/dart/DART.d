@@ -449,9 +449,6 @@ received = the HiRPC received package
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
-        // static size_t default_page_size = defaultStackPages;
-        // static size_t guard_page_size = guardPageSize; 
-
         immutable(Rims) root_rims;
         size_t fiberPageSize;
 

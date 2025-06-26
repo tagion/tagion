@@ -164,12 +164,15 @@ private:
         DARTSynchronizer[Pubkey] remote_workers;
         auto rim_range = iota!ushort(256);
 
-        void synchronizeFiber(DARTSynchronizer remote_worker, ushort current_rim) {
-            auto dist_sync_fiber = destination.synchronizer(remote_worker, Rims(
-                    [cast(ubyte) current_rim]), sz, guard_page_size);
-
-            // auto dist_sync_fiber = new DARTSynchronizationFiber(remote_worker, destination, Rims(
-            //         [cast(ubyte) current_rim]), sz, guard_page_size);
+        void synchronizeFiber(DARTSynchronizer dart_synchronizer, ushort current_rim) {
+            version (DEDICATED_DART_SYNC_FIBER) {
+                auto dist_sync_fiber = synchronizer(dart_synchronizer, destination, Rims(
+                        [cast(ubyte) current_rim]), sz, guard_page_size);
+            }
+            else {
+                auto dist_sync_fiber = destination.synchronizer(dart_synchronizer, Rims(
+                        [cast(ubyte) current_rim]), sz, guard_page_size);
+            }
 
             while (!dist_sync_fiber.empty) {
                 (() @trusted => dist_sync_fiber.call)();
@@ -189,12 +192,12 @@ private:
                 const sector = current_rim << 8;
                 rim_range.popFront;
 
-                auto remote_worker = new DARTSynchronizer(channel, node_interface_handle, destination);
-                remote_workers[channel] = remote_worker;
+                auto dart_synchronizer = new DARTSynchronizer(channel, node_interface_handle, destination);
+                remote_workers[channel] = dart_synchronizer;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_path, sector);
                 auto journalfile = File(journal_filename, "w");
-                remote_worker.updateJournalFile(journalfile);
+                dart_synchronizer.updateJournalFile(journalfile);
 
                 scope (exit) {
                     if (journalfile.size > 0) {
@@ -204,7 +207,7 @@ private:
                 }
 
                 try {
-                    synchronizeFiber(remote_worker, current_rim);
+                    synchronizeFiber(dart_synchronizer, current_rim);
                 }
                 catch (HiBONException e) {
                     break;
@@ -222,8 +225,12 @@ private:
 
     void replayWithFiles(DART destination, immutable(ReplayFiles) journal_filenames) {
         foreach (journal_filename; journal_filenames.files) {
-            destination.replay(journal_filename);
-        //     replay(destination, journal_filename);
+            version (DEDICATED_DART_SYNC_FIBER) {
+                replay(destination, journal_filename);
+            }
+            else {
+                destination.replay(journal_filename);
+            }
         }
     }
 

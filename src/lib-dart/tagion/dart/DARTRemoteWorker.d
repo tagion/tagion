@@ -22,7 +22,7 @@ import tagion.crypto.Types;
  * Remote synchronizer for DARTs.
  */
 @safe
-class DARTRemoteWorker : JournalSynchronizer { // Fiber
+class DARTRemoteWorker : JournalSynchronizer {
     protected DART destination;
     string sock_addr;
     immutable(DARTSyncOptions) opts;

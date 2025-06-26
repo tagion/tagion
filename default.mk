@@ -102,5 +102,6 @@ INSTALL?=$(HOME)/.local/bin
 # Enables to send dart-modify directly to the network
 # DVERSION+=GOD_CONTRACT
 
-# DVERSION+=USE_DART_SYNC
+# DVERSIONS+=USE_DART_SYNC
+DVERSIONS+=DEDICATED_DART_SYNC_FIBER
 
