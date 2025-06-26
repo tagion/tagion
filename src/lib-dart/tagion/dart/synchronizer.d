@@ -51,10 +51,6 @@ interface Synchronizer {
         void set(DART owner, DARTSynchronizationFiber fiber, HiRPC hirpc);
     }
     void set(DART owner, DART.SynchronizationFiber fiber, HiRPC hirpc);
-    // version (DEDICATED_DART_SYNC_FIBER) {
-    // }
-    // else {
-    // }
     /**
         * Checks if the synchronizer is empty
         * Returns:
