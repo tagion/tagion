@@ -155,6 +155,9 @@ struct NodeInterface {
         event_listener_tid = spawn(&event_listener, tn.event_listener);
         scheduler.start({
                 listener_sock = Socket(opts.node_address);
+                // if(listener_sock.address.domain == AddressFamily.INET || listener_sock.address.domain == AddressFamily.INET6) {
+                //     listener_sock.setOption(SocketOptionLevel.TCP, SocketOption.REUSEADDR, true);
+                // }
                 listener_sock.bind();
                 listener_sock.listen(10);
                 log("listening on %s", opts.node_address);
@@ -203,9 +206,10 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
 
     HiRPC hirpc = HiRPC(null);
 
-    log.task_name = format("%s(%s,%s)", tn.node_interface, thisTid, sock.handle);
+    log.task_name = format("(%s,%s)%s", thisTid, sock.handle, tn.node_interface);
 
     string method;
+    NodeSend req;
 
     while(true) {
         statistic_state_change++;
@@ -215,7 +219,7 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
             state = CONNECTION_STATE.receive;
             Document send_doc;
             receive(
-                (NodeSend _, Pubkey channel, Document doc) { send_doc = doc; },
+                (NodeSend req_, Pubkey channel, Document doc) { req = req_; send_doc = doc; },
                 (WavefrontReq _, Pubkey channel, Document doc) { send_doc = doc; },
                 (dartHiRPCRR.Response _, Document doc) { send_doc = doc;  },
                 (readRecorderRR.Response _, Document doc) { send_doc = doc; },
@@ -303,6 +307,12 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 method = hirpcmsg.method.name;
             }
 
+            if(req !is NodeSend.init) {
+                req.respond(doc);
+                break;
+            }
+
+            pragma(msg, "TODO handle service not existing");
             switch(method) {
                 case RPCMethods.dartRead:
                 case RPCMethods.dartCheckRead:
