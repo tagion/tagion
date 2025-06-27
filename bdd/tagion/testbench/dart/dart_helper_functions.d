@@ -127,8 +127,8 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
 }
 
 DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe
-        if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
-            ElementType!(ElementType!T) : const(ulong))) {
+    if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
+        ElementType!(ElementType!T) : const(ulong))) {
     DARTIndex[] dart_indices;
     foreach (range; ranges.randomShuffle(rnd)) {
         auto recorder = db.recorder();
@@ -174,7 +174,7 @@ ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
     const ulong sector = ((archive >> size_none_sector - angle) % size + angle) << size_none_sector;
 
     const(ulong) new_archive = archive & ~(
-            ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
+        ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
 
     return new_archive;
 }
@@ -240,14 +240,28 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
         //BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
         auto synch = new TestSynchronizer(journal_filename, db2, db1);
 
-        auto db2_synchronizer = db2.synchronizer(synch, Rims(sector));
+        version (DEDICATED_DART_SYNC_FIBER) {
+            import tagion.dart.DARTSynchronizationFiber;
+
+            auto db2_synchronizer = synchronizer(synch, db2, Rims(sector));
+        }
+        else {
+            auto db2_synchronizer = db2.synchronizer(synch, Rims(sector));
+        }
         // D!(sector, "%x");
         while (!db2_synchronizer.empty) {
             (() @trusted => db2_synchronizer.call)();
         }
     }
     foreach (journal_filename; journal_filenames) {
-        db2.replay(journal_filename);
+        version (DEDICATED_DART_SYNC_FIBER) {
+            import tagion.dart.DARTSynchronizationFiber;
+
+            replay(db2, journal_filename);
+        }
+        else {
+            db2.replay(journal_filename);
+        }
     }
 
 }

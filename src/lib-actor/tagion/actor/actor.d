@@ -409,7 +409,7 @@ static Topic taskfailure = Topic("taskfailure");
 void fail(Throwable t) nothrow {
     try {
         debug (actor) {
-            log(t);
+            log.fatal(t);
         }
         immutable tf = TaskFailure(thisActor.task_name, t);
         log.event(taskfailure, "taskfailure", tf);

@@ -248,7 +248,7 @@ jobs:
   acceptance_stage:
     runs-on: CD
     timeout-minutes: 12
-    needs: [commit_stage, unittest, build]
+    needs: [commit_stage, unittest, build, tvm_stage]
     strategy: 
       fail-fast: false
       matrix:
@@ -287,6 +287,50 @@ jobs:
           stacks=$(find -name "*.callstack")
           cp -r --parents logs/* $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
+
+  tvm_stage:
+    runs-on: CI
+    timeout-minutes: 5
+
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - name: pull
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore .
+
+      - name: Run tvm stage tests
+        run: |
+          export DC=${{ env.DC }}
+          export TEST_STAGE=tvm
+          export TESTBENCH_FLAGS=--silent 
+          export UNSHARE_NET=1
+          export RELEASE=1
+          make bddtest TEST_STAGE=tvm || make proper bddtest
+
+      - name: Report tvm stage tests
+        if: always()
+        run: |
+          sleep 5
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/tvm/results
+          ./build/${{ env.TARGET }}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/tvm/results >> $GITHUB_STEP_SUMMARY
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/tvm/results
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/tvm/results | grep "Test result success!"
+
+      - name: Post run
+        if: always()
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          make trunk
+          cp -r build/trunk/* ${{ env.ARTIFACT_DIR }}
+
+          make clean
+          rm -r *.callstack logs/ || echo "no logs"
 
   docker_build:
     runs-on: ubuntu-latest

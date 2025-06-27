@@ -138,7 +138,7 @@ class HashGraph {
     }
     do {
         debug (EPOCH_LOG) {
-            log("INITTING WITNESSES %s", _owner_node.channel.encodeBase64);
+            log("INITING WITNESSES %s", _owner_node.channel.encodeBase64);
         }
         Node[Pubkey] recovered_nodes;
 
@@ -170,8 +170,10 @@ class HashGraph {
         _rounds.erase;
         _rounds = Round.Rounder(this);
         _rounds.start_round = _rounds.last_round;
+        // AA clear is @safe since dmd v2.107.0
         (() @trusted { _event_cache.clear; })();
 
+        // We can't add our eva event if we're not participating in consensus
         if(!mirror_mode) {
             init_event(_owner_node.event.event_package);
         }
@@ -320,6 +322,23 @@ class HashGraph {
         frontSeat(eva_event);
         // set_strongly_seen_mask(eva_event);
         return eva_event;
+    }
+
+    @trusted
+    void resetAndSetBootEvents(immutable(EventPackage*)[] epacks) {
+        _event_cache = null;
+        foreach(epack_; epacks) {
+            EventPackage* epack = cast(EventPackage*)(epack_);
+            epack.event_body.mother = null;
+            auto event = new Event(cast(immutable(EventPackage*))epack, this);
+            _event_cache[event.fingerprint] = event;
+            event.witness_event();
+            frontSeat(event);
+        }
+    }
+
+    Event getEvent(Fingerprint fprint) {
+        return _event_cache.get(cast(Buffer)fprint, null);
     }
 
     alias EventPackageCache = immutable(EventPackage)*[Buffer]; /// EventPackages received from another node in the hashgraph.
@@ -502,6 +521,20 @@ class HashGraph {
         return front_seat_event;
     }
 
+    /** 
+     * Called during the boot phase to define a witness from the dart
+     * Params:
+     *   fingerprint = The fingerprint of the event to define as a witness
+     * Returns: The defined event if it was registered in the cache
+     */
+    const(Event) witness_event(Fingerprint fingerprint) {
+        Event e = register(cast(Buffer)fingerprint);
+        if(e) {
+            e.witness_event();
+        }
+        return e;
+    }
+
     @HiRPCMethod const(HiRPC.Sender) wavefront(
         const Wavefront wave,
         const uint id = 0) {
@@ -667,7 +700,6 @@ class HashGraph {
             break;
         case SHARP:
             return hirpc.result(received, sharpResponse(received_wave));
-
         case RIPPLE:
             if (areWeInGraph) {
                 break;
@@ -761,7 +793,6 @@ class HashGraph {
         return hirpc.error(received.getId, format("wavefront_error %s", received_wave.state));
     }
 
-    EventPackageCache mirror_package_cache;
     HiRPC.Sender mirror_wavefront_response(const HiRPC.Receiver received, lazy const(sdt_t) time) {
         immutable from_channel = received.pubkey;
 
@@ -810,6 +841,8 @@ class HashGraph {
                 return hirpc.result(received, Wavefront(result, Tides.init, state));
             }
             break;
+        case RIPPLE:
+            break;
         case FIRST_WAVE:
             import tagion.basic.basic;
             assert(!_rounds.isinit);
@@ -827,7 +860,7 @@ class HashGraph {
             /* return hirpc.result(received, buildWavefront(SECOND_WAVE, received_wave.tides)); */
             break;
         default:
-            assert(0, received_wave.state.stringof);
+            assert(0, received_wave.state.to!string);
         }
 
         return hirpc.error(received.getId, format("mirror node %s", received_wave.state));

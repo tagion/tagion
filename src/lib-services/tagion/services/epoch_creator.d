@@ -6,6 +6,7 @@ import core.time;
 
 import std.array;
 import std.algorithm;
+import std.range;
 import std.exception : RangePrimitive, handle;
 import std.stdio;
 import std.typecons : No;
@@ -32,6 +33,8 @@ import tagion.hashgraph.Event;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options : NetworkMode, TaskNames;
+import tagion.script.common;
+import tagion.script.standardnames;
 import tagion.json.JSONRecord;
 import tagion.utils.Queue;
 import tagion.utils.Random;
@@ -68,8 +71,8 @@ struct EpochCreatorService {
                     thisActor.task_name ~ "_graph".setExtension(FileExtension.hibon), number_of_nodes, addressbook.keys
             );
         }
-
-        NodeGossipNet gossip_net = new NodeGossipNet(opts.timeout, ActorHandle(task_names.node_interface), addressbook);
+        auto node_handle = ActorHandle(task_names.node_interface);
+        NodeGossipNet gossip_net = new NodeGossipNet(opts.timeout, node_handle, addressbook);
 
         Pubkey[] channels = addressbook.keys;
         Random!size_t random;
@@ -102,15 +105,19 @@ struct EpochCreatorService {
         }
 
         // Receive contracts from the TVM
-        void receivePayload(Payload, Document pload) {
+        void receive_payload(Payload, Document pload) {
             pragma(msg, "fixme(cbr): Should we not just send the payload directly to the hashgraph");
             refinement.queue.write(pload);
             counter++;
         }
 
+        void mirror_receive_payload(Payload, Document) {
+            // ignore. We can't not add our own events when mirroring
+        }
+
         HiRPC hirpc = HiRPC(net);
 
-        void receiveWavefront_req(WavefrontReq req, Document wave_doc) {
+        void receive_wavefront(WavefrontReq req, Document wave_doc) {
             const receiver = hirpc.receive(wave_doc);
             try {
                 if (receiver.isError) {
@@ -154,7 +161,7 @@ struct EpochCreatorService {
             }
         }
 
-        void receiveWavefront_req_mirror(WavefrontReq req, Document wave_doc) {
+        void mirror_receive_wavefront(WavefrontReq req, Document wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
             if (receiver.isError) {
                 return;
@@ -171,6 +178,39 @@ struct EpochCreatorService {
             if (receiver.isMethod) {
                 gossip_net.send(req, receiver.pubkey, return_wavefront);
             }
+
+        }
+
+        bool hasWitnessEvents;
+        void mirror_dart_witness(NodeSend.Response, Document doc) {
+            if(hasWitnessEvents) {
+                return;
+            }
+
+            import tagion.dart.Recorder;
+            import tagion.utils.Term;
+            log.trace("Receive witness\n%s", doc.toPretty);
+
+
+            const receiver = hirpc.receive(doc);
+            const recorder_doc = receiver.result;
+            auto factory = RecordFactory(net.hash);
+            auto recorder = factory.recorder(recorder_doc);
+
+            foreach(archive; recorder[]) {
+                const wh = WitnessHead(archive.filed);
+                auto witness_events = wh.witnesses.map!(e => hashgraph.getEvent(e));
+                foreach(f, e; zip(wh.witnesses, witness_events)) log("Witness %s%s%s", (e)? GREEN : RED, f.encodeBase64, RESET);
+                if(witness_events.all!(e => e !is null)) {
+                    hashgraph.resetAndSetBootEvents(witness_events.map!(e => e.event_package).array);
+                    hasWitnessEvents = true;
+                }
+                // foreach(f; wh.witnesses) {
+                //     const event = hashgraph.witness_event(f);
+                //     hashgraph.register();
+                //     log("Witness %s%s%s", (event)? GREEN : RED,  f.encodeBase64, RESET);
+                // }
+            }
         }
 
         void timeout() {
@@ -178,6 +218,21 @@ struct EpochCreatorService {
             if (init_tide) {
                 const sender = hashgraph.create_init_tide(payload, gossip_net.time);
                 gossip_net.send(hashgraph.select_channel, sender);
+            }
+        }
+
+        void mirror_boot_timeout() {
+            import tagion.script.methods;
+            import tagion.dart.DARTBasic;
+            const init_tide = random.value(0, 2) is 1;
+            if (init_tide) {
+                const sender = hashgraph.create_init_tide(payload, gossip_net.time);
+                gossip_net.send(hashgraph.select_channel, sender);
+                if(!hasWitnessEvents) {
+                    immutable(DARTIndex)[] witness_index = [net.hash.dartId(HashNames.witness, TagionDomain)];
+                    const dart_read_rpc = dartRead(witness_index, hirpc);
+                    node_handle.send(NodeSend(), hashgraph.select_channel, dart_read_rpc.toDoc);
+                }
             }
         }
 
@@ -192,9 +247,9 @@ struct EpochCreatorService {
             while (!thisActor.stop && !hashgraph.areWeInGraph) {
                 const received = receiveTimeout(
                         opts.timeout.msecs,
+                        &receive_wavefront,
                         &signal,
                         &ownerTerminated,
-                        &receiveWavefront_req,
                         &unknown
                 );
                 if (!received) {
@@ -212,13 +267,14 @@ struct EpochCreatorService {
             Topic inGraph = Topic("in_graph");
             log.event(inGraph, __FUNCTION__, Document());
 
-            runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront_req);
+            runTimeout(opts.timeout.msecs, &timeout, &receive_payload, &receive_wavefront);
             break;
 
         case NetworkMode.MIRROR:
 
             hashgraph.mirror_mode = true;
-            runTimeout(opts.timeout.msecs, &timeout, &receiveWavefront_req_mirror);
+
+            runTimeout(opts.timeout.msecs, &mirror_boot_timeout, &mirror_dart_witness, &mirror_receive_payload, &mirror_receive_wavefront);
             break;
         }
     }

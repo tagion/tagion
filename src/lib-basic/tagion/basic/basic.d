@@ -46,7 +46,7 @@ template suffix(string name, size_t index) {
 }
 
 /++
- Template function returns the suffux name after the last '.'
+ Template function returns the suffix name after the last '.'
  +/
 template basename(alias K) {
     static if (is(K == string)) {

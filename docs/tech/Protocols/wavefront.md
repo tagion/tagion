@@ -1,6 +1,8 @@
 # Wavefront
 
 The wavefront protocol is an initiate exchange exchange protocol, used for gossip in the tagion hashgraph.
+It's designed to efficiently exchange graph data without relying on stateful connections and minimizing duplicate data.
+The design goals are also described in the [Wavefront Patent](/assets/Wavefront_Patent_EP_3851974.pdf).
 
 Node Alpha initiates a connections and sends it's initial known altitudes.  
 Node Beta sends the difference between altitudes Alpha and it's own known altitudes.  

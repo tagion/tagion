@@ -9,6 +9,8 @@ import tagion.dart.DARTRim;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
 import core.thread;
+import core.thread.fiber;
+import tagion.dart.DARTSynchronizationFiber;
 
 /**
 * Interface to the DART synchronizer
@@ -45,6 +47,9 @@ interface Synchronizer {
         *     owner = is the dart to be modified
         *     fiber = is the synchronizer fiber object
         */
+    version (DEDICATED_DART_SYNC_FIBER) {
+        void set(DART owner, DARTSynchronizationFiber fiber, HiRPC hirpc);
+    }
     void set(DART owner, DART.SynchronizationFiber fiber, HiRPC hirpc);
     /**
         * Checks if the synchronizer is empty
@@ -59,8 +64,12 @@ interface Synchronizer {
     */
 @safe
 abstract class StdSynchronizer : Synchronizer {
-
-    protected DART.SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
+    version (DEDICATED_DART_SYNC_FIBER) {
+        protected DARTSynchronizationFiber fiber; /// Contains the reference to a dedicated DARTSynchronizationFiber
+    }
+    else {
+        protected DART.SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
+    }
     immutable uint chunk_size; /// Max number of archives operates in one recorder action
     protected {
         //        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
@@ -116,15 +125,29 @@ abstract class StdSynchronizer : Synchronizer {
         *   fiber = synchronizer fiber
         *   hirpc = remote credential used 
         */
-    void set(
-        DART owner,
-        DART.SynchronizationFiber fiber,
-        HiRPC hirpc) nothrow @trusted {
-        import std.conv : emplace;
+    version (DEDICATED_DART_SYNC_FIBER) {
+        void set(
+            DART owner,
+            DARTSynchronizationFiber fiber,
+            HiRPC hirpc) nothrow @trusted {
+            import std.conv : emplace;
 
-        this.fiber = fiber;
-        this.owner = owner;
-        emplace(&this.hirpc, hirpc);
+            this.fiber = fiber;
+            this.owner = owner;
+            emplace(&this.hirpc, hirpc);
+        }
+    }
+    else {
+        void set(
+            DART owner,
+            DART.SynchronizationFiber fiber,
+            HiRPC hirpc) nothrow @trusted {
+            import std.conv : emplace;
+
+            this.fiber = fiber;
+            this.owner = owner;
+            emplace(&this.hirpc, hirpc);
+        }
     }
 
     /**

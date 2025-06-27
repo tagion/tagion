@@ -155,6 +155,9 @@ struct NodeInterface {
         event_listener_tid = spawn(&event_listener, tn.event_listener);
         scheduler.start({
                 listener_sock = Socket(opts.node_address);
+                // if(listener_sock.address.domain == AddressFamily.INET || listener_sock.address.domain == AddressFamily.INET6) {
+                //     listener_sock.setOption(SocketOptionLevel.TCP, SocketOption.REUSEADDR, true);
+                // }
                 listener_sock.bind();
                 listener_sock.listen(10);
                 log("listening on %s", opts.node_address);
@@ -183,7 +186,7 @@ void connection(Tid event_listener_tid, immutable(NodeInterfaceOptions) opts, Ta
     catch(OwnerTerminated e) {
         return;
     }
-    // We catch the throwable here because it's inside a seperate thread.
+    // We catch the throwable here because it's inside a separate thread.
     catch(Throwable e) {
         log.fatal(e);
         return;
@@ -203,9 +206,10 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
 
     HiRPC hirpc = HiRPC(null);
 
-    log.task_name = format("%s(%s,%s)", tn.node_interface, thisTid, sock.handle);
+    log.task_name = format("(%s,%s)%s", thisTid, sock.handle, tn.node_interface);
 
     string method;
+    NodeSend req;
 
     while(true) {
         statistic_state_change++;
@@ -215,7 +219,7 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
             state = CONNECTION_STATE.receive;
             Document send_doc;
             receive(
-                (NodeSend _, Pubkey channel, Document doc) { send_doc = doc; },
+                (NodeSend req_, Pubkey channel, Document doc) { req = req_; send_doc = doc; },
                 (WavefrontReq _, Pubkey channel, Document doc) { send_doc = doc; },
                 (dartHiRPCRR.Response _, Document doc) { send_doc = doc;  },
                 (readRecorderRR.Response _, Document doc) { send_doc = doc; },
@@ -261,7 +265,7 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
             ReceiveBuffer receive_buffer;
             receive_buffer.max_size = opts.bufsize;
             // receive_buffer will keep calling the callback until the entire document has been received
-            auto result_buffer = receive_buffer(
+            auto result_len = receive_buffer(
                 (scope void[] buf) {
                     ptrdiff_t rc = sock.receive(buf);
                     if(sock.wouldHaveBlocked) {
@@ -277,14 +281,14 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 }
             );
 
-            debug(nodeinterface) log("recv %s bytes", result_buffer.size);
+            debug(nodeinterface) log("recv %s bytes", result_len);
 
-            if(result_buffer.size <= 0) {
+            if(result_len <= 0) {
                     // err
                     return;
             }
 
-            Document doc = Document((() @trusted => receive_buffer.buffer.assumeUnique)());
+            Document doc = Document(receive_buffer.consume());
 
             if (!doc.empty && !doc.isInorder(Document.Reserved.no)) {
                 check(false, "doc not in order");
@@ -303,6 +307,12 @@ void connection_impl(Tid event_listener_tid, immutable(NodeInterfaceOptions) opt
                 method = hirpcmsg.method.name;
             }
 
+            if(req !is NodeSend.init) {
+                req.respond(doc);
+                break;
+            }
+
+            pragma(msg, "TODO handle service not existing");
             switch(method) {
                 case RPCMethods.dartRead:
                 case RPCMethods.dartCheckRead:

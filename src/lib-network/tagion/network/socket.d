@@ -30,7 +30,9 @@ public import std.socket :
     AddressFamily,
     SocketType,
     ProtocolType,
-    SocketFlags;
+    SocketFlags,
+    SocketOption,
+    SocketOptionLevel;
 
 import sys = core.sys.posix.sys.socket;
 import core.stdc.errno;
@@ -138,6 +140,17 @@ struct Socket {
 
     bool wouldHaveBlocked() {
         return last_error == EAGAIN || last_error == EWOULDBLOCK;
+    }
+
+    void setOption(SocketOptionLevel level, SocketOption option, scope void[] value) @trusted {
+        int rc = sys.setsockopt(fd, cast(int)level, cast(int)option, value.ptr, cast(uint) value.length);
+        last_error = errno;
+        socket_check(rc != -1, "Set socket opt");
+    }
+
+    void setOption(SocketOptionLevel level, SocketOption option, int value) @trusted
+    {
+        setOption(level, option, (&value)[0 .. 1]);
     }
 
     @trusted

@@ -65,7 +65,7 @@ Pubkey[] getNodeKeys(DART db, const HashNet net = hash_net) {
         return active_record.nodes;
     }
 
-    DARTIndex epoch_index = net.dartId(HashNames.epoch, 0);
+    DARTIndex epoch_index = net.dartId(HashNames.epoch, long(0));
     const recorder = db.loads([epoch_index], Archive.Type.NONE);
     check(!recorder.empty, "No Active or GenesisEpoch record in dart");
     GenesisEpoch gen_epoch = GenesisEpoch(recorder[].front.filed);

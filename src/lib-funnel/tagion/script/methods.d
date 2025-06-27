@@ -22,14 +22,20 @@ enum RPCMethods {
     dartCheckRead = "dartCheckRead",
     dartRim = "dartRim",
 
+    /// Internal method for making changes to the DB
     dartModify = "dartModify",
 
+    /// Submit a contract to the network
     submit = "submit",
 
     /// deprecated trt method
     search = "search",
 
+    /// Node to Node wavefront exchange
     wavefront = "wavefront",
+
+    /// Shell development method for requesting bills to a wallet
+    faucet = "faucet"
 }
 
 static immutable(string[]) public_dart_methods = [
@@ -63,4 +69,10 @@ const(HiRPC.Sender) submit(SignedContract s_contract, HiRPC hirpc = HiRPC(null),
 
 const(HiRPC.Sender) wavefront(Wavefront wavefront, HiRPC hirpc = HiRPC(null), uint id = 0) {
     return hirpc.opDispatch!(RPCMethods.wavefront)(wavefront, id);
+}
+
+const(HiRPC.Sender) faucet(TagionBill[] bills, HiRPC hirpc = HiRPC(null), uint id = 0) {
+    auto h = new HiBON();
+    h[StdNames.values] = bills;
+    return hirpc.opDispatch!(RPCMethods.faucet)(h, id);
 }

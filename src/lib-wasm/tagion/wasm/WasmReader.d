@@ -361,6 +361,12 @@ struct WasmReader {
                     results = Vector!Types(data, index);
                     size = index;
                 }
+                package this(immutable(Types)[] params, immutable(Types)[] results) pure nothrow {
+                    type = Types.FUNC;
+                    this.params = params;
+                    this.results = results;
+                    size=0;
+                }
             }
 
             alias Type = SectionT!(FuncType);

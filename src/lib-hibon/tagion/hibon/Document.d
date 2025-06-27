@@ -412,7 +412,7 @@ static assert(uint.sizeof == 4);
     /++
      Check if the Document can be classified as an Array
      Returns:
-     Is true if all the keys in ordred numbers
+     Is true if all the keys in ordered numbers
      +/
     bool isArray() const nothrow pure {
         return .isArray(keys);

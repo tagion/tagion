@@ -1,4 +1,4 @@
-# Cross compilling iOS
+# Cross compiling iOS
 
 Tagion libmobile is a subset of the tagion modules which can be cross compiled for iOS.
 Compilation for iOS is only supported with OSX/MacOS as a host.

@@ -38,7 +38,7 @@ alias EpochCommitRR = Request!("EpochCommit", immutable(long));
 alias WavefrontReq = Request!"ReceivedWavefront";
 
 /// [TO: Node Interface] send HiRPC to another node 
-alias NodeSend = Msg!"node_send";
+alias NodeSend = Request!"node_send";
 
 /// A node action was completed
 enum NodeAction {

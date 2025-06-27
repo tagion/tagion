@@ -35,6 +35,7 @@ import tagion.tools.boot.genesis;
 import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout, register, thisTid;
 import tagion.wave.mode0 : dummy_nodenets_for_testing;
 import tagion.logger.Logger;
+import tagion.gossip.AddressBook;
 
 class NodeRunner {
 
@@ -42,10 +43,12 @@ class NodeRunner {
     uint timeout_msecs;
     const(Options)[] node_opts;
     Pid[] pids;
+    shared(AddressBook) addressbook;
 
     this(uint number_of_nodes, uint timeout_msecs) {
         this.number_of_nodes = number_of_nodes;
         this.timeout_msecs = timeout_msecs;
+        this.addressbook = new shared(AddressBook);
     }
 
     string[] collectDartAdresses() {
@@ -55,6 +58,11 @@ class NodeRunner {
         }
         return sock_addrs;
     }
+
+    
+    // shared(AddressBook) addressbook = new shared(AddressBook);
+    // nodes ~= Node(shared_net, task_names, epoch_creator_options);
+    // addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.node_interface));
 
     void setupMode1Options(string prefix_name = "Mode_1_") {
         Options local_options;
@@ -86,6 +94,8 @@ class NodeRunner {
     }
 
     Document[] getGenesisDoc() {
+        import tagion.script.namerecords : NetworkNodeRecord;
+
         NodeSettings[] node_settings;
         auto nodenets = dummy_nodenets_for_testing(node_opts);
         foreach (opt, node_net; zip(node_opts, nodenets)) {
@@ -94,10 +104,13 @@ class NodeRunner {
                 node_net.pubkey,
                 opt.node_interface.node_address,
             );
+            // addressbook.set(new NetworkNodeRecord(node_net.pubkey, opt.task_names.node_interface));
+            addressbook.set(new NetworkNodeRecord(node_net.pubkey, opt.rpcserver.sock_addr));
         }
 
         return createGenesis(node_settings, Document(), TagionGlobals.init);
     }
+
 
     string[] createNodesData(string genesis_dart_path, out string[] pins) {
         string[] node_paths;

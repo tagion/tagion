@@ -112,15 +112,18 @@
           "float_misc_export.wast",
           "br_block.wast", "br_if_block.wast", "br_table_block.wast",
           "if_block.wast", "loop_block.wast",
-            "load.wast", "store.wast" 
+          "load.wast", "store.wast",
+          "align_reduced.wast", "local_get.wast",
+          "switch_reduced.wast", "address_reduced_a.wast",
+          "address_reduced_b.wast", "global_reduced.wast"
       ],
       "envs": {
         "DCOMPILE": "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d $(REPOROOT)/tvm/foundation/error.d $(REPOROOT)/tvm/foundation/math.d $(REPOROOT)/tvm/foundation/context.d -I$(REPOROOT)/tvm -g -unittest -main",
         "imports": "wasm=foundation.wasm math=foundation.math error=foundation.error foundation.context std.typecons:Tuple",
         "attributes": "@safe"
       },
-      "stages": ["tvm", "tvm_new",  "tvm_test", "br", "br_if", "br_table", "loop", "if_block", 
-          "call_indirect", "element", "conversions", "br_table", "load",  "store", "align"],
+      "stages": ["tvm",
+         "switch_reduced", "local", "br_if", "address", "global", "call_indirect"],
       "extend" : {
         "tvm_export" : {
             "args": [
@@ -131,71 +134,34 @@
                 "float_misc_export.wast"
             ]
         },
-        "i32" : {
-            "args" : [
-                "i32.wast"
-
-            ]
+        "switch_reduced" : {
+          "args" : [
+            "switch_reduced.wast"
+          ]
         },
-        "br_table" : {
-            "args" : [
-                "br_table_block.wast"
-
-            ]
+        "element" : {
+          "args" : [
+            "elem.wast"
+          ]
         },
-        "br_if" : {
-            "args" : [
-                "br_if_block_2.wast"
-            ]
-        },
-         "br" : {
-            "args" : [
-                "br_block.wast"
-            ]
-        },
-        "loop" : {
-            "args" : [
-                "loop_block.wast"
-            ]
-        },
-        "if_block" : {
-            "args" : [
-                "if_block_2.wast"
-            ]
-        },
-        "tvm_test" : {
-            "args" : [
-                "int_literals_1.wast"
-            ]
+        "global" : {
+          "args" : [
+            "global_2.wast"
+          ]
         },
         "call_indirect" : {
           "args" : [
             "call_indirect_2.wast"
           ]
         },
-        "load" : {
+        "br_if" : {
           "args" : [
-            "load_1.wast"
+            "br_if_block.wast"
           ]
         },
-        "store" : {
+        "address" : {
           "args" : [
-            "store_1.wast"
-          ]
-        },
-        "align" : {
-          "args" : [
-            "align_1.wast"
-          ]
-        },
-        "conversions" : {
-          "args" : [
-            "conversions.wast"
-          ]
-        },
-        "element" : {
-          "args" : [
-            "elem.wast"
+            "address_reduced_c.wast"
           ]
         }
       },
@@ -406,7 +372,7 @@
     },
     "dart_synchronization": {
       "timeout" : 3.0,
-      "stages" : ["dart_synchronization", "commit"]
+      "stages" : ["dart_synchronization", "commit", "acceptance"]
     },
     "recorder_synchronizer": {
       "timeout" : 3.0,

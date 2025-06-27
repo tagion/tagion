@@ -245,6 +245,11 @@ class WasmWriter {
                     bout.reserve(guess_size);
                 }
                 SerializeLoop: foreach (i, m; this.tupleof) {
+                    static if (hasMember!(This, "excluded")) {
+                        if (excluded!(i)) {
+                            continue SerializeLoop;
+                        }
+                    }
                     enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {

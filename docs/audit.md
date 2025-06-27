@@ -61,4 +61,4 @@ meanng from 12 to 24 words.
 validateMnemonic has also been added.
 
 SL-17 & SL-18: 
-We havn't found a good solution of this yet.
+We haven't found a good solution of this yet.

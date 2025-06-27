@@ -170,8 +170,20 @@ private:
         auto sock_addr_arr = sock_addrs.sock_addrs;
 
         void synchronizeFiber(DARTRemoteWorker remote_worker, ushort current_rim) {
-            auto dist_sync_fiber = destination.synchronizer(remote_worker, Rims(
-                    [cast(ubyte) current_rim]), sz, guard_page_size);
+            version (DEDICATED_DART_SYNC_FIBER) {
+                import tagion.dart.DARTSynchronizationFiber;
+
+                auto dist_sync_fiber = synchronizer(remote_worker, destination, Rims(
+                        [
+                            cast(ubyte) current_rim
+                        ]), sz, guard_page_size);
+            }
+            else {
+                auto dist_sync_fiber = destination.synchronizer(remote_worker, Rims(
+                        [
+                            cast(ubyte) current_rim
+                        ]), sz, guard_page_size);
+            }
 
             while (!dist_sync_fiber.empty) {
                 (() @trusted => dist_sync_fiber.call)();
@@ -227,7 +239,14 @@ private:
 
     void replayWithFiles(DART destination, immutable(ReplayFiles) journal_filenames) {
         foreach (journal_filename; journal_filenames.files) {
-            destination.replay(journal_filename);
+            version (DEDICATED_DART_SYNC_FIBER) {
+                import tagion.dart.DARTSynchronizationFiber;
+
+                replay(destination, journal_filename);
+            }
+            else {
+                destination.replay(journal_filename);
+            }
         }
     }
 
@@ -298,19 +317,34 @@ private:
     }
 }
 
-class RemoteRequestSender {
+import tagion.dart.DARTSynchronizationFiber;
 
-    protected DART.SynchronizationFiber fiber;
+class RemoteRequestSender {
+    version (DEDICATED_DART_SYNC_FIBER) {
+        protected DARTSynchronizationFiber fiber;
+    }
+    else {
+        protected DART.SynchronizationFiber fiber;
+    }
     uint socket_timeout_mil;
     uint socket_attempts_mil;
     string sock_addr;
-
-    this(uint socket_timeout_mil, uint socket_attempts_mil, string sock_addr, DART
-            .SynchronizationFiber fiber = null) {
-        this.socket_timeout_mil = socket_timeout_mil;
-        this.socket_attempts_mil = socket_attempts_mil;
-        this.sock_addr = sock_addr;
-        this.fiber = fiber;
+    version (DEDICATED_DART_SYNC_FIBER) {
+        this(uint socket_timeout_mil, uint socket_attempts_mil, string sock_addr, DARTSynchronizationFiber fiber = null) {
+            this.socket_timeout_mil = socket_timeout_mil;
+            this.socket_attempts_mil = socket_attempts_mil;
+            this.sock_addr = sock_addr;
+            this.fiber = fiber;
+        }
+    }
+    else {
+        this(uint socket_timeout_mil, uint socket_attempts_mil, string sock_addr, DART
+                .SynchronizationFiber fiber = null) {
+            this.socket_timeout_mil = socket_timeout_mil;
+            this.socket_attempts_mil = socket_attempts_mil;
+            this.sock_addr = sock_addr;
+            this.fiber = fiber;
+        }
     }
 
     static bool isAccessible(string sock_addr) {

@@ -172,7 +172,7 @@ static struct SectorRange {
 }
 
 /**
-     * Rim selecter
+     * Rim selector
      */
 @recordType("Rims")
 struct Rims {

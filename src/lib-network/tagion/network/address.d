@@ -30,11 +30,6 @@ enum Schemes {
     tcp6 = "tcp6", // nng ip6 address
 }
 
-struct Sockaddr {
-    const socklen_t length;
-    const sockaddr* addr;
-}
-
 struct NNGAddress {
     string address;
 
