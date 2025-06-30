@@ -17,8 +17,9 @@ import tagion.hibon.Document;
 import tagion.dart.Recorder;
 import tagion.basic.basic : isinit;
 
+@safe:
+
 version (DEDICATED_DART_SYNC_FIBER) {
-    @safe
     class DARTSynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
@@ -57,7 +58,6 @@ version (DEDICATED_DART_SYNC_FIBER) {
         final void run()
         in {
             assert(sync);
-            // assert(owner.blockfile);
         }
         do {
             void iterate(const Rims params) @safe {
@@ -65,10 +65,7 @@ version (DEDICATED_DART_SYNC_FIBER) {
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 const local_branches = owner.branches(params.path);
-                // const request_branches = CRUD.dartRim(params, owner.hirpc, id);
-                const request_branches = CRUD.dartRim(rims : params, hirpc:
-                    owner.hirpc, id:
-                    id);
+                const request_branches = CRUD.dartRim(params, owner.hirpc, id);
                 const result_branches = sync.query(request_branches);
                 if (DARTFile.Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!(DARTFile.Branches);
@@ -140,7 +137,6 @@ version (DEDICATED_DART_SYNC_FIBER) {
         }
     }
 
-    @safe
     void replay(DART owner, const(string) journal_filename) {
         import tagion.hibon.HiBONFile;
         import std.range;
@@ -157,7 +153,6 @@ version (DEDICATED_DART_SYNC_FIBER) {
         }
     }
 
-    @safe
     DARTSynchronizationFiber synchronizer(Synchronizer synchonizer, DART owner,
         const Rims rims, size_t sz = pageSize * Fiber.defaultStackPages,
         size_t guardPageSize = pageSize) {
