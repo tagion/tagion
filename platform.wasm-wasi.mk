@@ -13,6 +13,7 @@ ifeq ($(PLATFORM),$(WASI_WASM32))
 TRIPLET:=wasm32-unknown-wasi
 WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi
 #WASI_SYSROOT:=share/wasi-sysroot/lib/wasm32-wasi-threads
+include $(DTUB)/scripts/setup_wasm-wasi_toolchain.mk
 endif
 
 ifeq ($(PLATFORM),$(WASI_WASM64))
@@ -20,6 +21,7 @@ ifeq ($(PLATFORM),$(WASI_WASM64))
 TRIPLET:=wasm64-unknown-wasi
 WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi
 #WASI_SYSROOT:=share/wasi-sysroot/lib/wasm64-wasi-threads
+include $(DTUB)/scripts/setup_wasm-wasi_toolchain.mk
 
 endif
 
@@ -29,9 +31,10 @@ DBIN_EXCLUDE=1
 
 #SPLIT_LINKER=1
 #DEFAULT_BIN_DISABLE=1
-ifneq ($(COMPILER),ldc)
-$(error $(PLATFORM) only supports ldc2 for now not $(COMPILER))
-endif
+#ifneq ($(COMPILER),ldc)
+#$(error $(PLATFORM) only supports ldc2 for now not $(COMPILER))
+#endif
+#endif
 
 
 WASI_DRUNTIME_ROOT?=$(abspath $(REPOROOT)/tools/wasi-druntime)
@@ -78,11 +81,15 @@ WASI_LDFLAGS+=--export=__data_end
 WASI_LDFLAGS+=--export=__heap_base
 WASI_LDFLAGS+=--allow-undefined
 
+else
+install-wasi-wasm-toolchain:
+	$(PRECMD)
+	echo "You need to specify an wasi-wasm target PLATFORM= to choose which toolchain to install"
+	${call log.kvp, PLATFORM, $(PLATFORM)}
 
-#DFILES+=$(TVM_SDK_DFILES)
 endif
 
-env-wasm:
+env-wasm: files-wasm
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.kvp, PLATFORM, $(PLATFORM))
@@ -94,6 +101,7 @@ env-wasm:
 	$(call log.kvp, LDC_RUNTIME_BUILD, $(LDC_RUNTIME_BUILD))
 	$(call log.env, WASI_DFLAGS, $(WASI_DFLAGS))
 	$(call log.env, WASI_LDFLAGS, $(WASI_LDFLAGS))
+	$(call log.env, LDC_WASI, $(LDC_WASI))
 	$(call log.close)
 
 .PHONY: env-wasm
@@ -102,10 +110,23 @@ env: env-wasm
 
 files-wasm:
 	$(PRECMD)
-	$(call log.header, $@ :: env)
+	$(call log.header, $@ :: files)
 	$(call log.env, WASI_LIB, $(WASI_LIB))
 	$(call log.env, WASI_DINC, $(WASI_DINC))
 	$(call log.close)
 .PHONY: files-wasm
 
 env-files: files-wasm
+
+help-wasm: help-wasi
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make help-wasm", "Will show this help text"}
+	${call log.help, "make install-wasi-wasm-toolchain", "Installs the ldc compiler for wasm"}
+	${call log.close}	
+
+.PHONY: help-wasm
+
+help: help-wasm
+
+
