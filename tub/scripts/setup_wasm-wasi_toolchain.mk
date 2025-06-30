@@ -5,7 +5,7 @@ LDC_HOST:=ldc2-${LDC_VERSION}-linux-x86_64
 LDC_HOST_TAR:=$(LDC_HOST).tar.xz
 LDC_WASI_BIN:=$(TOOLS)/$(LDC_HOST)/bin
 LDC_WASI:=$(LDC_WASI_BIN)/ldc2
-DC=$(LDC_WASI)
+export DC=$(LDC_WASI)
 #ANDROID_NDK:=android-ndk-r21b
 #ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
 

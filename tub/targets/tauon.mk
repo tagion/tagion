@@ -3,10 +3,10 @@ TAUON_BINS=$(addprefix $(DBIN)/,$(TAUON_TESTS:.d=.wasm))
 LIBTVM=$(DLIB)/libtauon.a
 
 $(DLIB)/libdruntime-ldc.a: $(DLIB)/.way
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libdruntime 
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) DC=$(LDC_WASI) TARGET_DIR=$(DBUILD) libdruntime 
 
 $(DLIB)/libdphobos2-ldc.a: $(DLIB)/.way
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) libphobos2 
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) DC=$(LDC_WASI) TARGET_DIR=$(DBUILD) libphobos2 
 
 $(DLIB)/libtauon.a: DFILES+=$(TAUON_DFILES)
 #$(DLIB)/libtauin.a: DFILES+=--output-o
@@ -18,7 +18,8 @@ $(DLIB)/libtauon.a: $(DLIB)/.way
 $(DLIB)/libtauon.a: revision
 
 $(TAUON_BINS): $(DBIN)/.way
-
+tauon-test: install-wasi-wasm-toolchain
+tauon-test: DC=$(LDC_WASI)
 tauon-test: $(DLIB)/libtauon.a
 tauon-test: $(DLIB)/libdruntime-ldc.a
 tauon-test: $(DLIB)/libdphobos2-ldc.a
