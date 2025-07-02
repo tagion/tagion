@@ -19,7 +19,8 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Fingerprint, Pubkey;
 import tagion.dart.DART;
 import tagion.dart.DARTcrud : dartBullseye;
-import tagion.dart.DARTRemoteWorker;
+import tagion.dart.DARTSynchronizer;
+import tagion.dart.synchronizer;
 import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
 import tagion.dart.BlockFile : BlockFile, BLOCK_SIZE;
@@ -80,7 +81,7 @@ struct DARTSyncService {
         }
 
         void synchronizeTask(dartSyncRR req) {
-            immutable journal_filenames = synchronize(journal_path, addressbook, handle, dest_db);
+            immutable journal_filenames = synchronize(journal_path, addressbook, task_names, dest_db);
             req.respond(journal_filenames);
         }
 
@@ -90,7 +91,7 @@ struct DARTSyncService {
         }
 
         void recorderSynchronizeTask(syncRecorderRR req) {
-            immutable result = recorderSynchronize(journal_path, addressbook, handle, net, dest_db);
+            immutable result = recorderSynchronize(journal_path, addressbook, task_names, handle, net, dest_db);
             req.respond(result);
         }
 
@@ -152,7 +153,7 @@ private:
     immutable(string[]) synchronize(
         string journal_path,
         shared(AddressBook) addressbook,
-        ActorHandle node_interface_handle,
+        immutable(TaskNames) task_names,
         DART destination
     ) {
         enum stackPage = 256;
@@ -161,10 +162,10 @@ private:
         const guard_page_size = pageSize;
 
         string[] journal_filenames;
-        DARTSynchronizer[Pubkey] remote_workers;
+        Synchronizer[Pubkey] remote_workers;
         auto rim_range = iota!ushort(256);
 
-        void synchronizeFiber(DARTSynchronizer dart_synchronizer, ushort current_rim) {
+        void synchronizeFiber(Synchronizer dart_synchronizer, ushort current_rim) {
             version (DEDICATED_DART_SYNC_FIBER) {
                 auto dist_sync_fiber = synchronizer(dart_synchronizer, destination, Rims(
                         [cast(ubyte) current_rim]), sz, guard_page_size);
@@ -192,7 +193,7 @@ private:
                 const sector = current_rim << 8;
                 rim_range.popFront;
 
-                auto dart_synchronizer = new DARTSynchronizer(channel, node_interface_handle, destination);
+                auto dart_synchronizer = new DARTSynchronizer(destination, channel, task_names);
                 remote_workers[channel] = dart_synchronizer;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_path, sector);
@@ -237,6 +238,7 @@ private:
     bool recorderSynchronize(
         string journal_path,
         shared(AddressBook) addressbook,
+        immutable(TaskNames) task_names,
         ActorHandle node_interface_handle,
         const SecureNet net,
         DART destination
@@ -257,7 +259,7 @@ private:
         uint pub_key_index = 0;
 
         while (!bullseye_match) {
-            synchronize(journal_path, addressbook, node_interface_handle, destination);
+            synchronize(journal_path, addressbook, task_names, destination);
             TagionHead tagion_head = getHead(destination);
             auto channel = channels[pub_key_index];
             auto startTime = MonoTime.currTime();
