@@ -96,7 +96,7 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
+A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](/gov/glossary#distributed-database) and validate and propagate transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
 
 ## On-chain Governance 
