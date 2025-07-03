@@ -171,9 +171,9 @@ The ability of a DLT system to process and validate a growing number of [transac
 
 A misnomer, because a consensus systems, by definition, has a state that the consensus agrees on. However, in this context, it often refers to a system where the amount of data that validators must store is minimized to a constant, manageable size, regardless of the system’s scale or transaction volume.
 
-## Stateless contract
+## Stateless Contract
 
-Contracts that check [transaction](/gov/glossary#transaction) details, approve or reject and process them without storing balances or transaction history on the blockchain/database. Instead, any required transaction data or business logic is provided by the transaction itself. 
+[Contracts](/gov/glossary#contract-smart) that check [transaction](/gov/glossary#transaction) details, approve or reject and process them without storing balances or transaction history on the blockchain/database. Instead, any required transaction data or business logic is provided by the transaction itself. 
 
 ##Sybil Attack
 
