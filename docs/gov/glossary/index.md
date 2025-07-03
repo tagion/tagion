@@ -33,6 +33,10 @@ For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) 
 
 A user-interface to make changes to the [database](/gov/glossary#database), it sends info about intended changes to a [node](/gov/glossary#node).
 
+## Burning (tokens)
+
+Expression describing when tokens are destroyed permanently, typically to reduce the total supply. 
+
 ## Byzantine Fault Tolerance (BFT)
 
 The network's ability to reach and maintain [consensus](/gov/glossary#consensus) and function correctly even in the presence of malicious, faulty, or non-cooperative actors/[nodes](/gov/glossary#node).
@@ -84,6 +88,11 @@ We use these funny sounding terms to distinguish between the intention and the e
 Tagion is a distributed database, not a ledger, designed to enable dynamic and flexible data management. Unlike ledgers that record data as a linear, immutable chain of transactions, Tagion allows for data to be queried, updated, and deleted. 
 
 Tagion ensures data integrity and authenticity through an immutable audit trail. Each update to the database is cryptographically signed and verified, creating a traceable history of changes. This guarantees that users can validate the authenticity and integrity of data while avoiding the inefficiencies of sequential ledger systems, such as blockchain. 
+
+## Distributed Hash Table (DHT)
+
+A [database](/gov/glossary#database) structure that enables data retreival based on key-value pairs. Distributed hash tables are decentralised, so all [nodes](/gov/glossary#node) form the collective system without centralised coordination. They are generally resilient because data is replicated across multiple nodes. 
+ 
 
 ## Distributed Ledger Technology (DLT)
 
@@ -183,3 +192,7 @@ Notably, to keep the Mainnet streamlined, applications are primarily run on Fede
 ## Transaction
 
 Unit of [database](/gov/glossary#database)-changes (add, edit, delete), including but not limited to currency related transactions.
+
+## Wallet
+
+A digital [application](/gov/glossary#application-mobile) or device that securely stores cryptographic keys used to access and manage cryptocurrencies. It enables users to send, receive, and store their digital assets, providing a convenient and secure way to interact with networks. 
