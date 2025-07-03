@@ -51,15 +51,8 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority. 
-
-In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
-
-A patented communication protocol caooed Wavefront connects nodes through information sharing. 
-
-[Ordering](/gov/glossary#ordering-fair) is established from the chronological event sequence. 
-
-Finality emerges as a supermajority consensus (2/3+1 of participating nodes) even in the face of up to 1/3 being non-cooperative (malicious or lost connection). 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority.  
+In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. 
 
 ## Consistency
 
@@ -67,7 +60,7 @@ A property that ensures all participants in a decentralized system see and agree
 
 ## Contract (smart)
 
-Information package instructing [nodes](gov/glossary#node) about [transactions](gov/glossary#transaction) to be included in the [database](gov/glossay#database). The term is inherited from "blockchain" and "DLT)(gov/glossar#distributed-ledger-technologies-(DLT)) concepts, where the compound term "smart contracts" is used to imply "self-execution" when the payload contains (complex) conditional instructions.
+Information package instructing [nodes](gov/glossary#node) about [transactions](gov/glossary#transaction) to be included in the [database](gov/glossay#database). The term is inherited from "blockchain" and "DLT)(gov/glossar#distributed-ledger-technology-dlt) concepts, where the compound term "smart contracts" is used to imply "self-execution" when the payload of the package contains (complex) conditional instructions.
 
 ## Contributors 
 
@@ -164,6 +157,22 @@ A public system or infrastrucre is open for everybody to use. Tagion aspires to 
 ## Scalability
 
 The ability of a DLT system to process and validate a growing number of [transactions](/gov/glossary#transaction) or operations efficiently without compromising other essential properties, such as decentralization, security, and [consistency](/gov/glossary#consistency). 
+
+## Stateless System
+
+A misnomer, because a consensus systems, by definition, has a state that the consensus agrees on. However, in this context, it often refers to a system where the amount of data that validators must store is minimized to a constant, manageable size, regardless of the system’s scale or transaction volume.
+
+## Stateless contract
+
+Contracts that check [transaction](/gov/glossary#transaction) details, approve or reject and process them without storing balances or transaction history on the blockchain/database. Instead, any required transaction data or business logic is provided by the transaction itself. 
+
+##Sybil Attack
+
+A term coined by John R. Douceur, refering to “an attack wherein a single entity masquerades as multiple entities or nodes within a network to gain a disproportionately high influence within the network or to subvert the network’s operation altogether.” An illicit actor, accordingly, creates multiple pseudonymous identities to manipulate or control the network. If successful, Sybil attacks can disrupt [consensus](/gov/glossary#consensus), manipulate governance decisions, and ultimately undermine the integrity of the system.
+
+## Sybil Resistance Mechanism
+
+Defines who can participate (as in running a [node](/gov/glossary#node)) in the [consensus](/gov/glossary#consensus) protocol and, potentially, in governance, serving as a mechanism to prevent Sybil attacks. 
 
 ## Tagion Mainnet 
 
