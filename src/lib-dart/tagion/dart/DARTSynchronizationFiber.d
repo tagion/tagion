@@ -17,25 +17,22 @@ import tagion.hibon.Document;
 import tagion.dart.Recorder;
 import tagion.basic.basic : isinit;
 
+@safe:
 version (DEDICATED_DART_SYNC_FIBER) {
-    @safe
     class DARTSynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
         immutable(Rims) root_rims;
         size_t fiberPageSize;
-        DART owner;
 
         this(Synchronizer sync,
-            DART owner,
             const Rims root_rims,
             size_t sz = pageSize * Fiber.defaultStackPages,
             size_t guardPageSize = pageSize,
         ) @trusted {
             this.sync = sync;
-            this.owner = owner,
             this.root_rims = root_rims;
-            sync.set(owner, this, owner.hirpc);
+            sync.set(this);
             super(&run, sz, guardPageSize);
         }
 
@@ -46,7 +43,7 @@ version (DEDICATED_DART_SYNC_FIBER) {
         */
         @property uint id() {
             if (_id == 0) {
-                _id = owner.hirpc.generateId();
+                _id = sync.hirpc.generateId();
             }
             return _id;
         }
@@ -57,18 +54,14 @@ version (DEDICATED_DART_SYNC_FIBER) {
         final void run()
         in {
             assert(sync);
-            // assert(owner.blockfile);
         }
         do {
             void iterate(const Rims params) @safe {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                const local_branches = owner.branches(params.path);
-                // const request_branches = CRUD.dartRim(params, owner.hirpc, id);
-                const request_branches = CRUD.dartRim(rims : params, hirpc:
-                    owner.hirpc, id:
-                    id);
+                const local_branches = sync.branches(params.path);
+                const request_branches = CRUD.dartRim(params, sync.hirpc, id);
                 const result_branches = sync.query(request_branches);
                 if (DARTFile.Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!(DARTFile.Branches);
@@ -77,14 +70,14 @@ version (DEDICATED_DART_SYNC_FIBER) {
                     //
                     const request_archives = CRUD.dartRead(
                         foreign_branches
-                            .dart_indices, owner.hirpc, id);
+                            .dart_indices, sync.hirpc, id);
                     const result_archives = sync.query(request_archives);
-                    auto foreign_recoder = owner.recorder(result_archives.response.result);
+                    auto foreign_recoder = sync.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // 
 
-                    auto local_recorder = owner.recorder;
+                    auto local_recorder = sync.recorder;
                     scope (success) {
                         sync.record(local_recorder);
                     }
@@ -102,7 +95,7 @@ version (DEDICATED_DART_SYNC_FIBER) {
                         else if (!foreign_print.isinit) {
                             // Foreign is points to branches
                             if (!local_print.empty) {
-                                const possible_branches_data = owner.load(local_branches, key);
+                                const possible_branches_data = sync.load(local_branches, key);
                                 if (!DARTFile.Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
@@ -118,7 +111,7 @@ version (DEDICATED_DART_SYNC_FIBER) {
                 }
                 else {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        auto foreign_recoder = owner.recorder(result_branches.response.result);
+                        auto foreign_recoder = sync.recorder(result_branches.response.result);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -140,7 +133,6 @@ version (DEDICATED_DART_SYNC_FIBER) {
         }
     }
 
-    @safe
     void replay(DART owner, const(string) journal_filename) {
         import tagion.hibon.HiBONFile;
         import std.range;
@@ -157,11 +149,10 @@ version (DEDICATED_DART_SYNC_FIBER) {
         }
     }
 
-    @safe
     DARTSynchronizationFiber synchronizer(Synchronizer synchonizer, DART owner,
         const Rims rims, size_t sz = pageSize * Fiber.defaultStackPages,
         size_t guardPageSize = pageSize) {
 
-        return new DARTSynchronizationFiber(synchonizer, owner, rims, sz, guardPageSize);
+        return new DARTSynchronizationFiber(synchonizer, rims, sz, guardPageSize);
     }
 }

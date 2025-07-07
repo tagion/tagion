@@ -49,6 +49,7 @@ interface Synchronizer {
         */
     version (DEDICATED_DART_SYNC_FIBER) {
         void set(DART owner, DARTSynchronizationFiber fiber, HiRPC hirpc);
+        void set(DARTSynchronizationFiber fiber);
     }
     void set(DART owner, DART.SynchronizationFiber fiber, HiRPC hirpc);
     /**
@@ -57,6 +58,16 @@ interface Synchronizer {
         *     If the SynchronizationFiber has finished then this function returns `true`
         */
     bool finished() const pure nothrow;
+    //
+    HiRPC hirpc();
+    //
+    DARTFile.Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null);
+    //
+    RecordFactory.Recorder recorder(); // rename back to recorder
+    //
+    RecordFactory.Recorder recorder(const(Document) doc);
+    //
+    Document load(ref const(DARTFile.Branches) b, const uint key);
 }
 
 /**

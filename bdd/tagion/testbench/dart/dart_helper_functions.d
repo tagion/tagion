@@ -219,6 +219,38 @@ static class TestSynchronizer : JournalSynchronizer {
         const received = owner.hirpc.receive(response_doc);
         return received;
     }
+
+    version (DEDICATED_DART_SYNC_FIBER) {
+        import tagion.dart.BlockFile;
+        import tagion.dart.DARTSynchronizationFiber;
+
+        override void set(
+            DARTSynchronizationFiber fiber,
+        ) nothrow @trusted {
+            super.fiber = fiber;
+            super.owner = owner;
+        }
+
+        override HiRPC hirpc() {
+            return owner.hirpc;
+        }
+
+        override DARTFile.Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null) {
+            return owner.branches(rim_path);
+        }
+
+        override RecordFactory.Recorder recorder() nothrow {
+            return owner.recorder;
+        }
+
+        override RecordFactory.Recorder recorder(const(Document) doc) {
+            return owner.recorder(doc);
+        }
+
+        override Document load(ref const(DARTFile.Branches) b, const uint key) {
+            return owner.load(b, key);
+        }
+    }
 }
 
 /** 

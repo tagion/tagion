@@ -11,7 +11,7 @@ wasi: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way
 wasi-run: wasi
 
 wasi-%: $(WASI_DRUNTIME_ROOT)/.git $(DLIB)/.way 
-	$(MAKE) -C $(WASI_DRUNTIME_ROOT) TARGET_DIR=$(DBUILD) $*
+	$(MAKE) -C $(WASI_DRUNTIME_ROOT) DC=$(LDC_WASI) TARGET_DIR=$(DBUILD) $*
 
 env-wasi:
 	$(PRECMD)
@@ -28,6 +28,7 @@ env: env-wasi
 help-wasi:
 	$(PRECMD)
 	$(call log.header, $@ :: help)
+	$(call log.help, "make help-wasi", "Will show this help text")
 	$(call log.help, "make wasi", "Prebuild druntime")
 	$(call log.help, "make wasi-<tag>", "Execute the make <tag> on the wasi-druntime")
 	$(call log.help, "make wasi-run", "Will run the simple test program")

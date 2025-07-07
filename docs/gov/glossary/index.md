@@ -28,7 +28,18 @@ For the two strucural levels of Tagion, [Mainnet](/gov/glossary#tagion-mainnet) 
 |--|:--:|:--:|
 |**Mainnet:**|**No** <br />because the amounts of all Txs are public|**Yes** <br />unless users decide to disclose their identity |
 |**Subsystem:**  |**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|**Yes**<br />if so desired – but the opposite is also possible (allowing for regulatory compliance)|
- 
+
+## Appplication (mobile)
+
+A user-interface to make changes to the [database](/gov/glossary#database), it sends info about intended changes to a [node](/gov/glossary#node).
+
+## Burning (tokens)
+
+Expression describing when tokens are destroyed permanently, typically to reduce the total supply. 
+
+## Byzantine Fault Tolerance (BFT)
+
+The network's ability to reach and maintain [consensus](/gov/glossary#consensus) and function correctly even in the presence of malicious, faulty, or non-cooperative actors/[nodes](/gov/glossary#node).
 
 ## Community 
 
@@ -44,15 +55,16 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority.  
+In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. 
 
-In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. In this system: 
+## Consistency
 
-A patented communication protocol caooed Wavefront connects nodes through information sharing. 
+A property that ensures all participants in a decentralized system see and agree on the same state of data at the same moment in time. (also see [consensus](/gov/glossary#consensus)
 
-[Ordering](/gov/glossary#ordering-fair) is established from the chronological event sequence. 
+## Contract (smart)
 
-Finality emerges as a supermajority consensus (2/3+1 of participating nodes) even in the face of up to 1/3 being non-cooperative (malicious or lost connection). 
+Information package instructing [nodes](gov/glossary#node) about [transactions](gov/glossary#transaction) to be included in the [database](gov/glossay#database). The term is inherited from "blockchain" and "DLT)(gov/glossar#distributed-ledger-technology-dlt) concepts, where the compound term "smart contracts" is used to imply "self-execution" when the payload of the package contains (complex) conditional instructions.
 
 ## Contributors 
 
@@ -63,6 +75,11 @@ The term "contributor" is fluid, encompassing a wide array of possible roles tha
 
 An implementation/instantiation of the concept of [money](/gov/glossary#money).  
 
+## Database
+
+A structured system to store, manage and retrieve data. Akin rather to a filing cabinet with labeled drawers - not the records in those drawers. 
+"DART" is the name of Tagion's custom-designed database system maintained in/by the Tagion [node](/gov/glossary#node) software 
+
 ## De jure / de facto
 We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, as we explain in the article about "[permissionlessness](/gov/governance_areas/network_formation/introductions/permission)", the real-world effect of certain rules (de facto) can run counter to its intention (de jure). 
 
@@ -72,11 +89,32 @@ Tagion is a distributed database, not a ledger, designed to enable dynamic and f
 
 Tagion ensures data integrity and authenticity through an immutable audit trail. Each update to the database is cryptographically signed and verified, creating a traceable history of changes. This guarantees that users can validate the authenticity and integrity of data while avoiding the inefficiencies of sequential ledger systems, such as blockchain. 
 
+## Distributed Hash Table (DHT)
+
+A [database](/gov/glossary#database) structure that enables data retreival based on key-value pairs. Distributed hash tables are decentralised, so all [nodes](/gov/glossary#node) form the collective system without centralised coordination. They are generally resilient because data is replicated across multiple nodes. 
+ 
+
+## Distributed Ledger Technology (DLT)
+
+A system of record-keeping where financial data is shared, synchronized, and stored across multiple nodes in a network. A ledger is a collection of accounts in which accounting transactions are recorded. A ledger is a limited use-case for a [database](/gov/glossary#database)-system.
+
 ## Federated Subsystem 
 
 A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion [Mainnet](/gov/glossary#tagion-mainnet) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
 
 In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. (Also see [Network Architecture](/gov/intro/network) in Governance Area "Network Formation".)
+
+## Finality (time to)
+
+Time to finality is the duration required for a [transaction](/gov/glossary#transaction) to be considered irreversible or practically [immutable](/gov/glossary#deterministic-finality) in the  system, depending on the [consensus](/gov/glossary#consensus) mechanism used. 
+
+## Finality: Deterministic
+
+A property of a distributed system where, once a [transaction](/gov/glossary#transaction) or block is finalized, it is permanently irreversible unless overridden by external intervention, such as a hard fork.
+
+## Finality: Probabilistic
+
+An oxymoron used to describe the property of a system where the likelihood of a [transaction](/gov/glossary#transaction) or block being reverted decreases over time as more confirmations are added, but reversal remains theoretically possible. 
 
 ## Formation
 
@@ -85,6 +123,10 @@ In our governance area "network formation" we use this word analogous to its dua
 ## Governance 
 
 At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](#on-chain) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+
+## Liveness
+
+A property of decentralized systems that ensures the system continues to make progress by processing new transactions, requests, or messages without indefinite delays.
 
 ## Money 
 
@@ -96,7 +138,7 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Nodes 
 
-A node is any device that connects to the network to help maintain the [database](/gov/glossary#distributed-database). Nodes perform various roles, such as storing a copy of the database, validating and propagating transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
+A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](/gov/glossary#distributed-database) and validate and propagate transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
 
 ## On-chain Governance 
@@ -119,10 +161,38 @@ Refers to anybody being able to participate in a system, e.g. running a node, wi
 
 ## Public/Private
 
-A public system or infrastrucre is open for everybody to use. Tagion aspires to provide that. Sub-systems however can choose to be set up there own rules and invite or preclude user as deem appropriate for the individual use-cases.    
+A public system or infrastrucre is open for everybody to use. Tagion aspires to provide that. Sub-systems however can choose to be set up there own rules and invite or preclude user - as deemed appropriate for the individual use-cases - making them de-facto private. 
+
+## Scalability
+
+The ability of a DLT system to process and validate a growing number of [transactions](/gov/glossary#transaction) or operations efficiently without compromising other essential properties, such as decentralization, security, and [consistency](/gov/glossary#consistency). 
+
+## Stateless System
+
+A misnomer, because a consensus systems, by definition, has a state that the consensus agrees on. However, in this context, it often refers to a system where the amount of data that validators must store is minimized to a constant, manageable size, regardless of the system’s scale or transaction volume.
+
+## Stateless Contract
+
+[Contracts](/gov/glossary#contract-smart) that check [transaction](/gov/glossary#transaction) details, approve or reject and process them without storing balances or transaction history on the blockchain/database. Instead, any required transaction data or business logic is provided by the transaction itself. 
+
+##Sybil Attack
+
+A term coined by John R. Douceur, refering to “an attack wherein a single entity masquerades as multiple entities or nodes within a network to gain a disproportionately high influence within the network or to subvert the network’s operation altogether.” An illicit actor, accordingly, creates multiple pseudonymous identities to manipulate or control the network. If successful, Sybil attacks can disrupt [consensus](/gov/glossary#consensus), manipulate governance decisions, and ultimately undermine the integrity of the system.
+
+## Sybil Resistance Mechanism
+
+Defines who can participate (as in running a [node](/gov/glossary#node)) in the [consensus](/gov/glossary#consensus) protocol and, potentially, in governance, serving as a mechanism to prevent Sybil attacks. 
 
 ## Tagion Mainnet 
 
 The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of [Federated Subsystems](/gov/glossary#tagion-mainnet). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
 
 Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing. (Also see [Network Architecture](/gov/intro/network) in Governance Atrea "Network Formation")
+
+## Transaction
+
+Unit of [database](/gov/glossary#database)-changes (add, edit, delete), including but not limited to currency related transactions.
+
+## Wallet
+
+A digital [application](/gov/glossary#application-mobile) or device that securely stores cryptographic keys used to access and manage cryptocurrencies. It enables users to send, receive, and store their digital assets, providing a convenient and secure way to interact with networks. 
