@@ -6,11 +6,6 @@ LDC_HOST_TAR:=$(LDC_HOST).tar.xz
 LDC_WASI_BIN:=$(TOOLS)/$(LDC_HOST)/bin
 LDC_WASI:=$(LDC_WASI_BIN)/ldc2
 export DC=$(LDC_WASI)
-#ANDROID_NDK:=android-ndk-r21b
-#ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
-
-#ANDROID_CMAKE_ZIP:=cmake-3.10.2-linux-x86_64.zip
-#ANDROID_CMAKE:=android-cmake
 
 install-wasi-wasm-toolchain: $(LDC_HOST) 
 .PHONY: install-wasi-wasm-toolchain
