@@ -91,7 +91,7 @@ struct DARTSyncService {
         }
 
         void recorderSynchronizeTask(syncRecorderRR req) {
-            immutable result = recorderSynchronize(journal_path, addressbook, task_names, handle, net, dest_db);
+            immutable result = recorderSynchronize(journal_path, addressbook, task_names, net, dest_db);
             req.respond(result);
         }
 
@@ -239,7 +239,6 @@ private:
         string journal_path,
         shared(AddressBook) addressbook,
         immutable(TaskNames) task_names,
-        ActorHandle node_interface_handle,
         const SecureNet net,
         DART destination
     ) {
@@ -274,7 +273,7 @@ private:
 
                     const recorder_read_request = hirpc.readRecorder(
                         EpochParam(tagion_head.current_epoch));
-
+                    ActorHandle node_interface_handle = ActorHandle(task_names.node_interface);
                     node_interface_handle.send(NodeReq(), channel, recorder_read_request
                             .toDoc);
                     const recorder_block_doc = receiveOnly!(NodeReq.Response, Document)[1];
