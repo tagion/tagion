@@ -38,7 +38,7 @@ A user-interface to make changes to the [database](/gov/glossary#database), it s
 
 ## Burning (tokens)
 
-Expression describing when tokens are destroyed permanently, typically to reduce the total supply. 
+Expression describing when [tokens](/gov/glossary#tokens-tgn) are destroyed permanently, typically to reduce the total supply. 
 
 ## Byzantine Fault Tolerance (BFT)
 
@@ -54,11 +54,11 @@ Notably, Community is a fluid term - a flexible and evolving entity - that may a
 
 ## Community Member 
 
-A community member is any individual or entity who has been verified by peers through the network’s [Social Scoring System](/gov/governance_areas/network_formation/tagion/poc). Once verified, community members gain the right to participate in both the consensus process and the governance of the network, contributing to its security, efficiency and decision-making. 
+A community member is any individual or entity who has been verified by peers through the network’s Social Scoring System (see Network Formation on [Governance Documentation](/gov/governance_areas/network_formation/tagion/poc) for more on this topic). Once verified, community members gain the right to participate in both the [consensus](/gov/glossary#consensus) process and the governance of the network, contributing to its security, efficiency and decision-making. 
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#node) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissionespermissionlessness)).  
+Consensus refers to the process by which  [Nodes](/gov/glossary#node) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissionedpermissionlessness)).  
 
 In the Tagion Network, consensus is reached using an [Asynchronous Byzantine Fault Tolerant (ABFT)](/gov/glossary#byzantine-fault-tolerance-bft) consensus algorithm called [Hashgraph](/gov/glossary#hashgraph). 
 
@@ -79,7 +79,7 @@ The term "contributor" is fluid, encompassing a wide array of possible roles tha
 
 An implementation/instantiation of the concept of [money](/gov/glossary#money). 
 
-As such, we use it as a term encompassing conventionl national as well as compelemtnary currencies. So called "crypto currencies" are a sub-category of the latter. 
+As such, we use it as a term encompassing conventionl national currencies as well as all complementary currencies. So called "crypto currencies" are a sub-category of the latter, as are the [Tagion Utility Tokens "TGN"](/gov/glossary#tokens-tgn).  
 
 ## Database
 
@@ -93,7 +93,7 @@ Tagion ensures data [integrity)(/gov/glossary#integrity) and authenticity throug
 ## DART
 
 DART is short for Distributed Archive of Random Transactions and is the storage layer of the Tagion network. 
-Once a contract is agreed upon by a supermajority of nodes via the [Hashgraph consensus protocol](/gov/glossary#consensus) and executed by the Tagion Virtual Machine (TVM), the resulting state changes are recorded in the DART. Structurally, DART is a sharded Hash Table strucutred as a sparse Merkle tree, where the totality of the data it stores rolls up into a single root hash, known as the bullseye. FOr more details, see the our [Tagion 101](https://docs.tagion.org/gov/intro/jargonbusting), or find all the details in the [Tech Documenation](https://docs.tagion.org/tech/Protocols/Dart.
+Once a contract is agreed upon by a supermajority of nodes via the [Hashgraph consensus protocol](/gov/glossary#consensus) and executed by the Tagion Virtual Machine (TVM), the resulting state changes are recorded in the DART. Structurally, DART is a sharded Hash Table strucutred as a sparse Merkle tree, where the totality of the data it stores rolls up into a single root hash, known as the bullseye. FOr more details, see the our [Tagion 101](https://docs.tagion.org/gov/intro/jargonbusting), or find all the details in the [Tech Documenation](https://docs.tagion.org/tech/Protocols/Dart).
 
 ## Decentralisation
 
@@ -102,7 +102,7 @@ The ambition and process of making online networks not reliant and dominated by 
 However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making decentralisation more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms ["de jure" / "de facto"](/gov/glossary#de-jure--de-facto). 
 
 ## De jure / de facto
-We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissionedpermissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissionedpermissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation). 
 
 ## Distributed Hash Table (DHT)
 
@@ -216,6 +216,8 @@ Defines who can participate (as in running a [node](/gov/glossary#node)) in the 
 The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating as a Layer 0 that provides the settlement layer for TGN transactions, the infrastructure facilitating network governance, and the security and interoperability layer that connects and protects the broader network of [Federated Subsystems](/gov/glossary#tagion-mainnet). By allowing independent networks to batch and finalize transactions on its secure and immutable ledger, the Mainnet ensures that even private Subsystems remain anchored to the decentralized security of the ecosystem. 
 
 Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing. (Also see [Network Architecture](/gov/intro/network) in Governance Atrea "Network Formation")
+
+## Tokens (TGN)
 
 ## Transaction
 
