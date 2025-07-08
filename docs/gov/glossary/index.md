@@ -85,12 +85,12 @@ A structured system to store, manage and retrieve data. Akin rather to a filing 
 
 ## Decentralization
 
-The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete "permissionlessness" (see [below](/gov/glossary#permissioned--permissionless)). 
+The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete ["permissionlessness"](/gov/glossary#permissioned--permissionless). 
 
-However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making "decentralization" more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms "de jure" and "de facto" (see [below](/gov/glossary#de-jure--de-facto)). 
+However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making "decentralization" more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms ["de jure" / "de facto"](/gov/glossary#de-jure--de-facto). 
 
 ## De jure / de facto
-We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to "permissionlessness" (see [below](/gov/glossary#permissioned--permissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissioned--permissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
 
 ## Distributed Database 
 
@@ -167,7 +167,7 @@ In contrast to the order of transactions in conventional DLT systems - determine
 
 Different defintions of these term exist, in the context of Tagion we use them to refer to the governance of the network and thhe question who can operae a node.
 
-In the Mainnet, both are to be possible without permission. In federated Subsystem, the rules concerning both can be set freely. 
+In the Mainnet, both are to be possible without permission. They are In federated Subsystem, the rules concerning both can be set freely. 
 
 (See also our in-depth analysis of "de-jure and de-facto" permissionlessness of DLT systems [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
 
