@@ -58,8 +58,9 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#distributed-database). It ensures the integrity, security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority.  
-In the Tagion Network, consensus is reached using an Asynchronous Byzantine Fault Tolerant (ABFT) consensus algorithm called Hashgraph. 
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissiones--permissionlessness)).  
+
+In the Tagion Network, consensus is reached using an [Asynchronous Byzantine Fault Tolerant (ABFT)](/gov/glossary#byzantine-fault-tolerance-bft) consensus algorithm called [Hashgraph](/gov/glossary#hashgraph). 
 
 ## Consistency
 
@@ -76,27 +77,32 @@ The term "contributor" is fluid, encompassing a wide array of possible roles tha
 
 ## Currency 
 
-An implementation/instantiation of the concept of [money](/gov/glossary#money).  
+An implementation/instantiation of the concept of [money](/gov/glossary#money). 
+
+As such, we use it as a term encompassing conventionl national as well as compelemtnary currencies. So called "crypto currencies" are a sub-category of the latter. 
 
 ## Database
 
 A structured system to store, manage and retrieve data. Akin rather to a filing cabinet with labeled drawers - not the records in those drawers. 
-"DART" is the name of Tagion's custom-designed database system maintained in/by the Tagion [node](/gov/glossary#node) software 
+["DART"](/gov/glossary#dart)  is the name of Tagion's custom-designed database system maintained in/by the Tagion [node](/gov/glossary#node) software.
 
-## Decentralization
+This makes Tagion a distributed database - not just a ledger - designed to enable dynamic and flexible data management. Unlike ledgers that record data as a linear, immutable chain of transactions, Tagion allows for data to be queried, updated, and deleted. 
+
+Tagion ensures data [integrity)(/gov/glossary#integrity) and authenticity through an immutable audit trail. Each update to the database is cryptographically signed and verified, creating a traceable history of changes. This guarantees that users can validate the authenticity and integrity of data while avoiding the inefficiencies of sequential ledger systems, such as blockchain. 
+
+## DART
+
+DART is short for Distributed Archive of Random Transactions and is the storage layer of the Tagion network. 
+Once a contract is agreed upon by a supermajority of nodes via the [Hashgraph consensus protocol](/gov/glossary#consensus) and executed by the Tagion Virtual Machine (TVM), the resulting state changes are recorded in the DART. Structurally, DART is a sharded Hash Table strucutred as a sparse Merkle tree, where the totality of the data it stores rolls up into a single root hash, known as the bullseye. FOr more details, see the our [Tagion 101](https://docs.tagion.org/gov/intro/jargonbusting), or find all the details in the [Tech Documenation](https://docs.tagion.org/tech/Protocols/Dart.
+
+## Decentralisation
 
 The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete ["permissionlessness"](/gov/glossary#permissioned--permissionless). 
 
-However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making "decentralization" more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms ["de jure" / "de facto"](/gov/glossary#de-jure--de-facto). 
+However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making decentralisation more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms ["de jure" / "de facto"](/gov/glossary#de-jure--de-facto). 
 
 ## De jure / de facto
 We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissioned--permissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
-
-## Distributed Database 
-
-Tagion is a distributed database, not a ledger, designed to enable dynamic and flexible data management. Unlike ledgers that record data as a linear, immutable chain of transactions, Tagion allows for data to be queried, updated, and deleted. 
-
-Tagion ensures data integrity and authenticity through an immutable audit trail. Each update to the database is cryptographically signed and verified, creating a traceable history of changes. This guarantees that users can validate the authenticity and integrity of data while avoiding the inefficiencies of sequential ledger systems, such as blockchain. 
 
 ## Distributed Hash Table (DHT)
 
@@ -132,6 +138,11 @@ In our governance area "network formation" we use this word analogous to its dua
 ## Governance 
 
 At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](#on-chain) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+
+## Hashgraph
+
+coming next 
+
 
 ## Liveness
 
