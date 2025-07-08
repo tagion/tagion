@@ -141,7 +141,7 @@ At its root, the term "governance" comes from the Greek word kybernan, meaning t
 
 ## Hashgraph
 
-coming next 
+coming next [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph)
 
 
 ## Liveness
@@ -171,7 +171,7 @@ Refers to networks being built on Tagion code and being connected (open) or unco
 
 ## Ordering (fair)
 
-The order in which transactions sent to different nodes are committed to the(ir) database(s) is determined by the median time at which the [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph) of that epoch have received the transaction or knowledge of it (through the [wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
+The order in which transactions sent to different nodes are committed to the(ir) database(s) is determined by the median time at which the [nodes](/gov/glossary#node) participating in the [consensus](/gov/glossary#consensus) of that epoch have received the transaction or knowledge of it (through the [wavefront protocol](/gov/glossary#wavefront)). 
 In contrast to the order of transactions in conventional DLT systems - determined by the highest fee or by subjective preferences of node operators - we call Tagion's approach to ordering "fair", because every transaction has the same chance of being included in the next epoch, and manipulations such as frontrunning and sandwich attacks become impossible. 
 
 ## Permissioned/Permissionless
@@ -203,7 +203,7 @@ A misnomer, because a consensus systems, by definition, has a state that the con
 
 [Contracts](/gov/glossary#contract-smart) that check [transaction](/gov/glossary#transaction) details, approve or reject and process them without storing balances or transaction history on the blockchain/database. Instead, any required transaction data or business logic is provided by the transaction itself. 
 
-##Sybil Attack
+## Sybil Attack
 
 A term coined by John R. Douceur, refering to “an attack wherein a single entity masquerades as multiple entities or nodes within a network to gain a disproportionately high influence within the network or to subvert the network’s operation altogether.” An illicit actor, accordingly, creates multiple pseudonymous identities to manipulate or control the network. If successful, Sybil attacks can disrupt [consensus](/gov/glossary#consensus), manipulate governance decisions, and ultimately undermine the integrity of the system.
 
@@ -224,3 +224,7 @@ Unit of [database](/gov/glossary#database)-changes (add, edit, delete), includin
 ## Wallet
 
 A digital [application](/gov/glossary#application-mobile) or device that securely stores cryptographic keys used to access and manage cryptocurrencies. It enables users to send, receive, and store their digital assets, providing a convenient and secure way to interact with networks. 
+
+## Wavefront
+
+[wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
