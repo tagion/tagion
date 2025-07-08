@@ -58,7 +58,7 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissiones--permissionlessness)).  
+Consensus refers to the process by which  [Nodes](/gov/glossary#nodes) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissionespermissionlessness)).  
 
 In the Tagion Network, consensus is reached using an [Asynchronous Byzantine Fault Tolerant (ABFT)](/gov/glossary#byzantine-fault-tolerance-bft) consensus algorithm called [Hashgraph](/gov/glossary#hashgraph). 
 
@@ -97,12 +97,12 @@ Once a contract is agreed upon by a supermajority of nodes via the [Hashgraph co
 
 ## Decentralisation
 
-The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete ["permissionlessness"](/gov/glossary#permissioned--permissionless). 
+The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete ["permissionlessness"](/gov/glossary#permissionedpermissionless). 
 
 However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making decentralisation more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms ["de jure" / "de facto"](/gov/glossary#de-jure--de-facto). 
 
 ## De jure / de facto
-We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissioned--permissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to ["permissionlessness"](/gov/glossary#permissionedpermissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
 
 ## Distributed Hash Table (DHT)
 
