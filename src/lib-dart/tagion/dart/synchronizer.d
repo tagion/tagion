@@ -61,7 +61,7 @@ interface Synchronizer {
     //
     HiRPC hirpc();
     //
-    DARTFile.Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null);
+    DARTFile.Branches branches(immutable(ubyte[]) rim_path, scope Index* branch_index = null);
     //
     RecordFactory.Recorder recorder(); // rename back to recorder
     //

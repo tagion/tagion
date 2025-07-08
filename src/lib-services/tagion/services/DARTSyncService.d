@@ -19,7 +19,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Fingerprint, Pubkey;
 import tagion.dart.DART;
 import tagion.dart.DARTcrud : dartBullseye;
-import tagion.dart.DARTSynchronizer;
+import tagion.dart.DARTFileSynchronizer;
 import tagion.dart.synchronizer;
 import tagion.dart.DARTBasic : DARTIndex, Params;
 import tagion.dart.DARTRim;
@@ -193,7 +193,7 @@ private:
                 const sector = current_rim << 8;
                 rim_range.popFront;
 
-                auto dart_synchronizer = new DARTSynchronizer(destination, channel, task_names);
+                auto dart_synchronizer = new DARTFileSynchronizer(destination, channel, task_names);
                 remote_workers[channel] = dart_synchronizer;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_path, sector);

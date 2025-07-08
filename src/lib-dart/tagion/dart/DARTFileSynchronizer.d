@@ -111,7 +111,7 @@ class DARTFileSynchronizer : StdSynchronizer {
     /** 
      * Wrapper: Loads the branches from the DART at rim_path
      */
-    override DARTFile.Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null) {
+    override DARTFile.Branches branches(immutable(ubyte[]) rim_path, scope Index* branch_index = null) {
         return owner.branches(rim_path);
     }
 
