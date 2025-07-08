@@ -1,4 +1,4 @@
-module tagion.dart.DARTSynchronizer;
+module tagion.dart.DARTFileSynchronizer;
 
 import core.time : MonoTime;
 import std.exception;
@@ -23,8 +23,8 @@ import tagion.communication.HiRPC;
 /**
  * DART file synchronizer.
  */
-@safe // class DARTSynchronizer : JournalSynchronizer {
-class DARTSynchronizer : StdSynchronizer {
+@safe
+class DARTFileSynchronizer : StdSynchronizer {
     protected {
         DART owner;
         Pubkey addr_pub_key;
