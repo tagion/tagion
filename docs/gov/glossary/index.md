@@ -80,8 +80,14 @@ An implementation/instantiation of the concept of [money](/gov/glossary#money).
 A structured system to store, manage and retrieve data. Akin rather to a filing cabinet with labeled drawers - not the records in those drawers. 
 "DART" is the name of Tagion's custom-designed database system maintained in/by the Tagion [node](/gov/glossary#node) software 
 
+## Decentralization
+
+The ambition and process of making online networks not reliant and dominated by central or priviliedged parties. Innovative protocols are a precondition for it, and blockchains and later other DLTs have been a trail-blazer in that direction. The ideal/aspirational version is often equated with the oversimplified statement "Anybody can run a node" - or complete "permissionlessness" (see [below](/gov/glossary#permissioned--permissionless)). 
+
+However, at Tagion we are mindful of the fact that this ideal will only ever be achieved to a certain degree - making "decentralization" more like a spectrum than a binary category (as in "system is decentralzied: yes or no"). To mark this disctinction we use the terms "de jure" and "de facto" (see [below](/gov/glossary#de-jure--de-facto)). 
+
 ## De jure / de facto
-We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, as we explain in the article about "[permissionlessness](/gov/governance_areas/network_formation/introductions/permission)", the real-world effect of certain rules (de facto) can run counter to its intention (de jure). 
+We use these funny sounding terms to distinguish between the intention and the effect of certain terms, or what is elsewhere called "in theory" and "in practice". "De jure" has references to law, which seems approrpiate in the DLT space where coded rules are often apprised as if they were law. However, the real-world effect of certain rules (de facto) can run counter to its intention (de jure). This is an important distinction particularly in regards to "permissionlessness" (see [below](/gov/glossary#permissioned--permissionless)) as a precondition for decentralization (which we explore in depth in the ["network formation" section](/gov/governance_areas/network_formation/introductions) of our governance documentation. 
 
 ## Distributed Database 
 
@@ -154,14 +160,22 @@ Refers to networks being built on Tagion code and being connected (open) or unco
 The order in which transactions sent to different nodes are committed to the(ir) database(s) is determined by the median time at which the [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph) of that epoch have received the transaction or knowledge of it (through the [wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
 In contrast to the order of transactions in conventional DLT systems - determined by the highest fee or by subjective preferences of node operators - we call Tagion's approach to ordering "fair", because every transaction has the same chance of being included in the next epoch, and manipulations such as frontrunning and sandwich attacks become impossible. 
 
-## Permission/Un-permissioned 
+## Permissioned/Permissionless
 
-Refers to anybody being able to participate in a system, e.g. running a node, with or without permission. (See our in-depth analysis what this means for DLT systems - "de-jure and de-facto" - [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
+Different defintions of these term exist, in the context of Tagion we use them to refer to the governance of the network and thhe question who can operae a node.
+
+In the Mainnet, both are to be possible without permission. In federated Subsystem, the rules concerning both can be set freely. 
+
+(See also our in-depth analysis of "de-jure and de-facto" permissionlessness of DLT systems [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
 
 
 ## Public/Private
 
-A public system or infrastrucre is open for everybody to use. Tagion aspires to provide that. Sub-systems however can choose to be set up there own rules and invite or preclude user - as deemed appropriate for the individual use-cases - making them de-facto private. 
+Different defintions of these term exist, in the context of Tagion we use them as follows: 
+
+A public network, system or infrastrucre is open for everybody to use and its data (transaction history, state, smart-contract code, etc.) is openly readable without prior registration or approval. Tagion aspires to provide that. 
+
+Sub-systems however can choose to be set up there own rules and invite or preclude user - as deemed appropriate for the individual use-cases - making them de-facto private. 
 
 ## Scalability
 
