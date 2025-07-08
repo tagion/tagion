@@ -4,6 +4,9 @@ sidebar_position: 3
 
 # Glossary
 
+Unless stated differently, links within the following entries go to other entries of the glossary. 
+
+
 ## Administered Pricing 
 
 Administered pricing is a concept introduced by the economist Gardiner Means, referring to the practice where prices are set deliberately by businesses, rather than being determined through atomistic competition — the orthodox economic model where numerous small players compete, and prices fluctuate according to supply and demand. 
