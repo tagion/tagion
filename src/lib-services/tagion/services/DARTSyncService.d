@@ -71,17 +71,19 @@ struct DARTSyncService {
 
         enforce(dst_dart_path.exists, "DART does not exist");
         auto net = shared_net.clone;
-        auto dest_db = new DART(net.hash, dst_dart_path);
 
-        ActorHandle handle = ActorHandle(task_names.node_interface);
+        DART dest_db;
+        if (dst_dart_path !is null) {
+            dest_db = new DART(net.hash, dst_dart_path);
+        }
 
         void compareTask(dartCompareRR req) {
-            immutable result = bullseyesMatch(net, addressbook, handle, dest_db);
+            immutable result = bullseyesMatch(net, addressbook, task_names, dest_db);
             req.respond(result);
         }
 
         void synchronizeTask(dartSyncRR req) {
-            immutable journal_filenames = synchronize(journal_path, addressbook, task_names, dest_db);
+            immutable journal_filenames = synchronize(journal_path, net, addressbook, task_names, dest_db);
             req.respond(journal_filenames);
         }
 
@@ -102,7 +104,7 @@ private:
     immutable(bool) bullseyesMatch(
         const SecureNet net,
         shared(AddressBook) addressbook,
-        ActorHandle node_interface_handle,
+        immutable(TaskNames) task_names,
         DART destination
     ) {
 
@@ -119,6 +121,8 @@ private:
         uint default_timeout_mil = 10_000;
         auto total_timeout = (max_retries * channels.length * default_timeout_mil).msecs;
         auto start_time = MonoTime.currTime();
+
+        ActorHandle node_interface_handle = ActorHandle(task_names.node_interface);
 
         foreach (channel; channels) {
             auto address = addressbook[channel].get.address;
@@ -137,7 +141,15 @@ private:
                     auto message = response.message[Keywords.result].get!Document;
                     const remote_bullseye = message[Params.bullseye].get!Fingerprint;
 
-                    return remote_bullseye == destination.bullseye;
+                    if (destination !is null) {
+                        return remote_bullseye == destination.bullseye;
+                    }
+
+                    ActorHandle dart_handle = ActorHandle(task_names.dart);
+                    dart_handle.send(dartBullseyeRR());
+                    const local_bullseye = receiveOnly!(dartBullseyeRR.Response, Fingerprint)[1];
+
+                    return remote_bullseye == local_bullseye;
                 }
 
                 catch (Exception e) {
@@ -152,6 +164,7 @@ private:
 
     immutable(string[]) synchronize(
         string journal_path,
+        shared(SecureNet) shared_net,
         shared(AddressBook) addressbook,
         immutable(TaskNames) task_names,
         DART destination
@@ -193,7 +206,15 @@ private:
                 const sector = current_rim << 8;
                 rim_range.popFront;
 
-                auto dart_synchronizer = new DARTFileSynchronizer(destination, channel, task_names);
+                Synchronizer dart_synchronizer;
+
+                if (destination !is null) {
+                    dart_synchronizer = new DARTFileSynchronizer(destination, channel, task_names);
+                }
+                else {
+                    dart_synchronizer = new DARTRemoteSynchronizer(channel, task_names, shared_net);
+                }
+
                 remote_workers[channel] = dart_synchronizer;
 
                 immutable journal_filename = format("%s.%04x.dart_journal.hibon", journal_path, sector);
@@ -230,6 +251,7 @@ private:
                 replay(destination, journal_filename);
             }
             else {
+                // Add a replay with a DARTService.
                 destination.replay(journal_filename);
             }
         }
@@ -259,7 +281,19 @@ private:
 
         while (!bullseye_match) {
             synchronize(journal_path, addressbook, task_names, destination);
-            TagionHead tagion_head = getHead(destination);
+
+            TagionHead tagion_head;
+
+            if (destination !is null) {
+                tagion_head = getHead(destination);
+            }
+            else {
+                ActorHandle dart_handle = ActorHandle(task_names.dart);
+                dart_handle.send(dartReadRR());
+                auto recorder = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder))[1];
+                tagion_head = TagionHead(recorder[].front.filed);
+            }
+
             auto channel = channels[pub_key_index];
             auto startTime = MonoTime.currTime();
 
@@ -284,7 +318,17 @@ private:
                     const block = RecorderBlock(recorder_block_doc);
                     auto factory = RecordFactory(net.hash);
                     auto recorder = factory.recorder(block.recorder_doc);
-                    auto bullseye = destination.modify(recorder);
+
+                    Fingerprint bullseye;
+
+                    if (destination !is null) {
+                        bullseye = destination.modify(recorder);
+                    }
+                    else {
+                        ActorHandle dart_handle = ActorHandle(task_names.dart);
+                        dart_handle.send(dartModifyRR(), recorder);
+                        bullseye = receiveOnly!(dartReadRR.Response, Fingerprint)[1];
+                    }
 
                     bullseye_match = bullseye == block.bullseye;
                     if (bullseye_match)
