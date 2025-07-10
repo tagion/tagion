@@ -154,7 +154,7 @@ When refering to data, integrity refers to the accuracy, consistency, and trustw
 
 In Tagion this is achieved by a combination of techniques: 
 
-Consensus Mechanisms: In [decentralised](#decentralisation) networks, agreement among multiple independent nodes confirms that a piece of data is valid and present in all individual copies of the shared database.
+Consensus Mechanisms: In [decentralised](#decentralisation) networks, agreement among multiple independent nodes confirms that a piece of data is valid and present in all individual copies of the shared [database](#database).
 
 Digital Signatures: Cryptographic signatures verify that data comes from a trusted source and has not been altered since it was signed. 
 
