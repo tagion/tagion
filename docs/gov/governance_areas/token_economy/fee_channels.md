@@ -32,7 +32,7 @@ _The Ecosystem Tax will be administered but will initially be set at x TGN per m
 
 + **Usage Tax** – A tax that is incurred for each execution. Notably, the tax rate should be a fraction of the execution fees on the mainnet. This reflects the reality that subsystems primarily depend on Mainnet nodes for security rather than full computational processing. In other words, while subsystems leverage the Mainnet’s security infrastructure, they do not place the same level of computational burden on it. As a result, the execution fees for subsystems are set lower to account for their reduced reliance on Mainnet resources. 
 
-_The Execution Tax will be administered but will initially be set at x Ticket (link) per unit of Quark._
+_The Execution Tax will be administered but will initially be set at x Ticket (see below) per unit of Quark._
 
 The community, as mentioned, is responsible for determining and administering the tax rates, ensuring they reflect the collective needs and preferences of its members. This includes both the ecosystem tax and the execution tax, which should be balanced to achieve two key objectives: 
 
