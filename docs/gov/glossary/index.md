@@ -3,8 +3,7 @@ sidebar_position: 3
 ---
 
 # Glossary
-
-Unless stated differently, links within the following entries go to other entries of the glossary. Let's keep learning!
+[_Unless stated differently, links within the following entries go to other entries of the glossary. Let's keep learning!_]
 
 
 ## Administered Pricing 
