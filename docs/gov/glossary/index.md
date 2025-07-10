@@ -148,6 +148,20 @@ This is the name of the [consensus protocol](#consensus) used by Tagion. It was 
 
 The Hashgraph protocal provides a network-wide communication history from which each [node](#node) can reconstruct by and for itself, and with [mathematical certainty](#finality), what other nodes in the network know. And once information about new [contracts](#contract-smart)/[transactions](#transaction) has spread to enough nodes in the network (namely to 2/3+1 of all nodes) - and consequently  [consensus](#consensus) about those contracts is algorithmically established, all nodes will commit the same information/changes to their respective copies of the [database](#database).Details about our implementation of the Hashgraph protocal can be found in our [Tech Documention](https://docs.tagion.org/tech/protocols/consensus/HashGraph).
 
+## Integrity
+
+When refering to data, integrity refers to the accuracy, consistency, and trustworthiness of data records throughout their lifecycle. Particularly important in distributed systems, ensuring data integrity means guaranteeing that information is tampered with, corrupted, or altered, whether by accident or malicious intent. 
+
+In Tagion this is achieved by a combination of techniques: 
+
+Consensus Mechanisms: In [decentralised](#decentralisation) networks, agreement among multiple independent nodes confirms that a piece of data is valid and present in all individual copies of the shared database.
+
+Digital Signatures: Cryptographic signatures verify that data comes from a trusted source and has not been altered since it was signed. 
+
+Cryptographic Hashing: Data is processed through a hash function to produce a unique fingerprint which is easy to compare. If the data changes, even slightly, the hash changes, making tampering easy to detect. 
+
+[Merkle Trees](#merkle-tree-sparce): These allow a network to prove the integrity of large datasets efficiently by breaking them into smaller pieces, each verifiable through a chain of hashes. 
+
 ## Liveness
 
 A property of decentralized systems that ensures the system continues to make progress by processing new transactions, requests, or messages without indefinite delays.
