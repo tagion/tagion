@@ -30,7 +30,7 @@ Based on these assumptions, the total estimated monthly rewards would amount to 
 
 ## Determining Fees 
 
-Fees, collected through one of three defined channels ([see above](#the-treasury)), are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
+Fees, collected through one of the [defined channels](https://docs.tagion.org/gov/governance_areas/token_economy/fee_channels), are deposited into the Treasury and subsequently distributed to compensate contributors, ensuring the network’s sustainability and growth. These fees must strike a balance, ensuring the network’s sustainability while maintaining its accessibility and security.  
 
 Fees set too low risks leaving the Treasury underfunded, potentially depleting its resources over time and making it unable to fairly compensate contributors—or forcing the community to dilute the supply of TGN. They could also undermine the demand for TGN. If users are not required to pay meaningful fees, demand for the token may drop, creating a feedback loop of declining token value, reduced contributor incentives, and weakened network security and resilience, thereby threatening the network’s long-term sustainability. Finally, setting fees too low could inadvertently make it both easy and inexpensive to flood the network with spam. This could strain resources and compromise the overall efficiency of the network. 
 
