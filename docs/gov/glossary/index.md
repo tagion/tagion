@@ -113,6 +113,10 @@ A [database](/gov/glossary#database) structure that enables data retreival based
 
 A system of record-keeping where financial data is shared, synchronized, and stored across multiple nodes in a network. A ledger is a collection of accounts in which accounting transactions are recorded. A ledger is a limited use-case for a [database](/gov/glossary#database)-system.
 
+## Epoch
+
+The time-span from one moment of [consensus](#consensus) to the next is called an "epoch". In Tagion this time is the same as ["time to finality"](#finality).
+
 ## Federated Subsystem 
 
 A Federated Subsystem is an independent network — either public or private — that operates separately from the Tagion [Mainnet](/gov/glossary#tagion-mainnet) but leverages the Mainnet for security and trust. These subsystems can be tailored to specific use cases, industries, or communities, providing flexibility in how they manage data and transactions while benefiting from the underlying security provided by Mainnet Nodes. 
@@ -138,9 +142,9 @@ At its root, the term "governance" comes from the Greek word kybernan, meaning t
 
 ## Hashgraph
 
-This is the name of the consensus protocol used by Tagion. It was originally developed by Leemon Baird (co-founder of the "Hedera" project), under the now well established term "Hashgraph consensus algorithm". Together with Tagion's patented communication protocal ["Wavefront"](/gov/glossary#wavefront)
+This is the name of the [consensus protocol](#consensus) used by Tagion. It was originally developed by Leemon Baird (co-founder of the "Hedera" project), under the now well established term "Hashgraph consensus algorithm". Together with Tagion's patented communication protocal ["Wavefront"](#wavefront) it swiftly and securely establishes, which changes are to be introduced to the database with the conclusion of the next [epoch](#epoch). 
 
-Together, the two protocols establish, swiftly and securely, which changes are to be introduced to the database with the conclusion of the next epoch. Because the hashgraph provides a network-wide communication history from which each node can reconstruct by and for itself, and with mathematical certainty, what other nodes in the network know. And once information about new contracts/transactions has spread to enough nodes in the network (namely to 2/3+1 of all nodes) - and consequently consensus about those contracts is algorithmically established, all nodes will commit the same information/changes to their respective copies of the database.coming next [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph)
+The Hashgraph protocal provides a network-wide communication history from which each [node](#node) can reconstruct by and for itself, and with [mathematical certainty](#finality), what other nodes in the network know. And once information about new [contracts](#contract-smart)/[transactions](#transaction) has spread to enough nodes in the network (namely to 2/3+1 of all nodes) - and consequently  [consensus](#consensus) about those contracts is algorithmically established, all nodes will commit the same information/changes to their respective copies of the [database](#database).Details about our implementation of the Hashgraph protocal can be found in our [Tech Documention](https://docs.tagion.org/tech/protocols/consensus/HashGraph).
 
 
 ## Liveness
