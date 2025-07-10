@@ -141,7 +141,9 @@ At its root, the term "governance" comes from the Greek word kybernan, meaning t
 
 ## Hashgraph
 
-coming next [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph)
+This is the name of the consensus protocol used by Tagion. It was originally developed by Leemon Baird (co-founder of the "Hedera" project), under the now well established term "Hashgraph consensus algorithm". Together with Tagion's patented communication protocal ["Wavefront"](/gov/glossary#wavefront)
+
+Together, the two protocols establish, swiftly and securely, which changes are to be introduced to the database with the conclusion of the next epoch. Because the hashgraph provides a network-wide communication history from which each node can reconstruct by and for itself, and with mathematical certainty, what other nodes in the network know. And once information about new contracts/transactions has spread to enough nodes in the network (namely to 2/3+1 of all nodes) - and consequently consensus about those contracts is algorithmically established, all nodes will commit the same information/changes to their respective copies of the database.coming next [nodes participating in the consensus](https://docs.tagion.org/tech/protocols/consensus/HashGraph)
 
 
 ## Liveness
@@ -161,9 +163,9 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](/gov/glossary#database) and validate and propagate transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
 
-## On-chain Governance 
+## On-chain
 
-On-chain governance refers to formal processes—such as submitting proposals, casting votes, and executing decisions—carried out through smart contracts on the network itself. It ensures that decisions are not only transparent but also enforceable and resistant to manipulation. 
+On-chain refers to formal processes, for example in the management of [tokens](#token-tgn) or [governance](#governance) — as in submitting proposals, casting votes, and executing decisions — that are carried out through smart contracts on the network itself. It ensures that decisions are not only transparent but also enforceable and resistant to manipulation. 
 
 ## Open/Closed 
 
