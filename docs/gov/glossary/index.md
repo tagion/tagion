@@ -232,4 +232,5 @@ A digital [application](/gov/glossary#application-mobile) or device that securel
 
 ## Wavefront
 
-[wavefront protocol](https://docs.tagion.org/tech/protocols/wavefront)). 
+A lightweight communication protocal used for data synchronisation in the Tagion network. This patented method improve previous protocols, because instead of exchanging full event histories, [nodes](#node) use simple counters called "altitudes" to summarise their progress. When two nodes connect, they compare their last-known altitudes to identify exactly which [transactions](#transaction) the other is missing. They then exchange only those in two efficient steps called "First and Second Waves". This minimises data transfer and speeds up [consensus](#consensus) by avoiding redundant communication. 
+All the details can be found in out [Tech Documentation](https://docs.tagion.org/tech/protocols/wavefront)) and the original patent document available in our [Archive](https://docs.tagion.org/gov/archive).
