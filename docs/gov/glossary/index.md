@@ -48,13 +48,11 @@ The network's ability to reach and maintain [consensus](/gov/glossary#consensus)
 
 The word "community" is derived from the Latin communitas, which comes from communis, meaning "common, public, or shared by all." Combining con- (together) and munis (relating to duties or services), it conveys the idea of people coming together to fulfill shared responsibilities or provide services.  
 
-In the context of Tagion, the Community encompasses all verified [Community Members](/gov/glossary#community-member) actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes.  
-
 Notably, Community is a fluid term - a flexible and evolving entity - that may adapt to include new roles and contributors as the network develops and grows. 
 
-## Community Member 
+In the context of Tagion, the Community encompasses all verified members actively participating in and contributing to the network, including [consensus](/gov/glossary#consensus) and [Governance](/gov/glossary#governance) processes. As such, a community member is any individual or entity who has been verified by peers through the network’s Social Scoring System (see Network Formation on [Governance Documentation](/gov/governance_areas/network_formation/tagion/poc)). 
 
-A community member is any individual or entity who has been verified by peers through the network’s Social Scoring System (see Network Formation on [Governance Documentation](/gov/governance_areas/network_formation/tagion/poc) for more on this topic). Once verified, community members gain the right to participate in both the [consensus](/gov/glossary#consensus) process and the governance of the network, contributing to its security, efficiency and decision-making. 
+To simplify decision making processes for every-day decisions and recommendations for topics to be voted on, a council will be elected from amongst the members of the community. 
 
 ## Consensus 
 
