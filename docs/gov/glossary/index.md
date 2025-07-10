@@ -125,10 +125,10 @@ In a Federated Subsystem, all data remains encrypted within the subsystem, ensur
 
 Finality is a property of a distributed system where, once a [transaction](/gov/glossary#transaction) or block is finalized, it is permanently irreversible unless overridden by external intervention, such as a hard fork.
 
-The term "probabilistic finality", as often used in blockchain systems, is an oxymoron because the likelihood of a [transaction](/gov/glossary#transaction) or block being reverted only decreases over time as more confirmations are added, but reversal remains theoretically possible. 
-To distinguish actual finality from this, systems with [Hashgraph consensus](#consensus) often specify to have "deterministic finality". 
+The term "**probabilistic finality**", as often used in blockchain systems, is an oxymoron because the likelihood of a [transaction](/gov/glossary#transaction) or block being reverted only decreases over time as more confirmations are added, but reversal remains theoretically possible. 
+To distinguish actual finality from this, systems with [Hashgraph consensus](#consensus) often specify to have "**deterministic finality**". 
 
-"Time to finality" is the duration required for a transaction to be considered irreversible or practically immutable in the system, this depends to a large degree on the [consensus mechanism](#consensus) used.
+"**Time to finality**" is the duration required for a transaction to be considered irreversible or practically immutable in the system, this depends to a large degree on the [consensus mechanism](#consensus) used.
 
 ## Formation
 
@@ -137,6 +137,10 @@ In our governance area "network formation" we use this word analogous to its dua
 ## Governance 
 
 At its root, the term "governance" comes from the Greek word kybernan, meaning to steer or guide. In the context of a decentralized network like Tagion, governance refers to the system and processes through which decisions are made, rules are set, and changes are implemented. It encompasses both [on-chain](#on-chain) processes—such as voting and proposal submission—and informal practices, including open discussions and deliberation on proposals. 
+
+## HiBON
+
+HiBON, which is short for Hash-invariant Binary Object Notation, is a compact data format used in the Tagion network to store and exchange information. HiBON ensures that the same piece of data always looks the same at the binary level, so it always produces the same hash. Unlike formats like JSON, which can vary depending on how they are written, HiBON has a fixed structure and order, making it ideal for cryptographic systems. All details can be foud on our dedicated documentation site [hibon.org](https://www.hibon.or).
 
 ## Hashgraph
 
@@ -147,6 +151,10 @@ The Hashgraph protocal provides a network-wide communication history from which 
 ## Liveness
 
 A property of decentralized systems that ensures the system continues to make progress by processing new transactions, requests, or messages without indefinite delays.
+
+## Merkle Tree (sparce)
+
+A sparse Merkle tree is a compact way for a distributed database to prove whether a specific entry is recorded or not, without sending the whole dataset. Every piece of data is hashed individually, and those hashes are then combined in pairs and hashed again, continuing upward, layer by layer, until a single hash remains at the top: the root hash, in Tagion's [DART database](#dart) this known as the "bullseye". Because the tree is cryptographically linked, any change to any part of it, no matter how small, will result in a completely different root hash. And to prove whether a particular record is present (or absent), one needs only share the few fingerprints that connect that record to the root hash. 
 
 ## Modularity
 
@@ -204,6 +212,10 @@ Sub-systems however can choose to be set up there own rules and invite or preclu
 ## Scalability
 
 The ability of a DLT system to process and validate a growing number of [transactions](/gov/glossary#transaction) or operations efficiently without compromising other essential properties, such as decentralization, security, and [consistency](/gov/glossary#consistency). 
+
+## Staking
+
+Staking refers to the act of locking up a certain number of [tokens](#tokens-tgn) to participate in network functions such as securing the network, validating transactions, supporting governance decisions, or providing liquidity in decentralised finance (DeFi) protocols. In return, participants typically earn a yield. 
 
 ## Stateless System
 
