@@ -29,7 +29,7 @@ Notably, the length of the procreation interval directly impacts network securit
 
 - Longer intervals enhance security by slowing identity creation, reducing the risk of centralization and manipulation but also moderating overall growth. 
 
-To maintain optimal network balance, the length of these intervals may be dynamically adjusted by the community (link) based on network conditions, such as community size and current security needs.  
+To maintain optimal network balance, the length of these intervals may be dynamically adjusted by the [community](/gov/glossary#community) based on network conditions, such as community size and current security needs.  
 
 ## The Adam and Eve Cohort 
 
