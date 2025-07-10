@@ -12,7 +12,7 @@ The key difference, of course, is that in the latter scenario, the mechanisms he
 
 Ultimately, for a network to increase both security and decentralization, Sybil resistance must not only prevent identity manipulation but also ensure that power remains sufficiently distributed. Otherwise, the system, while protected from Sybil attacks, risks evolving into a plutocracy—one where control is concentrated, entrenched, and inherently unfair, undermining the very ideals of decentralization. 
 
-Therefore, the ultimate purpose of Tagion’s Sybil-resistance mechanism, in alignment with the principles outlined in the Manifesto (link), is twofold: positively, it must ensure the network remains secure against sybil attacks, and negatively, it must actively prevent the consolidation of power, ensuring a fair and decentralized distribution of influence. 
+Therefore, the ultimate purpose of Tagion’s Sybil-resistance mechanism, in alignment with the principles outlined in the [Manifesto](https://docs.tagion.org/gov/intro/manifesto), is twofold: positively, it must ensure the network remains secure against sybil attacks, and negatively, it must actively prevent the consolidation of power, ensuring a fair and decentralized distribution of influence. 
 
 ## Proof of Community
 To achieve this dual objective, it is essential to cultivate a diverse community of network participants. Since traditional Sybil resistance mechanisms, as argued, have proven inadequate in this respect, we have made a proposal for a novel approach to strengthen trust and security within the Tagion network. 
