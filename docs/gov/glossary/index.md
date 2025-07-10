@@ -73,7 +73,6 @@ Information package instructing [nodes](gov/glossary#node) about [transactions](
 ## Contributors 
 
 The term "contributor" is fluid, encompassing a wide array of possible roles that may expand as the network matures and new opportunities for engagement emerge. For now, we consider our contributors a category that íncludes but also goes beyond out "community members" (see above). As such they encompass: node operator, developers and governance participants, as outlined [here](/gov/intro/network). 
- 
 
 ## Currency 
 
@@ -108,7 +107,6 @@ We use these funny sounding terms to distinguish between the intention and the e
 
 A [database](/gov/glossary#database) structure that enables data retreival based on key-value pairs. Distributed hash tables are decentralised, so all [nodes](/gov/glossary#node) form the collective system without centralised coordination. They are generally resilient because data is replicated across multiple nodes. 
  
-
 ## Distributed Ledger Technology (DLT)
 
 A system of record-keeping where financial data is shared, synchronized, and stored across multiple nodes in a network. A ledger is a collection of accounts in which accounting transactions are recorded. A ledger is a limited use-case for a [database](/gov/glossary#database)-system.
@@ -146,10 +144,21 @@ This is the name of the [consensus protocol](#consensus) used by Tagion. It was 
 
 The Hashgraph protocal provides a network-wide communication history from which each [node](#node) can reconstruct by and for itself, and with [mathematical certainty](#finality), what other nodes in the network know. And once information about new [contracts](#contract-smart)/[transactions](#transaction) has spread to enough nodes in the network (namely to 2/3+1 of all nodes) - and consequently  [consensus](#consensus) about those contracts is algorithmically established, all nodes will commit the same information/changes to their respective copies of the [database](#database).Details about our implementation of the Hashgraph protocal can be found in our [Tech Documention](https://docs.tagion.org/tech/protocols/consensus/HashGraph).
 
-
 ## Liveness
 
 A property of decentralized systems that ensures the system continues to make progress by processing new transactions, requests, or messages without indefinite delays.
+
+## Modularity
+
+Modularity refers to the architectural design principle of breaking a system into distinct, self-contained components, or modules, each responsible for a specific function.  
+
+In Tagion, the term is used for two forms of modularity: 
+
+**Functional Modularity: **
+Core responsibilities such as consensu, execution, and data storage are separated into individual modules. This separation allows developers to improve, replace, or scale each part without affecting the rest of the system. It promotes clean design, reduces complexity, and supports parallel development. 
+
+**Network Modularity: **
+Instead of one large, unified network, modular systems can be composed of multiple independent or semi-independent networks. These may be governed separately and tailored for specific use cases but remain interoperable through a network hub. This allows for specialisation, isolation of complexity, and greater flexibility across the ecosystem. 
 
 ## Money 
 
@@ -162,7 +171,6 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 ## Node
 
 A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](#database) and validate and propagate transactions, and participating in the [consensus process](#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
-
 
 ## On-chain
 
@@ -184,7 +192,6 @@ Different defintions of these term exist, in the context of Tagion we use them t
 In the Mainnet, both are to be possible without permission. They are In federated Subsystem, the rules concerning both can be set freely. 
 
 (See also our in-depth analysis of "de-jure and de-facto" permissionlessness of DLT systems [here](https://docs.tagion.org/gov/governance_areas/network_formation/introductions/permission).)
-
 
 ## Public/Private
 
@@ -221,6 +228,11 @@ The Tagion Mainnet serves as the foundation of the Tagion Ecosystem, operating a
 Notably, to keep the Mainnet streamlined, applications are primarily run on Federated Sub-systems, reducing the risk of Mainnet bloating and ensuring that the core network remains slick, scalable, and high-performing. (Also see [Network Architecture](/gov/intro/network) in Governance Atrea "Network Formation")
 
 ## Tokens (TGN)
+
+A token is a digital representation of a specific asset, right, or piece of data recorded on a [distributed network](#distributed-ledger-technology-dlt). Tokens can serve various purposes, such as enabling payments, granting access to services or applications, or representing ownership or governance rights. Depending on their function, tokens are typically categorised as utility tokens, governance tokens, security tokens, non-fungible tokens (NFTs), or asset-backed tokens. They are managed and transferred via smart contracts or protocol rules. 
+
+**TGN** is the native utility token of the Tagion Network. It is used to transact, incentivise participation in the network (such as through node operation), and potentially access services within the Tagion ecosystem.  
+ 
 
 ## Transaction
 
