@@ -8,7 +8,7 @@ Some ideas and concepts described in the following PDFs are outdated or abandone
 
 As of May 2025, everything current is published on the different pages of the tech and governance documentation on this site, see top menu to start navigating. 
 
-The only document to persist unchanged and published as an PDF is the [Tagion Manifesto](https://www.tagion.org/resources/tagion-manifesto.pdf). 
+The only document to persist unchanged and published as an PDF is the [Tagion Manifesto](https://www.tagion.org/resources/tagion-manifesto.pdf) of January 2025.
 
 ## Pantent Documents
 
