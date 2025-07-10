@@ -58,7 +58,7 @@ A community member is any individual or entity who has been verified by peers th
 
 ## Consensus 
 
-Consensus refers to the process by which  [Nodes](/gov/glossary#node) agree on the transactions (and their order) to be recorded in the shared [Database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissionedpermissionlessness)).  
+Consensus refers to the process by which  [nodes](/gov/glossary#node) agree on the transactions (and their order) to be recorded in the shared [database](/gov/glossary#database). It ensures the [integrity](/gov/glossary#integrity), security of the Tagion Network by making sure that all participating nodes maintain a consistent view of the current state of data without relying on a central authority (see ["permissionlessness"](/gov/glossary#permissionedpermissionlessness)).  
 
 In the Tagion Network, consensus is reached using an [Asynchronous Byzantine Fault Tolerant (ABFT)](/gov/glossary#byzantine-fault-tolerance-bft) consensus algorithm called [Hashgraph](/gov/glossary#hashgraph). 
 
@@ -119,17 +119,14 @@ A Federated Subsystem is an independent network — either public or private —
 
 In a Federated Subsystem, all data remains encrypted within the subsystem, ensuring privacy and confidentiality for users. However, transactional activity — the overall volume and frequency of transactions — is monitored by Mainnet Nodes. (Also see [Network Architecture](/gov/intro/network) in Governance Area "Network Formation".)
 
-## Finality (time to)
+## Finality 
 
-Time to finality is the duration required for a [transaction](/gov/glossary#transaction) to be considered irreversible or practically [immutable](/gov/glossary#deterministic-finality) in the  system, depending on the [consensus](/gov/glossary#consensus) mechanism used. 
+Finality is a property of a distributed system where, once a [transaction](/gov/glossary#transaction) or block is finalized, it is permanently irreversible unless overridden by external intervention, such as a hard fork.
 
-## Finality: Deterministic
+The term "probabilistic finality", as often used in blockchain systems, is an oxymoron because the likelihood of a [transaction](/gov/glossary#transaction) or block being reverted only decreases over time as more confirmations are added, but reversal remains theoretically possible. 
+To distinguish actual finality from this, systems with [Hashgraph consensus](#consensus) often specify to have "deterministic finality". 
 
-A property of a distributed system where, once a [transaction](/gov/glossary#transaction) or block is finalized, it is permanently irreversible unless overridden by external intervention, such as a hard fork.
-
-## Finality: Probabilistic
-
-An oxymoron used to describe the property of a system where the likelihood of a [transaction](/gov/glossary#transaction) or block being reverted decreases over time as more confirmations are added, but reversal remains theoretically possible. 
+"Time to finality" is the duration required for a transaction to be considered irreversible or practically immutable in the system, this depends to a large degree on the [consensus mechanism](#consensus) used.
 
 ## Formation
 
@@ -160,12 +157,12 @@ Network services refer to the functionalities provided by the Tagion Mainnet, en
 
 ## Node
 
-A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](/gov/glossary#database) and validate and propagate transactions, and participating in the [consensus process](/gov/glossary#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
+A node is an instance of the main Tagion software (for Tagion Mainnet and Subsystems). Several nodes can run on one computer, but in a "distributed" system they will be on different computers connected via the internet or local networks. Nodes maintain a copy of the [database](#database) and validate and propagate transactions, and participating in the [consensus process](#consensus). The types of nodes in the Tagion network are outlined [here](/gov/intro/network). 
 
 
 ## On-chain
 
-On-chain refers to formal processes, for example in the management of [tokens](#token-tgn) or [governance](#governance) — as in submitting proposals, casting votes, and executing decisions — that are carried out through smart contracts on the network itself. It ensures that decisions are not only transparent but also enforceable and resistant to manipulation. 
+On-chain refers to formal processes, for example in the management of [tokens](#tokens-tgn) or [governance](#governance) — as in submitting proposals, casting votes, and executing decisions — that are carried out through smart contracts on the network itself. It ensures that decisions are not only transparent but also enforceable and resistant to manipulation. 
 
 ## Open/Closed 
 
