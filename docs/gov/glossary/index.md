@@ -197,7 +197,7 @@ On-chain refers to formal processes, for example in the management of [tokens](#
 
 ## Open/Closed 
 
-Refers to networks being built on Tagion code and being unconnected (closed) to the mainnet or connected (open). The latter is what we call “federated Subsystems”, the former need to comply with the terms of our licensing regime. 
+Refers to networks being built on Tagion code and being unconnected (closed) to the mainnet or connected (open). The latter is what we call “[Federated Subsystems](#federated-subsystem)”, the former need to comply with the terms of our licensing regime. 
 
 ## Ordering (fair)
 
