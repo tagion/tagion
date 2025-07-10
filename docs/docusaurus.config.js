@@ -182,7 +182,7 @@ const config = {
               },
                {
                  label: 'Archive',
-                to: 'https://docs.tagion.org/gov/intro/archive',
+                to: 'https://docs.tagion.org/gov/archive',
               }
             ],
           },
