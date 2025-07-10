@@ -258,7 +258,6 @@ Notably, to keep the Mainnet streamlined, applications are primarily run on Fede
 A token is a digital representation of a specific asset, right, or piece of data recorded on a [distributed network](#distributed-ledger-technology-dlt). Tokens can serve various purposes, such as enabling payments, granting access to services or applications, or representing ownership or governance rights. Depending on their function, tokens are typically categorised as utility tokens, governance tokens, security tokens, non-fungible tokens (NFTs), or asset-backed tokens. They are managed and transferred via smart contracts or protocol rules. 
 
 **TGN** is the native utility token of the Tagion Network. It is used to transact, incentivise participation in the network (such as through node operation), and potentially access services within the Tagion ecosystem.  
- 
 
 ## Transaction
 
@@ -266,7 +265,8 @@ Unit of [database](/gov/glossary#database)-changes (add, edit, delete), includin
 
 ## Wallet
 
-A digital [application](/gov/glossary#application-mobile) or device that securely stores cryptographic keys used to access and manage cryptocurrencies. It enables users to send, receive, and store their digital assets, providing a convenient and secure way to interact with networks. 
+A particular digital [application](#application-mobile) that allows users to send [transations](#transaction) to the  nodes of the network. The name is derived from early applications of [DLTs](#distributed-ledger-technology-dlt) in financial services. Typically they securely store the cryptographic keys used to access and manage cryptocurrencies and show the balances/assets associated with these keys. 
+For the Tagion network, the [JustPay](https://www.decard.io/justpay) application currently serves this purpose.
 
 ## Wavefront
 
