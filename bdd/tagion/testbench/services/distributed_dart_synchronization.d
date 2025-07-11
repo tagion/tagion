@@ -41,7 +41,9 @@ import tagion.hibon.Document;
 import tagion.logger.subscription;
 import tagion.script.common;
 import tagion.script.standardnames;
+
 import tagion.services.DARTSynchronization;
+import tagion.services.DARTSyncService;
 import tagion.services.TRTService;
 import tagion.services.messages;
 import tagion.services.nodeinterface;
@@ -62,20 +64,20 @@ import tagion.wallet.SecureWallet : SecureWallet;
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 enum feature = Feature(
-            "is a service that synchronize the DART local database with real remote nodes.",
-            [
-        "It should be used on node start up to ensure that local database is up-to-date.",
-        "In this test scenario we require that the remote database is static (not updated)."
-]);
+        "is a service that synchronize the DART local database with real remote nodes.",
+        [
+            "It should be used on node start up to ensure that local database is up-to-date.",
+            "In this test scenario we require that the remote database is static (not updated)."
+        ]);
 
 alias FeatureContext = Tuple!(
-        WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem, "WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem",
-        FeatureGroup*, "result"
+    WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem, "WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem",
+    FeatureGroup*, "result"
 );
 
 @trusted @Scenario( // Does not work with @safe
-        "we run multiple nodes as a separate programs and synchronize the local database with them.",
-        [])
+    "we run multiple nodes as a separate programs and synchronize the local database with them.",
+    [])
 class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThem {
 
     Fingerprint remote_b;
@@ -139,70 +141,87 @@ class WeRunMultipleNodesAsASeparateProgramsAndSynchronizeTheLocalDatabaseWithThe
 
         // Collect adresses.
         SockAddresses sock_addrs;
+        sock_addrs.setDefault();
         sock_addrs.sock_addrs = node_runner.collectDartAdresses;
+
+        writefln("Socket collectDartAdresses: ", node_runner.collectDartAdresses);
+        writefln("Socket addresses: ", sock_addrs.sock_addrs);
 
         DARTSyncOptions dart_sync_opts;
         dart_sync_opts.journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
                 .baseName.stripExtension);
 
-        // dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
-        //         TaskNames().dart_synchronization,
-        //         cast(immutable) dart_sync_opts,
-        //         cast(immutable) sock_addrs,
-        //         cast(shared) net,
-        //         local_db_path))();
+        // auto journal_path = buildPath(env.bdd_log, __MODULE__, local_db_path
+        //         .baseName.stripExtension);
 
-        // waitforChildren(Ctrl.ALIVE, 3.seconds);
+        // Options opts;
+        // opts.setDefault();
+        // dart_sync_handle = (() @trusted => spawn!DARTSyncService(
+        //         opts.task_names.dart_synchronization,
+        //         cast(immutable) journal_path,
+        //         cast(shared) net,
+        //         local_db_path,
+        //         node_runner.addressbook,
+        //         opts.task_names))();
+
+        dart_sync_handle = (() @trusted => spawn!DARTSynchronization(
+                TaskNames().dart_synchronization,
+                cast(immutable) dart_sync_opts,
+                cast(immutable) sock_addrs,
+                cast(shared) net,
+                local_db_path))();
+
+        waitforChildren(Ctrl.ALIVE, 3.seconds);
 
         return result_ok;
     }
 
     @When("we check that local database is not up-to-date.")
     Document uptodate() {
-        // auto dart_compare = dartCompareRR();
-        // dart_sync_handle.send(dart_compare);
-        // immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+        auto dart_compare = dartCompareRR();
+        dart_sync_handle.send(dart_compare);
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
 
-        // log("Is local database up to date %s", result);
-        // check(!result, "the local database is not up-to-date");
+        log("Is local database up to date %s", result);
+        check(!result, "the local database is not up-to-date");
         return result_ok;
     }
 
     @Then("we run the local database synchronization.")
     Document synchronization() {
-        // auto dart_sync = dartSyncRR();
-        // dart_sync_handle.send(dart_sync);
-        // immutable journal_filenames = receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])(
-        //         env.DISTRIBUTION_TIMEOUT!uint.seconds);
+        auto dart_sync = dartSyncRR();
+        dart_sync_handle.send(dart_sync);
+        immutable journal_filenames = receiveOnlyTimeout!(dart_sync.Response, immutable(char[])[])(
+                env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
-        // auto dart_replay = dartReplayRR();
-        // dart_sync_handle.send(dart_replay, immutable(DARTSynchronization.ReplayFiles)(
-        //         journal_filenames[1]));
-        // auto result = receiveOnlyTimeout!(dart_replay.Response, bool)(
-        //         env.DISTRIBUTION_TIMEOUT!uint.seconds);
+        auto dart_replay = dartReplayRR();
+        dart_sync_handle.send(dart_replay, immutable(DARTSynchronization.ReplayFiles)(
+                journal_filenames[1]));
+        auto result = receiveOnlyTimeout!(dart_replay.Response, bool)(
+                env.DISTRIBUTION_TIMEOUT!uint.seconds);
 
-        // check(result[1], "Database has been synchronized.");
+        check(result[1], "Database has been synchronized.");
         return result_ok;
     }
 
     @Then("we check that bullseyes match.")
     Document match() {
-        // auto dart_compare = dartCompareRR();
-        // (() @trusted => dart_sync_handle.send(dart_compare))();
-        // immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
+        auto dart_compare = dartCompareRR();
+        (() @trusted => dart_sync_handle.send(dart_compare))();
+        immutable result = receiveOnlyTimeout!(dart_compare.Response, immutable(bool))[1];
 
-        // log("Check that bullseyes match %s", result);
-        // check(result, "bullseyes match");
+        log("Check that bullseyes match %s", result);
+        check(result, "bullseyes match");
         return result_ok;
     }
 
     void stopActor() {
-        // foreach (remote_dart_handle; remote_dart_handles)
-        //     remote_dart_handle.send(Sig.STOP);
-        // foreach (rpcserver_handle; rpcserver_handles)
-        //     rpcserver_handle.send(Sig.STOP);
-        // dart_sync_handle.send(Sig.STOP);
-        // node_runner.killWaves(3.seconds);
+        foreach (remote_dart_handle; remote_dart_handles)
+            remote_dart_handle.send(Sig.STOP);
+        foreach (rpcserver_handle; rpcserver_handles)
+            rpcserver_handle.send(Sig.STOP);
+        dart_sync_handle.send(Sig.STOP);
+        node_runner.killWaves(3.seconds);
         waitforChildren(Ctrl.END);
     }
 }

@@ -56,13 +56,9 @@ class NodeRunner {
         foreach (opt; node_opts) {
             sock_addrs ~= opt.rpcserver.sock_addr;
         }
+        writefln("collectDartAdresses: %s", sock_addrs);
         return sock_addrs;
     }
-
-    
-    // shared(AddressBook) addressbook = new shared(AddressBook);
-    // nodes ~= Node(shared_net, task_names, epoch_creator_options);
-    // addressbook.set(new NetworkNodeRecord(net.pubkey, task_names.node_interface));
 
     void setupMode1Options(string prefix_name = "Mode_1_") {
         Options local_options;
@@ -110,7 +106,6 @@ class NodeRunner {
 
         return createGenesis(node_settings, Document(), TagionGlobals.init);
     }
-
 
     string[] createNodesData(string genesis_dart_path, out string[] pins) {
         string[] node_paths;

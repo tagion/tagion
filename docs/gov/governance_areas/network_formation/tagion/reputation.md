@@ -3,7 +3,7 @@ sidebar_position: 3
 ---
 # Reputation 
 
-A high Gene Score (link) may grant a member the ability to reproduce more frequently, but it does not directly determine influence within the network. Influence is governed by reputation, which is built over time through peer endorsements. Members with higher reputation scores gain greater influence in consensus and decision-making processes, while those with low reputation remain less influential, regardless of their genetic diversity.  
+A high [Gene Score](https://docs.tagion.org/gov/governance_areas/network_formation/tagion/genetics) may grant a member the ability to reproduce more frequently, but it does not directly determine influence within the network. Influence is governed by reputation, which is built over time through peer endorsements. Members with higher reputation scores gain greater influence in consensus and decision-making processes, while those with low reputation remain less influential, regardless of their genetic diversity.  
 
 Unlike the gene score, which is a fixed measure of diversity based on inherited attributes, reputation is dynamic and evolves over time. It is built through peer endorsements, where existing members validate and vouch for other members’ credibility. 
 
@@ -49,7 +49,7 @@ To counter this tendency, endorsing others should not only benefit the recipient
 
 ## Reputation Loss 
 
-Reputation is built on trust, but it must also be subject to scrutiny. If a member is found to be engaging in malicious activities—whether through coordinated manipulation, endorsement fraud, or other forms of abuse—they risk having their membership suspended (link). However, accountability should not be limited to the individual alone. Since reputation is built through endorsements, those who vouched for a malicious actor may also face consequences if their endorsements contributed to an abuse of trust. Hence, a proportional penalty may also be applied to those who endorse malicious actors, discouraging reckless or fraudulent endorsements. This introduces a layer of social responsibility, where members must consider the credibility of those they vouch for rather than endorsing indiscriminately. 
+Reputation is built on trust, but it must also be subject to scrutiny. If a member is found to be engaging in malicious activities—whether through coordinated manipulation, endorsement fraud, or other forms of abuse—they risk having their [community membership](/gov/glossary#community) suspended. However, accountability should not be limited to the individual alone. Since reputation is built through endorsements, those who vouched for a malicious actor may also face consequences if their endorsements contributed to an abuse of trust. Hence, a proportional penalty may also be applied to those who endorse malicious actors, discouraging reckless or fraudulent endorsements. This introduces a layer of social responsibility, where members must consider the credibility of those they vouch for rather than endorsing indiscriminately. 
 
 However, while an endorser may face penalties for supporting a bad actor, this does not extend to others who it has endorsed. As such, a member losing reputation or being suspended does not impact the reputation scores of those they previously endorsed, as this could create a domino effect where the mistakes or misconduct of one individual ripple across the entire network. 
 
@@ -57,13 +57,13 @@ However, while an endorser may face penalties for supporting a bad actor, this d
 
 By analyzing the graph structure and identifying clusters, what is commonly referred to as cluster analysis, it becomes possible to detect patterns of collusion and Sybil attacks within the network. Clusters of nodes that exhibit unusually high internal connectivity but limited external endorsements may indicate coordinated manipulation, as genuine reputation networks tend to form more distributed and organic structures. 
 
-The Security Council (link) is responsible for monitoring the network and investigating potential Sybil attacks or collusion. They can intervene when manipulation threatens the integrity of the reputation system. However, before taking any action, the Council must first verify that the detected anomaly is indeed an attempt to exploit the system. This, we envision, may include communicating with the suspected members, ensuring that interventions are based on strong evidence rather than algorithmic suspicion alone. 
+The [community council[(/gov/glossary#community) is responsible for monitoring the network and investigating potential Sybil attacks or collusion. They can intervene when manipulation threatens the integrity of the reputation system. However, before taking any action, the Council must first verify that the detected anomaly is indeed an attempt to exploit the system. This, we envision, may include communicating with the suspected members, ensuring that interventions are based on strong evidence rather than algorithmic suspicion alone. 
 
  
 
 ## Weighted Participation Rights 
 
-Participation in both the consensus process (link) and governance (link) requires verified community membership, meeting the criteria outlined in the Proof-of-Community section(link). Importantly, for both processes it follows that they are not governed by strictly egalitarian principles, meaning people do not participate on equal terms. Rather, participation rights are weighted based on the reputation score along with a set of metrics, as we define below: 
+Participation in both the [consensus process](/gov/glossary#consensus) and [governance](/gov/glossary#governance) requires verified community membership, meeting the criteria outlined in the [Proof-of-Community section](https://docs.tagion.org/gov/governance_areas/network_formation/tagion). Importantly, for both processes it follows that they are not governed by strictly egalitarian principles, meaning people do not participate on equal terms. Rather, participation rights are weighted based on the reputation score along with a set of metrics, as we define below: 
 
  
 

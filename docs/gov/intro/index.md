@@ -10,14 +10,14 @@ Welcome to these pages concerning the governance development- and documentation 
 
 On this site, you will find the current state of ideas and deliberation regarding Tagion's governance. 
 
-We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
+We have chosen to publish these ideas throughout their development process because we want the evolution of the network to be shaped by the collective will of its "community" (the meaning of this and other terms will be specified in the [Glossary](./glossary)). The only guiding principles that should always be adhered to are the values outlined in the Tagion ["Manifesto"](./manifesto). 
 
 :::info[Previous Documentation]
 
 Since 2019 we had preliminarily described a lot of our ideas in PDF publications:  
 our "Technical", "Concept" and "Tokenomics" papers. They are all considered superseded by the information on these pages, and everything current is now found here. 
 
-But if you are interested in the history of our thinking, you can find the old publications in our [archive](https://docs.tagion.org/gov/intro/archive).
+But if you are interested in the history of our thinking, you can find the old publications in our [Archive](https://docs.tagion.org/gov/archive).
 :::
 
 
